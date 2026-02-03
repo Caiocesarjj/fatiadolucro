@@ -2,95 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Browmor Design System - Confectionery SaaS
+   Primary: Pink (#ea90c9) | Success: Emerald Green | Modern & Clean
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core brand colors - Pink primary */
+    --background: 0 0% 99%;
+    --foreground: 240 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Pink primary - derived from #ea90c9 */
+    --primary: 320 68% 74%;
+    --primary-foreground: 320 30% 15%;
+    --primary-hover: 320 68% 68%;
+    --primary-light: 320 60% 92%;
+    --primary-glow: 320 68% 80%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 320 40% 95%;
+    --accent-foreground: 320 50% 30%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success/Positive metrics - Emerald Green */
+    --success: 158 64% 42%;
+    --success-foreground: 158 64% 98%;
+    --success-light: 158 60% 92%;
 
-    --radius: 0.5rem;
+    /* Warning */
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 10%;
 
-    --sidebar-background: 0 0% 98%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 320 68% 74%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --radius: 0.75rem;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Chart colors */
+    --chart-1: 320 68% 74%;
+    --chart-2: 158 64% 42%;
+    --chart-3: 220 70% 50%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 270 60% 65%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Sidebar - subtle and elegant */
+    --sidebar-background: 320 20% 98%;
+    --sidebar-foreground: 240 6% 25%;
+    --sidebar-primary: 320 68% 74%;
+    --sidebar-primary-foreground: 320 30% 15%;
+    --sidebar-accent: 320 30% 94%;
+    --sidebar-accent-foreground: 320 50% 30%;
+    --sidebar-border: 320 15% 92%;
+    --sidebar-ring: 320 68% 74%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(240 6% 10% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(240 6% 10% / 0.05), 0 2px 4px -1px hsl(240 6% 10% / 0.03);
+    --shadow-lg: 0 10px 15px -3px hsl(240 6% 10% / 0.05), 0 4px 6px -2px hsl(240 6% 10% / 0.02);
+    --shadow-card: 0 1px 3px 0 hsl(240 6% 10% / 0.04), 0 1px 2px 0 hsl(240 6% 10% / 0.02);
+    --shadow-hover: 0 10px 20px -5px hsl(320 68% 74% / 0.15);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 240 10% 8%;
+    --foreground: 0 0% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 10% 10%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 10% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 320 68% 70%;
+    --primary-foreground: 320 10% 10%;
+    --primary-hover: 320 68% 75%;
+    --primary-light: 320 30% 20%;
+    --primary-glow: 320 50% 60%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 5% 18%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 5% 18%;
+    --muted-foreground: 240 4% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 320 30% 20%;
+    --accent-foreground: 320 50% 80%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --success: 158 64% 45%;
+    --success-foreground: 158 64% 98%;
+    --success-light: 158 30% 18%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 10%;
+
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 320 68% 70%;
+
+    --sidebar-background: 240 10% 6%;
+    --sidebar-foreground: 240 4% 70%;
+    --sidebar-primary: 320 68% 70%;
+    --sidebar-primary-foreground: 320 10% 10%;
+    --sidebar-accent: 320 20% 15%;
+    --sidebar-accent-foreground: 320 40% 80%;
+    --sidebar-border: 240 5% 15%;
+    --sidebar-ring: 320 68% 70%;
   }
 }
 
@@ -100,6 +133,111 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/50;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+}
+
+@layer components {
+  /* Card variants */
+  .card-metric {
+    @apply bg-card rounded-xl border shadow-sm p-6 transition-all duration-200;
+  }
+
+  .card-metric:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .card-metric-success {
+    @apply card-metric border-l-4;
+    border-left-color: hsl(var(--success));
+  }
+
+  .card-metric-primary {
+    @apply card-metric border-l-4;
+    border-left-color: hsl(var(--primary));
+  }
+
+  .card-metric-warning {
+    @apply card-metric border-l-4;
+    border-left-color: hsl(var(--warning));
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
+  }
+
+  .bg-gradient-success {
+    background: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(158 64% 52%) 100%);
+  }
+
+  /* Text styles */
+  .text-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Input styles for currency */
+  .input-currency {
+    @apply font-mono tabular-nums;
+  }
+
+  /* Badge styles */
+  .badge-success {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background-color: hsl(var(--success-light));
+    color: hsl(var(--success));
+  }
+
+  .badge-primary {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background-color: hsl(var(--primary-light));
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Table styles */
+  .table-row-hover {
+    @apply transition-colors duration-150;
+  }
+
+  .table-row-hover:hover {
+    background-color: hsl(var(--muted) / 0.5);
+  }
+
+  /* Animate */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

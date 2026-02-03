@@ -1,0 +1,629 @@
+import { useState, useEffect, useMemo } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Calculator as CalcIcon,
+  Plus,
+  Minus,
+  DollarSign,
+  TrendingUp,
+  Lightbulb,
+  Store,
+  Truck,
+  Package,
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+interface Ingredient {
+  id: string;
+  name: string;
+  unit_type: "weight" | "unit";
+  cost_per_unit: number;
+}
+
+interface Platform {
+  id: string;
+  name: string;
+  fee_percentage: number;
+  is_active: boolean;
+}
+
+interface RecipeItem {
+  ingredientId: string;
+  quantity: number;
+}
+
+interface PlatformResult {
+  name: string;
+  icon: React.ReactNode;
+  fee: number;
+  feeAmount: number;
+  netProfit: number;
+  margin: number;
+}
+
+const Calculadora = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [selectedIngredients, setSelectedIngredients] = useState<RecipeItem[]>([]);
+  const [laborCost, setLaborCost] = useState("");
+  const [yieldAmount, setYieldAmount] = useState("");
+  const [targetPrice, setTargetPrice] = useState("");
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [recipeName, setRecipeName] = useState("");
+  const [suggestedMarkup, setSuggestedMarkup] = useState("100");
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
+    const [ingredientsRes, platformsRes] = await Promise.all([
+      supabase.from("ingredients").select("id, name, unit_type, cost_per_unit").order("name"),
+      supabase.from("platforms").select("*").eq("is_active", true).order("name"),
+    ]);
+
+    setIngredients(ingredientsRes.data || []);
+    setPlatforms(platformsRes.data || []);
+    
+    // Select first platform by default
+    if (platformsRes.data?.length) {
+      setSelectedPlatforms(platformsRes.data.map((p) => p.id));
+    }
+  };
+
+  const addIngredient = () => {
+    if (ingredients.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Sem ingredientes",
+        description: "Cadastre ingredientes primeiro na página de Ingredientes.",
+      });
+      return;
+    }
+    setSelectedIngredients([
+      ...selectedIngredients,
+      { ingredientId: ingredients[0].id, quantity: 0 },
+    ]);
+  };
+
+  const removeIngredient = (index: number) => {
+    setSelectedIngredients(selectedIngredients.filter((_, i) => i !== index));
+  };
+
+  const updateIngredient = (
+    index: number,
+    field: "ingredientId" | "quantity",
+    value: string | number
+  ) => {
+    const updated = [...selectedIngredients];
+    updated[index] = { ...updated[index], [field]: value };
+    setSelectedIngredients(updated);
+  };
+
+  // Calculations
+  const calculations = useMemo(() => {
+    const ingredientsCost = selectedIngredients.reduce((total, item) => {
+      const ingredient = ingredients.find((i) => i.id === item.ingredientId);
+      if (!ingredient) return total;
+      return total + ingredient.cost_per_unit * item.quantity;
+    }, 0);
+
+    const labor = parseFloat(laborCost.replace(",", ".")) || 0;
+    const yield_ = parseInt(yieldAmount) || 1;
+    const price = parseFloat(targetPrice.replace(",", ".")) || 0;
+
+    const totalRecipeCost = ingredientsCost + labor;
+    const unitCost = totalRecipeCost / yield_;
+
+    return {
+      ingredientsCost,
+      laborCost: labor,
+      totalRecipeCost,
+      unitCost,
+      yield: yield_,
+      targetPrice: price,
+    };
+  }, [selectedIngredients, ingredients, laborCost, yieldAmount, targetPrice]);
+
+  // Platform results
+  const platformResults = useMemo<PlatformResult[]>(() => {
+    if (!calculations.targetPrice || calculations.targetPrice <= 0) return [];
+
+    return platforms
+      .filter((p) => selectedPlatforms.includes(p.id))
+      .map((platform) => {
+        const feeAmount = (calculations.targetPrice * platform.fee_percentage) / 100;
+        const netProfit = calculations.targetPrice - calculations.unitCost - feeAmount;
+        const margin = calculations.targetPrice > 0 
+          ? (netProfit / calculations.targetPrice) * 100 
+          : 0;
+
+        return {
+          name: platform.name,
+          icon: platform.name.toLowerCase().includes("balcão") ? (
+            <Store className="h-5 w-5" />
+          ) : (
+            <Truck className="h-5 w-5" />
+          ),
+          fee: platform.fee_percentage,
+          feeAmount,
+          netProfit,
+          margin,
+        };
+      });
+  }, [platforms, selectedPlatforms, calculations]);
+
+  // Suggested price calculation
+  const suggestedPrice = useMemo(() => {
+    const markup = parseFloat(suggestedMarkup) || 100;
+    const maxFee = Math.max(...platforms.map((p) => p.fee_percentage), 0);
+    const basePrice = calculations.unitCost * (1 + markup / 100);
+    return basePrice / (1 - maxFee / 100);
+  }, [calculations.unitCost, suggestedMarkup, platforms]);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const handleSaveRecipe = async () => {
+    if (!recipeName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Nome obrigatório",
+        description: "Digite um nome para a receita.",
+      });
+      return;
+    }
+
+    try {
+      const { data: recipe, error: recipeError } = await supabase
+        .from("recipes")
+        .insert({
+          user_id: user!.id,
+          name: recipeName,
+          yield_amount: calculations.yield,
+          labor_cost: calculations.laborCost,
+          target_sale_price: calculations.targetPrice,
+        })
+        .select()
+        .single();
+
+      if (recipeError) throw recipeError;
+
+      if (selectedIngredients.length > 0) {
+        const recipeItems = selectedIngredients.map((item) => ({
+          recipe_id: recipe.id,
+          ingredient_id: item.ingredientId,
+          quantity: item.quantity,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("recipe_items")
+          .insert(recipeItems);
+
+        if (itemsError) throw itemsError;
+      }
+
+      toast({ title: "Receita salva com sucesso!" });
+      setRecipeName("");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: error.message,
+      });
+    }
+  };
+
+  return (
+    <AppLayout title="Calculadora de Receitas">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Inputs */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Recipe Name */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <CalcIcon className="h-5 w-5 text-primary" />
+                  Nova Receita
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="recipeName">Nome da Receita</Label>
+                  <Input
+                    id="recipeName"
+                    value={recipeName}
+                    onChange={(e) => setRecipeName(e.target.value)}
+                    placeholder="Ex: Brownie Tradicional"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Ingredients Selection */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    Ingredientes e Embalagens
+                  </CardTitle>
+                  <Button onClick={addIngredient} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {selectedIngredients.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Clique em "Adicionar" para selecionar ingredientes
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedIngredients.map((item, index) => {
+                      const ingredient = ingredients.find(
+                        (i) => i.id === item.ingredientId
+                      );
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                        >
+                          <select
+                            value={item.ingredientId}
+                            onChange={(e) =>
+                              updateIngredient(index, "ingredientId", e.target.value)
+                            }
+                            className="flex-1 bg-background border rounded-md px-3 py-2 text-sm"
+                          >
+                            {ingredients.map((ing) => (
+                              <option key={ing.id} value={ing.id}>
+                                {ing.name}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={item.quantity || ""}
+                              onChange={(e) =>
+                                updateIngredient(
+                                  index,
+                                  "quantity",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              placeholder="Qtd"
+                              className="w-24 input-currency"
+                            />
+                            <span className="text-sm text-muted-foreground w-8">
+                              {ingredient?.unit_type === "weight" ? "g" : "un"}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeIngredient(index)}
+                          >
+                            <Minus className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Labor and Yield */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="laborCost">Mão de Obra (R$)</Label>
+                    <Input
+                      id="laborCost"
+                      value={laborCost}
+                      onChange={(e) => setLaborCost(e.target.value)}
+                      placeholder="Ex: 15,00"
+                      className="input-currency"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Custo total da mão de obra para a receita inteira
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="yieldAmount">Rendimento (unidades)</Label>
+                    <Input
+                      id="yieldAmount"
+                      type="number"
+                      value={yieldAmount}
+                      onChange={(e) => setYieldAmount(e.target.value)}
+                      placeholder="Ex: 12"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Quantas unidades essa receita produz
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Pricing */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  Precificação
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="targetPrice">Preço de Venda Unitário (R$)</Label>
+                  <Input
+                    id="targetPrice"
+                    value={targetPrice}
+                    onChange={(e) => setTargetPrice(e.target.value)}
+                    placeholder="Ex: 8,00"
+                    className="input-currency text-lg font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Plataformas para Comparar</Label>
+                  <div className="flex flex-wrap gap-4">
+                    {platforms.map((platform) => (
+                      <div key={platform.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={platform.id}
+                          checked={selectedPlatforms.includes(platform.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedPlatforms([...selectedPlatforms, platform.id]);
+                            } else {
+                              setSelectedPlatforms(
+                                selectedPlatforms.filter((id) => id !== platform.id)
+                              );
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={platform.id}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {platform.name} ({platform.fee_percentage}%)
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Right Column - Results */}
+        <div className="space-y-6">
+          {/* Cost Summary */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Resumo de Custos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Ingredientes</span>
+                  <span className="font-mono">
+                    {formatCurrency(calculations.ingredientsCost)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Mão de Obra</span>
+                  <span className="font-mono">
+                    {formatCurrency(calculations.laborCost)}
+                  </span>
+                </div>
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Custo Total</span>
+                    <span className="font-mono font-bold">
+                      {formatCurrency(calculations.totalRecipeCost)}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-primary-light rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Custo por Unidade</span>
+                    <span className="text-xl font-bold text-primary">
+                      {formatCurrency(calculations.unitCost)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Baseado em {calculations.yield} unidade(s)
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Platform Comparison */}
+          {platformResults.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <TrendingUp className="h-5 w-5 text-success" />
+                    Lucro por Plataforma
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {platformResults.map((result, index) => (
+                    <div
+                      key={index}
+                      className={`p-4 rounded-lg border ${
+                        result.netProfit > 0
+                          ? "border-success/30 bg-success-light"
+                          : "border-destructive/30 bg-destructive/5"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        {result.icon}
+                        <span className="font-medium">{result.name}</span>
+                        <span className="badge-primary ml-auto">
+                          {result.fee}% taxa
+                        </span>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Custo Unitário
+                          </span>
+                          <span>{formatCurrency(calculations.unitCost)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Taxa da Plataforma
+                          </span>
+                          <span className="text-destructive">
+                            -{formatCurrency(result.feeAmount)}
+                          </span>
+                        </div>
+                        <div className="border-t pt-2 flex justify-between items-center">
+                          <span className="font-medium">Lucro Líquido</span>
+                          <span
+                            className={`text-lg font-bold ${
+                              result.netProfit > 0
+                                ? "text-success"
+                                : "text-destructive"
+                            }`}
+                          >
+                            {formatCurrency(result.netProfit)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Margem</span>
+                          <span
+                            className={
+                              result.margin > 0
+                                ? "text-success"
+                                : "text-destructive"
+                            }
+                          >
+                            {result.margin.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* AI Suggestion */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Card className="border-primary/30">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Lightbulb className="h-5 w-5 text-warning" />
+                  Sugestão de Preço
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="markup">Markup Desejado (%)</Label>
+                  <Input
+                    id="markup"
+                    type="number"
+                    value={suggestedMarkup}
+                    onChange={(e) => setSuggestedMarkup(e.target.value)}
+                    className="input-currency"
+                  />
+                </div>
+                <div className="bg-primary-light rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Preço Sugerido (já com taxas)
+                  </p>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrency(suggestedPrice)}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() =>
+                    setTargetPrice(suggestedPrice.toFixed(2).replace(".", ","))
+                  }
+                >
+                  Usar este preço
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Save Button */}
+          <Button
+            onClick={handleSaveRecipe}
+            className="w-full bg-primary hover:bg-primary-hover text-primary-foreground"
+            size="lg"
+          >
+            Salvar Receita
+          </Button>
+        </div>
+      </div>
+    </AppLayout>
+  );
+};
+
+export default Calculadora;
