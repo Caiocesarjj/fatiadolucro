@@ -29,8 +29,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Package, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Search, Filter, Group } from "lucide-react";
 import { motion } from "framer-motion";
+import { Switch } from "@/components/ui/switch";
 
 interface Ingredient {
   id: string;
@@ -51,6 +52,9 @@ const Ingredientes = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "weight" | "unit">("all");
+  const [filterStore, setFilterStore] = useState<string>("all");
+  const [groupByStore, setGroupByStore] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -182,148 +186,216 @@ const Ingredientes = () => {
   };
 
   const formatCostPerUnit = (value: number, unitType: "weight" | "unit") => {
-    const formatted = value.toFixed(4).replace(".", ",");
+    const formatted = value.toFixed(2).replace(".", ",");
     return `R$ ${formatted}/${unitType === "weight" ? "g" : "un"}`;
   };
 
-  const filteredIngredients = ingredients.filter(
-    (ing) =>
+  // Get unique stores for filter
+  const uniqueStores = [...new Set(ingredients.map((i) => i.store).filter(Boolean))];
+
+  const filteredIngredients = ingredients.filter((ing) => {
+    const matchesSearch =
       ing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ing.brand?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      ing.brand?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === "all" || ing.unit_type === filterType;
+    const matchesStore = filterStore === "all" || ing.store === filterStore;
+    return matchesSearch && matchesType && matchesStore;
+  });
+
+  // Group by store if enabled
+  const groupedIngredients = groupByStore
+    ? filteredIngredients.reduce((acc, ing) => {
+        const store = ing.store || "Sem loja";
+        if (!acc[store]) acc[store] = [];
+        acc[store].push(ing);
+        return acc;
+      }, {} as Record<string, Ingredient[]>)
+    : { "": filteredIngredients };
 
   return (
     <AppLayout title="Ingredientes">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar ingredientes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar ingredientes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={() => resetForm()}
+                  className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Ingrediente
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingId ? "Editar Ingrediente" : "Novo Ingrediente"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome *</Label>
+                    <Input
+                      id="name"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="Ex: Farinha de Trigo"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="brand">Marca</Label>
+                      <Input
+                        id="brand"
+                        value={form.brand}
+                        onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                        placeholder="Ex: Dona Benta"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="store">Loja</Label>
+                      <Input
+                        id="store"
+                        value={form.store}
+                        onChange={(e) => setForm({ ...form, store: e.target.value })}
+                        placeholder="Ex: Assaí"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="price_paid">Preço Pago (R$) *</Label>
+                      <Input
+                        id="price_paid"
+                        value={form.price_paid}
+                        onChange={(e) =>
+                          setForm({ ...form, price_paid: e.target.value })
+                        }
+                        placeholder="Ex: 12,90"
+                        className="input-currency"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="package_size">Tamanho *</Label>
+                      <Input
+                        id="package_size"
+                        value={form.package_size}
+                        onChange={(e) =>
+                          setForm({ ...form, package_size: e.target.value })
+                        }
+                        placeholder="Ex: 1000"
+                        className="input-currency"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="unit_type">Tipo de Medida</Label>
+                    <Select
+                      value={form.unit_type}
+                      onValueChange={(value: "weight" | "unit") =>
+                        setForm({ ...form, unit_type: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weight">Peso (kg/g)</SelectItem>
+                        <SelectItem value="unit">Unidade (un)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {form.unit_type === "weight"
+                        ? "Informe o tamanho em gramas (ex: 1000 para 1kg)"
+                        : "Informe a quantidade de unidades (ex: 12 para 1 dúzia)"}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={resetForm}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
+                    >
+                      {editingId ? "Salvar" : "Adicionar"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={() => resetForm()}
-                className="bg-primary hover:bg-primary-hover text-primary-foreground"
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={filterType}
+                onValueChange={(value: "all" | "weight" | "unit") =>
+                  setFilterType(value)
+                }
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Ingrediente
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingId ? "Editar Ingrediente" : "Novo Ingrediente"}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome *</Label>
-                  <Input
-                    id="name"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Ex: Farinha de Trigo"
-                  />
-                </div>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="weight">Peso (kg/g)</SelectItem>
+                  <SelectItem value="unit">Unidade (un)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="brand">Marca</Label>
-                    <Input
-                      id="brand"
-                      value={form.brand}
-                      onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                      placeholder="Ex: Dona Benta"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="store">Loja</Label>
-                    <Input
-                      id="store"
-                      value={form.store}
-                      onChange={(e) => setForm({ ...form, store: e.target.value })}
-                      placeholder="Ex: Assaí"
-                    />
-                  </div>
-                </div>
+            <Select
+              value={filterStore}
+              onValueChange={setFilterStore}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Loja" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as lojas</SelectItem>
+                {uniqueStores.map((store) => (
+                  <SelectItem key={store} value={store!}>
+                    {store}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price_paid">Preço Pago (R$) *</Label>
-                    <Input
-                      id="price_paid"
-                      value={form.price_paid}
-                      onChange={(e) =>
-                        setForm({ ...form, price_paid: e.target.value })
-                      }
-                      placeholder="Ex: 12,90"
-                      className="input-currency"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="package_size">Tamanho *</Label>
-                    <Input
-                      id="package_size"
-                      value={form.package_size}
-                      onChange={(e) =>
-                        setForm({ ...form, package_size: e.target.value })
-                      }
-                      placeholder="Ex: 1000"
-                      className="input-currency"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="unit_type">Tipo de Medida</Label>
-                  <Select
-                    value={form.unit_type}
-                    onValueChange={(value: "weight" | "unit") =>
-                      setForm({ ...form, unit_type: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weight">Peso (kg/g)</SelectItem>
-                      <SelectItem value="unit">Unidade (un)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {form.unit_type === "weight"
-                      ? "Informe o tamanho em gramas (ex: 1000 para 1kg)"
-                      : "Informe a quantidade de unidades (ex: 12 para 1 dúzia)"}
-                  </p>
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={resetForm}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
-                  >
-                    {editingId ? "Salvar" : "Adicionar"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+            <div className="flex items-center gap-2 ml-auto">
+              <Label htmlFor="group-store" className="text-sm text-muted-foreground">
+                Agrupar por loja
+              </Label>
+              <Switch
+                id="group-store"
+                checked={groupByStore}
+                onCheckedChange={setGroupByStore}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Table */}
