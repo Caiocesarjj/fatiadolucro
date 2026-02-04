@@ -47,13 +47,16 @@ import { ptBR } from "date-fns/locale";
 interface Transaction {
   id: string;
   type: "revenue" | "expense";
+  entry_type: "direct_sale" | "transfer" | null;
   description: string;
   amount: number;
   platform_id: string | null;
   platform_fee: number | null;
   net_amount: number;
   transaction_date: string;
+  client_id: string | null;
   platforms?: { name: string } | null;
+  clients?: { name: string } | null;
 }
 
 interface Platform {
@@ -62,19 +65,27 @@ interface Platform {
   fee_percentage: number;
 }
 
+interface Client {
+  id: string;
+  name: string;
+}
+
 const Financeiro = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const [form, setForm] = useState({
     type: "revenue" as "revenue" | "expense",
+    entry_type: "direct_sale" as "direct_sale" | "transfer",
     description: "",
     amount: "",
     platform_id: "",
+    client_id: "",
     transaction_date: format(new Date(), "yyyy-MM-dd"),
   });
 
@@ -86,16 +97,18 @@ const Financeiro = () => {
 
   const fetchData = async () => {
     try {
-      const [transactionsRes, platformsRes] = await Promise.all([
+      const [transactionsRes, platformsRes, clientsRes] = await Promise.all([
         supabase
           .from("transactions")
-          .select("*, platforms(name)")
+          .select("*, platforms(name), clients(name)")
           .order("transaction_date", { ascending: false }),
         supabase.from("platforms").select("*").order("name"),
+        supabase.from("clients").select("id, name").order("name"),
       ]);
 
       setTransactions(transactionsRes.data || []);
       setPlatforms(platformsRes.data || []);
+      setClients(clientsRes.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -119,7 +132,8 @@ const Financeiro = () => {
       const amount = parseFloat(form.amount.replace(",", "."));
       let platformFee = 0;
 
-      if (form.type === "revenue" && form.platform_id) {
+      // Only apply platform fee for direct sales (Venda Direta), not for transfers (Repasse)
+      if (form.type === "revenue" && form.platform_id && form.entry_type === "direct_sale") {
         const platform = platforms.find((p) => p.id === form.platform_id);
         if (platform) {
           platformFee = (amount * platform.fee_percentage) / 100;
@@ -129,9 +143,11 @@ const Financeiro = () => {
       const { error } = await supabase.from("transactions").insert({
         user_id: user!.id,
         type: form.type,
+        entry_type: form.type === "revenue" ? form.entry_type : null,
         description: form.description,
         amount,
         platform_id: form.platform_id || null,
+        client_id: form.client_id || null,
         platform_fee: platformFee,
         transaction_date: form.transaction_date,
       });
@@ -171,9 +187,11 @@ const Financeiro = () => {
   const resetForm = () => {
     setForm({
       type: "revenue",
+      entry_type: "direct_sale",
       description: "",
       amount: "",
       platform_id: "",
+      client_id: "",
       transaction_date: format(new Date(), "yyyy-MM-dd"),
     });
     setDialogOpen(false);
@@ -375,30 +393,77 @@ const Financeiro = () => {
                       </div>
 
                       {form.type === "revenue" && (
-                        <div className="space-y-2">
-                          <Label>Plataforma de Venda</Label>
-                          <Select
-                            value={form.platform_id}
-                            onValueChange={(value) =>
-                              setForm({ ...form, platform_id: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a plataforma" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {platforms.map((platform) => (
-                                <SelectItem key={platform.id} value={platform.id}>
-                                  {platform.name} ({platform.fee_percentage}% taxa)
+                        <>
+                          <div className="space-y-2">
+                            <Label>Tipo de Entrada</Label>
+                            <Select
+                              value={form.entry_type}
+                              onValueChange={(value: "direct_sale" | "transfer") =>
+                                setForm({ ...form, entry_type: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="direct_sale">
+                                  Venda Direta (desconta taxa)
                                 </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-muted-foreground">
-                            A taxa será descontada automaticamente
-                          </p>
-                        </div>
+                                <SelectItem value="transfer">
+                                  Repasse (sem desconto de taxa)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Plataforma de Venda</Label>
+                            <Select
+                              value={form.platform_id}
+                              onValueChange={(value) =>
+                                setForm({ ...form, platform_id: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a plataforma" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {platforms.map((platform) => (
+                                  <SelectItem key={platform.id} value={platform.id}>
+                                    {platform.name} ({platform.fee_percentage}% taxa)
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                              {form.entry_type === "direct_sale"
+                                ? "A taxa será descontada automaticamente"
+                                : "Nenhuma taxa será descontada (repasse)"}
+                            </p>
+                          </div>
+                        </>
                       )}
+
+                      <div className="space-y-2">
+                        <Label>Cliente (opcional)</Label>
+                        <Select
+                          value={form.client_id}
+                          onValueChange={(value) =>
+                            setForm({ ...form, client_id: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um cliente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clients.map((client) => (
+                              <SelectItem key={client.id} value={client.id}>
+                                {client.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
                       <div className="flex gap-2 pt-4">
                         <Button

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingredients: {
         Row: {
           brand: string | null
@@ -56,8 +89,56 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          delivery_date: string
+          description: string | null
+          id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          delivery_date: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          delivery_date?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platforms: {
         Row: {
+          color: string | null
           created_at: string
           fee_percentage: number
           id: string
@@ -66,6 +147,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           fee_percentage?: number
           id?: string
@@ -74,6 +156,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           fee_percentage?: number
           id?: string
@@ -85,24 +168,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allowed_modules: string[]
           created_at: string
           id: string
+          is_active: boolean
           logo_url: string | null
           store_name: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          allowed_modules?: string[]
           created_at?: string
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           store_name?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          allowed_modules?: string[]
           created_at?: string
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           store_name?: string | null
           updated_at?: string
@@ -185,11 +274,48 @@ export type Database = {
         }
         Relationships: []
       }
+      shopping_list_items: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          is_checked: boolean
+          quantity_needed: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          is_checked?: boolean
+          quantity_needed?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          is_checked?: boolean
+          quantity_needed?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_list_items_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
+          client_id: string | null
           created_at: string
           description: string
+          entry_type: Database["public"]["Enums"]["entry_type"] | null
           id: string
           net_amount: number | null
           platform_fee: number | null
@@ -201,8 +327,10 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          client_id?: string | null
           created_at?: string
           description: string
+          entry_type?: Database["public"]["Enums"]["entry_type"] | null
           id?: string
           net_amount?: number | null
           platform_fee?: number | null
@@ -214,8 +342,10 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_id?: string | null
           created_at?: string
           description?: string
+          entry_type?: Database["public"]["Enums"]["entry_type"] | null
           id?: string
           net_amount?: number | null
           platform_fee?: number | null
@@ -226,6 +356,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_platform_id_fkey"
             columns: ["platform_id"]
@@ -242,14 +379,50 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
+      entry_type: "direct_sale" | "transfer"
+      order_status:
+        | "pending"
+        | "in_production"
+        | "ready"
+        | "delivered"
+        | "cancelled"
       transaction_type: "revenue" | "expense"
       unit_type: "weight" | "unit"
     }
@@ -379,6 +552,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
+      entry_type: ["direct_sale", "transfer"],
+      order_status: [
+        "pending",
+        "in_production",
+        "ready",
+        "delivered",
+        "cancelled",
+      ],
       transaction_type: ["revenue", "expense"],
       unit_type: ["weight", "unit"],
     },

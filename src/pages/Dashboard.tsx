@@ -79,14 +79,42 @@ const Dashboard = () => {
         netProfit: revenue - expenses,
       });
 
-      // Generate chart data for the last 6 months
-      const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"];
-      const mockChartData = months.map((month) => ({
-        month,
-        receitas: Math.floor(Math.random() * 5000) + 1000,
-        despesas: Math.floor(Math.random() * 3000) + 500,
-      }));
-      setChartData(mockChartData);
+      // Generate chart data from real transactions by month
+      const monthlyData: Record<string, { receitas: number; despesas: number }> = {};
+      const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      
+      // Initialize last 6 months
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+        monthlyData[monthKey] = { receitas: 0, despesas: 0 };
+      }
+
+      // Aggregate transactions by month
+      transactions.forEach((t) => {
+        const date = new Date(t.transaction_date);
+        const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+        if (monthlyData[monthKey]) {
+          if (t.type === "revenue") {
+            monthlyData[monthKey].receitas += Number(t.net_amount || 0);
+          } else {
+            monthlyData[monthKey].despesas += Number(t.amount || 0);
+          }
+        }
+      });
+
+      // Convert to chart format
+      const chartDataFromTransactions = Object.entries(monthlyData).map(([key, data]) => {
+        const [year, month] = key.split("-").map(Number);
+        return {
+          month: months[month],
+          receitas: data.receitas,
+          despesas: data.despesas,
+        };
+      });
+
+      setChartData(chartDataFromTransactions);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {

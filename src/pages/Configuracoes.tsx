@@ -28,6 +28,7 @@ interface Platform {
   name: string;
   fee_percentage: number;
   is_active: boolean;
+  color: string;
 }
 
 const Configuracoes = () => {
@@ -99,6 +100,7 @@ const Configuracoes = () => {
           name: platform.name,
           fee_percentage: platform.fee_percentage,
           is_active: platform.is_active,
+          color: platform.color,
         })
         .eq("id", platform.id);
 
@@ -238,11 +240,14 @@ const Configuracoes = () => {
                     key={platform.id}
                     className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
                   >
-                    <div className="p-2 rounded-lg bg-background">
+                    <div 
+                      className="p-2 rounded-lg"
+                      style={{ backgroundColor: platform.color || "#ea90c9" }}
+                    >
                       {platform.name.toLowerCase().includes("balcão") ? (
-                        <Store className="h-4 w-4 text-primary" />
+                        <Store className="h-4 w-4 text-white" />
                       ) : (
-                        <Truck className="h-4 w-4 text-primary" />
+                        <Truck className="h-4 w-4 text-white" />
                       )}
                     </div>
                     <Input
@@ -272,6 +277,25 @@ const Configuracoes = () => {
                         className="w-20 input-currency"
                       />
                       <span className="text-sm text-muted-foreground">%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`color-${platform.id}`} className="sr-only">
+                        Cor
+                      </Label>
+                      <input
+                        id={`color-${platform.id}`}
+                        type="color"
+                        value={platform.color || "#ea90c9"}
+                        onChange={(e) => {
+                          const updated = platforms.map((p) =>
+                            p.id === platform.id
+                              ? { ...p, color: e.target.value }
+                              : p
+                          );
+                          setPlatforms(updated);
+                        }}
+                        className="w-8 h-8 rounded cursor-pointer border-0"
+                      />
                     </div>
                     <Button
                       variant="outline"

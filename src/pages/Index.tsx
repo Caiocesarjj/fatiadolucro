@@ -67,7 +67,7 @@ const Index = () => {
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-primary">
                 <Cookie className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Browmor</span>
+              <span className="text-xl font-bold text-foreground">Doce e Lucro</span>
             </div>
             <Link to="/auth">
               <Button variant="outline" className="hover:bg-primary-light">
@@ -157,7 +157,7 @@ const Index = () => {
               viewport={{ once: true }}
             >
               <h2 className="text-3xl font-bold text-foreground mb-6">
-                Por que escolher o Browmor?
+                Por que escolher o Doce e Lucro?
               </h2>
               <p className="text-muted-foreground mb-8">
                 Desenvolvido especialmente para confeiteiros que vendem em
@@ -248,10 +248,10 @@ const Index = () => {
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-primary">
                 <Cookie className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">Browmor</span>
+              <span className="font-semibold text-foreground">Doce e Lucro</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Browmor. Feito com 💖 para
+              © {new Date().getFullYear()} Doce e Lucro. Feito com 💖 para
               confeiteiros.
             </p>
           </div>
