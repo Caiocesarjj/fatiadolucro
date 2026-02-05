@@ -1,5 +1,5 @@
 import { useLocation, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -13,6 +13,8 @@ import {
   ClipboardList,
   ShoppingCart,
   Shield,
+  ShoppingBag,
+  Lock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,16 +32,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole, hasModuleAccess } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { useSubscription, isModuleLockedForFree } from "@/hooks/useSubscription";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
+// Sidebar order: Início > Clientes > Encomendas > Catálogo > Calculadora > Ingredientes > Compras > Financeiro > Configurações
 const allMenuItems = [
   { title: "Início", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
-  { title: "Ingredientes", url: "/ingredientes", icon: Package, module: "ingredientes" },
-  { title: "Calculadora", url: "/calculadora", icon: Calculator, module: "calculadora" },
-  { title: "Financeiro", url: "/financeiro", icon: Wallet, module: "financeiro" },
   { title: "Clientes", url: "/clientes", icon: Users, module: "clientes" },
   { title: "Encomendas", url: "/encomendas", icon: ClipboardList, module: "encomendas" },
+  { title: "Catálogo", url: "/catalogo", icon: ShoppingBag, module: "catalogo" },
+  { title: "Calculadora", url: "/calculadora", icon: Calculator, module: "calculadora" },
+  { title: "Ingredientes", url: "/ingredientes", icon: Package, module: "ingredientes" },
   { title: "Lista de Compras", url: "/compras", icon: ShoppingCart, module: "compras" },
+  { title: "Financeiro", url: "/financeiro", icon: Wallet, module: "financeiro" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, module: "configuracoes" },
 ];
 
@@ -47,8 +52,10 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { isAdmin, allowedModules } = useUserRole();
+  const { planType } = useSubscription();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
+  const [upgradeModal, setUpgradeModal] = useState({ open: false, moduleName: "" });
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -57,11 +64,19 @@ export function AppSidebar() {
     hasModuleAccess(allowedModules, item.module)
   );
 
+  const handleNavClick = (e: React.MouseEvent, item: typeof allMenuItems[0]) => {
+    if (isModuleLockedForFree(item.module, planType)) {
+      e.preventDefault();
+      setUpgradeModal({ open: true, moduleName: item.title });
+    }
+  };
+
   return (
-    <Sidebar
-      collapsible="icon"
-      className="border-r border-sidebar-border bg-sidebar"
-    >
+    <>
+      <Sidebar
+        collapsible="icon"
+        className="border-r border-sidebar-border bg-sidebar"
+      >
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className={cn(
           "flex items-center gap-3 transition-all duration-200",
@@ -84,7 +99,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} className="relative">
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
@@ -92,6 +107,7 @@ export function AppSidebar() {
                   >
                     <Link
                       to={item.url}
+                      onClick={(e) => handleNavClick(e, item)}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sidebar-foreground transition-all duration-200",
                         isActive(item.url)
@@ -104,6 +120,9 @@ export function AppSidebar() {
                         isActive(item.url) ? "text-sidebar-primary" : ""
                       )} />
                       <span className={cn(collapsed && "sr-only")}>{item.title}</span>
+                      {isModuleLockedForFree(item.module, planType) && !collapsed && (
+                        <Lock className="h-3 w-3 ml-auto text-muted-foreground" />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -161,6 +180,13 @@ export function AppSidebar() {
           </Button>
         </div>
       </SidebarFooter>
-    </Sidebar>
+      </Sidebar>
+      <UpgradeModal
+        open={upgradeModal.open}
+        onOpenChange={(open) => setUpgradeModal({ ...upgradeModal, open })}
+        type="module_locked"
+        moduleName={upgradeModal.moduleName}
+      />
+    </>
   );
 }

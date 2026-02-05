@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, ShoppingCart, Check } from "lucide-react";
+import { FileText, FileSpreadsheet } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ShoppingListItem {
@@ -207,12 +208,101 @@ const Compras = () => {
 
   const selectedIngredient = ingredients.find((i) => i.id === form.ingredient_id);
 
+  const exportToPDF = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Permita pop-ups para gerar o PDF",
+      });
+      return;
+    }
+
+    const listHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Lista de Compras - Doce e Lucro</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #ea90c9; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+          th { background: #f5f5f5; }
+          .total { font-size: 18px; font-weight: bold; margin-top: 20px; text-align: right; }
+          .checked { text-decoration: line-through; opacity: 0.5; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Lista de Compras</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>Ingrediente</th>
+              <th>Qtd</th>
+              <th>Custo Est.</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr class="${item.is_checked ? 'checked' : ''}">
+                <td>${item.ingredients.name}${item.ingredients.brand ? ` (${item.ingredients.brand})` : ''}</td>
+                <td>${item.quantity_needed} ${item.ingredients.unit_type === 'weight' ? 'g' : 'un'}</td>
+                <td>${formatCurrency(calculateEstimatedCost(item))}</td>
+                <td>${item.is_checked ? '✓' : 'Pendente'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <p class="total">Total Estimado: ${formatCurrency(totalEstimated)}</p>
+        <script>window.print();</script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(listHTML);
+    printWindow.document.close();
+  };
+
+  const exportToExcel = () => {
+    const csvContent = [
+      ["Ingrediente", "Marca", "Quantidade", "Unidade", "Custo Estimado", "Status"].join(";"),
+      ...items.map(item => [
+        item.ingredients.name,
+        item.ingredients.brand || "",
+        item.quantity_needed,
+        item.ingredients.unit_type === "weight" ? "g" : "un",
+        calculateEstimatedCost(item).toFixed(2).replace(".", ","),
+        item.is_checked ? "Comprado" : "Pendente"
+      ].join(";"))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "lista-compras.csv";
+    link.click();
+
+    toast({ title: "Lista exportada para Excel!" });
+  };
+
   return (
     <AppLayout title="Lista de Compras">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={exportToPDF}>
+              <FileText className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </Button>
+            <Button variant="outline" onClick={exportToExcel}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </Button>
             {checkedItems.length > 0 && (
               <Button variant="outline" onClick={handleClearChecked}>
                 <Check className="h-4 w-4 mr-2" />

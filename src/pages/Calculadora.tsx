@@ -18,8 +18,21 @@ import {
   Store,
   Truck,
   Package,
+  RotateCcw,
+  Cake,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubscription, FREE_RECIPE_LIMIT_VALUE } from "@/hooks/useSubscription";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { motion } from "framer-motion";
+
+interface Recipe {
+  id: string;
+  name: string;
+  yield_amount: number;
+  labor_cost: number;
+  total_cost?: number;
+}
 
 interface Ingredient {
   id: string;
@@ -33,6 +46,11 @@ interface Platform {
   name: string;
   fee_percentage: number;
   is_active: boolean;
+}
+
+interface RecipeAsIngredient {
+  recipeId: string;
+  quantity: number;
 }
 
 interface RecipeItem {
@@ -61,6 +79,11 @@ const Calculadora = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [recipeName, setRecipeName] = useState("");
   const [suggestedMarkup, setSuggestedMarkup] = useState("100");
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [selectedRecipes, setSelectedRecipes] = useState<RecipeAsIngredient[]>([]);
+  const [inputMode, setInputMode] = useState<"ingredient" | "recipe">("ingredient");
+  const { canCreateRecipe, recipeCount, planType } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -69,18 +92,71 @@ const Calculadora = () => {
   }, [user]);
 
   const fetchData = async () => {
-    const [ingredientsRes, platformsRes] = await Promise.all([
+    const [ingredientsRes, platformsRes, recipesRes] = await Promise.all([
       supabase.from("ingredients").select("id, name, unit_type, cost_per_unit").order("name"),
       supabase.from("platforms").select("*").eq("is_active", true).order("name"),
+      supabase.from("recipes").select("id, name, yield_amount, labor_cost").order("name"),
     ]);
 
     setIngredients(ingredientsRes.data || []);
     setPlatforms(platformsRes.data || []);
     
+    // Calculate total cost for each recipe
+    if (recipesRes.data) {
+      const recipesWithCost = await Promise.all(
+        recipesRes.data.map(async (recipe) => {
+          const { data: items } = await supabase
+            .from("recipe_items")
+            .select("quantity, ingredients(cost_per_unit)")
+            .eq("recipe_id", recipe.id);
+          
+          const ingredientsCost = items?.reduce((total, item) => {
+            const costPerUnit = (item.ingredients as any)?.cost_per_unit || 0;
+            return total + costPerUnit * item.quantity;
+          }, 0) || 0;
+          
+          return {
+            ...recipe,
+            total_cost: ingredientsCost + recipe.labor_cost,
+          };
+        })
+      );
+      setRecipes(recipesWithCost);
+    }
+    
     // Select first platform by default
     if (platformsRes.data?.length) {
       setSelectedPlatforms(platformsRes.data.map((p) => p.id));
     }
+  };
+
+  const addRecipeAsIngredient = () => {
+    if (recipes.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Sem receitas",
+        description: "Cadastre receitas primeiro para criar combos.",
+      });
+      return;
+    }
+    setSelectedRecipes([
+      ...selectedRecipes,
+      { recipeId: recipes[0].id, quantity: 1 },
+    ]);
+  };
+
+  const removeRecipeAsIngredient = (index: number) => {
+    setSelectedRecipes(selectedRecipes.filter((_, i) => i !== index));
+  };
+
+  const updateRecipeAsIngredient = (
+    index: number,
+    field: "recipeId" | "quantity",
+    value: string | number
+  ) => {
+    const updated = [...selectedRecipes];
+    updated[index] = { ...updated[index], [field]: value };
+    setSelectedRecipes(updated);
   };
 
   const addIngredient = () => {
@@ -120,22 +196,32 @@ const Calculadora = () => {
       return total + ingredient.cost_per_unit * item.quantity;
     }, 0);
 
+    // Add cost from selected recipes (combos)
+    const recipesCost = selectedRecipes.reduce((total, item) => {
+      const recipe = recipes.find((r) => r.id === item.recipeId);
+      if (!recipe || !recipe.total_cost) return total;
+      // Cost per unit of the recipe * quantity
+      const unitCost = recipe.total_cost / recipe.yield_amount;
+      return total + unitCost * item.quantity;
+    }, 0);
+
     const labor = parseFloat(laborCost.replace(",", ".")) || 0;
     const yield_ = parseInt(yieldAmount) || 1;
     const price = parseFloat(targetPrice.replace(",", ".")) || 0;
 
-    const totalRecipeCost = ingredientsCost + labor;
+    const totalRecipeCost = ingredientsCost + recipesCost + labor;
     const unitCost = totalRecipeCost / yield_;
 
     return {
       ingredientsCost,
+      recipesCost,
       laborCost: labor,
       totalRecipeCost,
       unitCost,
       yield: yield_,
       targetPrice: price,
     };
-  }, [selectedIngredients, ingredients, laborCost, yieldAmount, targetPrice]);
+  }, [selectedIngredients, ingredients, selectedRecipes, recipes, laborCost, yieldAmount, targetPrice]);
 
   // Platform results
   const platformResults = useMemo<PlatformResult[]>(() => {
@@ -180,7 +266,23 @@ const Calculadora = () => {
     }).format(value);
   };
 
+  const resetRecipe = () => {
+    setRecipeName("");
+    setSelectedIngredients([]);
+    setSelectedRecipes([]);
+    setLaborCost("");
+    setYieldAmount("");
+    setTargetPrice("");
+    setInputMode("ingredient");
+    toast({ title: "Campos limpos para nova receita!" });
+  };
+
   const handleSaveRecipe = async () => {
+    if (!canCreateRecipe && planType === "free") {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     if (!recipeName.trim()) {
       toast({
         variant: "destructive",
@@ -231,6 +333,7 @@ const Calculadora = () => {
   };
 
   return (
+    <>
     <AppLayout title="Calculadora de Receitas">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Inputs */}
@@ -248,7 +351,8 @@ const Calculadora = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1 space-y-2">
                   <Label htmlFor="recipeName">Nome da Receita</Label>
                   <Input
                     id="recipeName"
@@ -256,7 +360,20 @@ const Calculadora = () => {
                     onChange={(e) => setRecipeName(e.target.value)}
                     placeholder="Ex: Brownie Tradicional"
                   />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={resetRecipe}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Nova Receita
+                  </Button>
                 </div>
+                {planType === "free" && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {recipeCount}/{FREE_RECIPE_LIMIT_VALUE} receitas no plano grátis
+                  </p>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -274,18 +391,27 @@ const Calculadora = () => {
                     <Package className="h-5 w-5 text-primary" />
                     Ingredientes e Embalagens
                   </CardTitle>
-                  <Button onClick={addIngredient} size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Adicionar
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {selectedIngredients.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Clique em "Adicionar" para selecionar ingredientes
-                  </p>
-                ) : (
+                <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "ingredient" | "recipe")}>
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="ingredient">Ingrediente</TabsTrigger>
+                    <TabsTrigger value="recipe">Produto Pronto (Combo)</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="ingredient">
+                    <div className="flex justify-end mb-3">
+                      <Button onClick={addIngredient} size="sm" variant="outline">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Adicionar Ingrediente
+                      </Button>
+                    </div>
+                    {selectedIngredients.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        Clique em "Adicionar Ingrediente" para começar
+                      </p>
+                    ) : (
                   <div className="space-y-3">
                     {selectedIngredients.map((item, index) => {
                       const ingredient = ingredients.find(
@@ -338,7 +464,78 @@ const Calculadora = () => {
                       );
                     })}
                   </div>
-                )}
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="recipe">
+                    <div className="flex justify-end mb-3">
+                      <Button onClick={addRecipeAsIngredient} size="sm" variant="outline">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Adicionar Produto
+                      </Button>
+                    </div>
+                    {selectedRecipes.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        Adicione receitas existentes para criar um combo/kit
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedRecipes.map((item, index) => {
+                          const recipe = recipes.find((r) => r.id === item.recipeId);
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                            >
+                              <Cake className="h-4 w-4 text-primary shrink-0" />
+                              <select
+                                value={item.recipeId}
+                                onChange={(e) =>
+                                  updateRecipeAsIngredient(index, "recipeId", e.target.value)
+                                }
+                                className="flex-1 bg-background border rounded-md px-3 py-2 text-sm"
+                              >
+                                {recipes.map((rec) => (
+                                  <option key={rec.id} value={rec.id}>
+                                    {rec.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={item.quantity || ""}
+                                  onChange={(e) =>
+                                    updateRecipeAsIngredient(
+                                      index,
+                                      "quantity",
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  placeholder="Qtd"
+                                  className="w-24 input-currency"
+                                />
+                                <span className="text-sm text-muted-foreground">un</span>
+                              </div>
+                              {recipe && (
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {formatCurrency((recipe.total_cost || 0) / recipe.yield_amount)}/un
+                                </span>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeRecipeAsIngredient(index)}
+                              >
+                                <Minus className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </motion.div>
@@ -460,6 +657,14 @@ const Calculadora = () => {
                     {formatCurrency(calculations.ingredientsCost)}
                   </span>
                 </div>
+                {calculations.recipesCost > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Produtos Prontos</span>
+                    <span className="font-mono">
+                      {formatCurrency(calculations.recipesCost)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Mão de Obra</span>
                   <span className="font-mono">
@@ -623,6 +828,12 @@ const Calculadora = () => {
         </div>
       </div>
     </AppLayout>
+    <UpgradeModal
+      open={showUpgradeModal}
+      onOpenChange={setShowUpgradeModal}
+      type="recipe_limit"
+    />
+    </>
   );
 };
 

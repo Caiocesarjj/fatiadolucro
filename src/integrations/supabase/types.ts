@@ -173,6 +173,7 @@ export type Database = {
           id: string
           is_active: boolean
           logo_url: string | null
+          plan_type: string
           store_name: string | null
           updated_at: string
           user_id: string
@@ -183,6 +184,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           logo_url?: string | null
+          plan_type?: string
           store_name?: string | null
           updated_at?: string
           user_id: string
@@ -193,6 +195,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           logo_url?: string | null
+          plan_type?: string
           store_name?: string | null
           updated_at?: string
           user_id?: string
@@ -240,10 +243,12 @@ export type Database = {
       }
       recipes: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           labor_cost: number
           name: string
+          photo_url: string | null
           profit_margin_goal: number | null
           target_sale_price: number | null
           updated_at: string
@@ -251,10 +256,12 @@ export type Database = {
           yield_amount: number
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           labor_cost?: number
           name: string
+          photo_url?: string | null
           profit_margin_goal?: number | null
           target_sale_price?: number | null
           updated_at?: string
@@ -262,10 +269,12 @@ export type Database = {
           yield_amount?: number
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           labor_cost?: number
           name?: string
+          photo_url?: string | null
           profit_margin_goal?: number | null
           target_sale_price?: number | null
           updated_at?: string
@@ -317,6 +326,7 @@ export type Database = {
           description: string
           entry_type: Database["public"]["Enums"]["entry_type"] | null
           id: string
+          invoice_number: string | null
           net_amount: number | null
           platform_fee: number | null
           platform_id: string | null
@@ -332,6 +342,7 @@ export type Database = {
           description: string
           entry_type?: Database["public"]["Enums"]["entry_type"] | null
           id?: string
+          invoice_number?: string | null
           net_amount?: number | null
           platform_fee?: number | null
           platform_id?: string | null
@@ -347,6 +358,7 @@ export type Database = {
           description?: string
           entry_type?: Database["public"]["Enums"]["entry_type"] | null
           id?: string
+          invoice_number?: string | null
           net_amount?: number | null
           platform_fee?: number | null
           platform_id?: string | null
