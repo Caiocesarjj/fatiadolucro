@@ -422,6 +422,84 @@ const Ingredientes = () => {
                     Clique em "Novo Ingrediente" para começar
                   </p>
                 </div>
+              ) : groupByStore ? (
+                <div className="space-y-6">
+                  {Object.entries(
+                    filteredIngredients.reduce((acc, ing) => {
+                      const store = ing.store || "Sem loja";
+                      if (!acc[store]) acc[store] = [];
+                      acc[store].push(ing);
+                      return acc;
+                    }, {} as Record<string, Ingredient[]>)
+                  ).map(([storeName, storeIngredients]) => (
+                    <div key={storeName}>
+                      <h3 className="font-semibold text-lg mb-3 pb-2 border-b flex items-center gap-2">
+                        <Package className="h-4 w-4 text-primary" />
+                        {storeName}
+                        <span className="text-sm font-normal text-muted-foreground">
+                          ({storeIngredients.length} itens)
+                        </span>
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nome</TableHead>
+                              <TableHead>Marca</TableHead>
+                              <TableHead className="text-right">Preço</TableHead>
+                              <TableHead className="text-right">Tamanho</TableHead>
+                              <TableHead className="text-right">Custo/Unidade</TableHead>
+                              <TableHead className="w-[100px]"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {storeIngredients.map((ingredient) => (
+                              <TableRow key={ingredient.id} className="table-row-hover">
+                                <TableCell className="font-medium">
+                                  {ingredient.name}
+                                </TableCell>
+                                <TableCell>{ingredient.brand || "-"}</TableCell>
+                                <TableCell className="text-right font-mono">
+                                  {formatCurrency(ingredient.price_paid)}
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                  {ingredient.package_size}
+                                  {ingredient.unit_type === "weight" ? "g" : " un"}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className="badge-success">
+                                    {formatCostPerUnit(
+                                      ingredient.cost_per_unit,
+                                      ingredient.unit_type
+                                    )}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1 justify-end">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEdit(ingredient)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDelete(ingredient.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>

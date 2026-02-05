@@ -24,6 +24,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Users, Ban, Settings, Loader2 } from "lucide-react";
+import { Crown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { motion } from "framer-motion";
 
 interface UserProfile {
@@ -32,6 +40,7 @@ interface UserProfile {
   store_name: string | null;
   is_active: boolean;
   allowed_modules: string[];
+  plan_type: string;
   email?: string;
   recipes_count?: number;
   transactions_count?: number;
@@ -39,12 +48,13 @@ interface UserProfile {
 
 const AVAILABLE_MODULES = [
   { id: "dashboard", label: "Dashboard" },
-  { id: "ingredientes", label: "Ingredientes" },
-  { id: "calculadora", label: "Calculadora" },
-  { id: "financeiro", label: "Financeiro" },
   { id: "clientes", label: "Clientes" },
   { id: "encomendas", label: "Encomendas" },
+  { id: "catalogo", label: "Catálogo" },
+  { id: "calculadora", label: "Calculadora" },
+  { id: "ingredientes", label: "Ingredientes" },
   { id: "compras", label: "Lista de Compras" },
+  { id: "financeiro", label: "Financeiro" },
   { id: "configuracoes", label: "Configurações" },
 ];
 
@@ -106,6 +116,28 @@ const Admin = () => {
       console.error("Error fetching users:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePlan = async (user: UserProfile, newPlan: "free" | "pro") => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ plan_type: newPlan })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: `Plano alterado para ${newPlan === "pro" ? "PRO" : "Grátis"}`,
+      });
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
     }
   };
 
@@ -262,11 +294,62 @@ const Admin = () => {
           </motion.div>
         </div>
 
+        {/* Plan Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Plano Grátis
+                    </p>
+                    <p className="text-2xl font-bold mt-1">
+                      {users.filter((u) => u.plan_type === "free" || !u.plan_type).length}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="border-primary/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Plano PRO
+                    </p>
+                    <p className="text-2xl font-bold text-primary mt-1">
+                      {users.filter((u) => u.plan_type === "pro").length}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary-light">
+                    <Crown className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
         {/* Users Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.35 }}
         >
           <Card>
             <CardHeader>
@@ -287,6 +370,7 @@ const Admin = () => {
                       <TableHead>ID do Usuário</TableHead>
                       <TableHead className="text-center">Receitas</TableHead>
                       <TableHead className="text-center">Transações</TableHead>
+                      <TableHead className="text-center">Plano</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -305,6 +389,27 @@ const Admin = () => {
                         </TableCell>
                         <TableCell className="text-center">
                           {user.transactions_count}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Select
+                            value={user.plan_type || "free"}
+                            onValueChange={(value: "free" | "pro") =>
+                              handleChangePlan(user, value)
+                            }
+                          >
+                            <SelectTrigger className="w-24 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="free">Grátis</SelectItem>
+                              <SelectItem value="pro">
+                                <div className="flex items-center gap-1">
+                                  <Crown className="h-3 w-3 text-primary" />
+                                  PRO
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge

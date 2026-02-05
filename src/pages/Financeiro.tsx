@@ -55,6 +55,7 @@ interface Transaction {
   net_amount: number;
   transaction_date: string;
   client_id: string | null;
+  invoice_number: string | null;
   platforms?: { name: string } | null;
   clients?: { name: string } | null;
 }
@@ -86,6 +87,7 @@ const Financeiro = () => {
     amount: "",
     platform_id: "",
     client_id: "",
+    invoice_number: "",
     transaction_date: format(new Date(), "yyyy-MM-dd"),
   });
 
@@ -148,6 +150,7 @@ const Financeiro = () => {
         amount,
         platform_id: form.platform_id || null,
         client_id: form.client_id || null,
+        invoice_number: form.invoice_number || null,
         platform_fee: platformFee,
         transaction_date: form.transaction_date,
       });
@@ -192,6 +195,7 @@ const Financeiro = () => {
       amount: "",
       platform_id: "",
       client_id: "",
+      invoice_number: "",
       transaction_date: format(new Date(), "yyyy-MM-dd"),
     });
     setDialogOpen(false);
@@ -203,6 +207,22 @@ const Financeiro = () => {
       currency: "BRL",
     }).format(value);
   };
+
+  // Calculate sales by platform for chart
+  const salesByPlatform = platforms.map((platform) => {
+    const platformTransactions = transactions.filter(
+      (t) => t.type === "revenue" && t.platform_id === platform.id
+    );
+    const total = platformTransactions.reduce(
+      (sum, t) => sum + Number(t.net_amount || 0),
+      0
+    );
+    return {
+      name: platform.name,
+      total,
+      count: platformTransactions.length,
+    };
+  }).filter((p) => p.count > 0);
 
   const totalRevenue = transactions
     .filter((t) => t.type === "revenue")
@@ -296,6 +316,46 @@ const Financeiro = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Sales by Platform Chart */}
+          {salesByPlatform.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="md:col-span-3"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Vendas por Plataforma</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {salesByPlatform.map((platform) => {
+                      const maxTotal = Math.max(...salesByPlatform.map((p) => p.total));
+                      const percentage = maxTotal > 0 ? (platform.total / maxTotal) * 100 : 0;
+                      return (
+                        <div key={platform.name} className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="font-medium">{platform.name}</span>
+                            <span className="text-muted-foreground">
+                              {platform.count} vendas · {formatCurrency(platform.total)}
+                            </span>
+                          </div>
+                          <div className="h-3 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
         </div>
 
         {/* Transactions */}
@@ -392,6 +452,18 @@ const Financeiro = () => {
                         </div>
                       </div>
 
+                      <div className="space-y-2">
+                        <Label htmlFor="invoice">Nº Nota/Pedido (opcional)</Label>
+                        <Input
+                          id="invoice"
+                          value={form.invoice_number}
+                          onChange={(e) =>
+                            setForm({ ...form, invoice_number: e.target.value })
+                          }
+                          placeholder="Ex: NF-001"
+                        />
+                      </div>
+
                       {form.type === "revenue" && (
                         <>
                           <div className="space-y-2">
@@ -430,7 +502,7 @@ const Financeiro = () => {
                               <SelectContent>
                                 {platforms.map((platform) => (
                                   <SelectItem key={platform.id} value={platform.id}>
-                                    {platform.name} ({platform.fee_percentage}% taxa)
+                                    {platform.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>

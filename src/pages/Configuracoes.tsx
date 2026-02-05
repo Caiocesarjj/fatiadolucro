@@ -15,6 +15,7 @@ import {
   Plus,
   Trash2,
   User,
+  Palette,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -41,6 +42,65 @@ const Configuracoes = () => {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [newPlatform, setNewPlatform] = useState({ name: "", fee: "" });
   const [loading, setLoading] = useState(true);
+
+  const [primaryColor, setPrimaryColor] = useState("#ea90c9");
+
+  // Load primary color from localStorage on mount
+  useEffect(() => {
+    const savedColor = localStorage.getItem("doce-lucro-primary-color");
+    if (savedColor) {
+      setPrimaryColor(savedColor);
+      applyPrimaryColor(savedColor);
+    }
+  }, []);
+
+  const applyPrimaryColor = (color: string) => {
+    // Convert hex to HSL
+    const hex = color.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0;
+    let s = 0;
+    const l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r:
+          h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+          break;
+        case g:
+          h = ((b - r) / d + 2) / 6;
+          break;
+        case b:
+          h = ((r - g) / d + 4) / 6;
+          break;
+      }
+    }
+
+    const hue = Math.round(h * 360);
+    const saturation = Math.round(s * 100);
+    const lightness = Math.round(l * 100);
+
+    // Apply to CSS variables
+    document.documentElement.style.setProperty("--primary", `${hue} ${saturation}% ${lightness}%`);
+    document.documentElement.style.setProperty("--primary-hover", `${hue} ${saturation}% ${Math.max(lightness - 6, 0)}%`);
+    document.documentElement.style.setProperty("--primary-light", `${hue} ${Math.max(saturation - 8, 0)}% 92%`);
+    document.documentElement.style.setProperty("--primary-glow", `${hue} ${saturation}% ${Math.min(lightness + 6, 100)}%`);
+    document.documentElement.style.setProperty("--ring", `${hue} ${saturation}% ${lightness}%`);
+    document.documentElement.style.setProperty("--sidebar-primary", `${hue} ${saturation}% ${lightness}%`);
+  };
+
+  const handleSaveTheme = () => {
+    localStorage.setItem("doce-lucro-primary-color", primaryColor);
+    applyPrimaryColor(primaryColor);
+    toast({ title: "Tema atualizado!" });
+  };
 
   useEffect(() => {
     if (user) {
@@ -347,6 +407,77 @@ const Configuracoes = () => {
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Info Card */}
+        {/* Theme Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                Tema e Cores
+              </CardTitle>
+              <CardDescription>
+                Personalize a cor principal do sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="space-y-2 flex-1">
+                  <Label htmlFor="primary-color">Cor Principal</Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="primary-color"
+                      type="color"
+                      value={primaryColor}
+                      onChange={(e) => {
+                        setPrimaryColor(e.target.value);
+                        applyPrimaryColor(e.target.value);
+                      }}
+                      className="w-12 h-12 rounded cursor-pointer border-0"
+                    />
+                    <Input
+                      value={primaryColor}
+                      onChange={(e) => {
+                        setPrimaryColor(e.target.value);
+                        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+                          applyPrimaryColor(e.target.value);
+                        }
+                      }}
+                      placeholder="#ea90c9"
+                      className="w-32 font-mono"
+                    />
+                    <div className="flex gap-2">
+                      {["#ea90c9", "#22c55e", "#3b82f6", "#f59e0b", "#8b5cf6"].map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => {
+                            setPrimaryColor(color);
+                            applyPrimaryColor(color);
+                          }}
+                          className="w-8 h-8 rounded-full border-2 border-transparent hover:border-foreground/20 transition-colors"
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={handleSaveTheme}
+                className="bg-primary hover:bg-primary-hover text-primary-foreground"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Tema
+              </Button>
             </CardContent>
           </Card>
         </motion.div>
