@@ -2,13 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Browmor Design System - Confectionery SaaS
-   Primary: Pink (#ea90c9) | Success: Emerald Green | Modern & Clean
+/* Fatia do Lucro Design System - Confectionery SaaS
+   Primary: Mint Green (#10B981) | Success: Emerald Green | Modern & Clean
 */
 
 @layer base {
   :root {
-    /* Core brand colors - Pink primary */
+    /* Core brand colors - Mint Green primary */
     --background: 0 0% 99%;
     --foreground: 240 10% 10%;
 
@@ -18,12 +18,12 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 10%;
 
-    /* Pink primary - derived from #ea90c9 */
-    --primary: 320 68% 74%;
-    --primary-foreground: 320 30% 15%;
-    --primary-hover: 320 68% 68%;
-    --primary-light: 320 60% 92%;
-    --primary-glow: 320 68% 80%;
+    /* Mint Green primary - derived from #10B981 */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 160 84% 33%;
+    --primary-light: 160 60% 92%;
+    --primary-glow: 160 84% 45%;
 
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 6% 20%;
@@ -31,8 +31,8 @@
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 46%;
 
-    --accent: 320 40% 95%;
-    --accent-foreground: 320 50% 30%;
+    --accent: 160 40% 95%;
+    --accent-foreground: 160 50% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -46,35 +46,43 @@
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 10%;
 
+    /* Brand Colors for Platforms */
+    --ifood: 4 90% 51%;
+    --ifood-foreground: 0 0% 100%;
+    --ninety-nine-food: 48 96% 49%;
+    --ninety-nine-food-foreground: 0 0% 10%;
+    --direct-sale: 160 84% 39%;
+    --direct-sale-foreground: 0 0% 100%;
+
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 320 68% 74%;
+    --ring: 160 84% 39%;
 
     --radius: 0.75rem;
 
     /* Chart colors */
-    --chart-1: 320 68% 74%;
+    --chart-1: 160 84% 39%;
     --chart-2: 158 64% 42%;
     --chart-3: 220 70% 50%;
     --chart-4: 38 92% 50%;
     --chart-5: 270 60% 65%;
 
     /* Sidebar - subtle and elegant */
-    --sidebar-background: 320 20% 98%;
+    --sidebar-background: 160 20% 98%;
     --sidebar-foreground: 240 6% 25%;
-    --sidebar-primary: 320 68% 74%;
-    --sidebar-primary-foreground: 320 30% 15%;
-    --sidebar-accent: 320 30% 94%;
-    --sidebar-accent-foreground: 320 50% 30%;
-    --sidebar-border: 320 15% 92%;
-    --sidebar-ring: 320 68% 74%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 30% 94%;
+    --sidebar-accent-foreground: 160 50% 25%;
+    --sidebar-border: 160 15% 92%;
+    --sidebar-ring: 160 84% 39%;
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(240 6% 10% / 0.03);
     --shadow-md: 0 4px 6px -1px hsl(240 6% 10% / 0.05), 0 2px 4px -1px hsl(240 6% 10% / 0.03);
     --shadow-lg: 0 10px 15px -3px hsl(240 6% 10% / 0.05), 0 4px 6px -2px hsl(240 6% 10% / 0.02);
     --shadow-card: 0 1px 3px 0 hsl(240 6% 10% / 0.04), 0 1px 2px 0 hsl(240 6% 10% / 0.02);
-    --shadow-hover: 0 10px 20px -5px hsl(320 68% 74% / 0.15);
+    --shadow-hover: 0 10px 20px -5px hsl(160 84% 39% / 0.15);
   }
 
   .dark {
@@ -87,11 +95,11 @@
     --popover: 240 10% 10%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 320 68% 70%;
-    --primary-foreground: 320 10% 10%;
-    --primary-hover: 320 68% 75%;
-    --primary-light: 320 30% 20%;
-    --primary-glow: 320 50% 60%;
+    --primary: 160 84% 45%;
+    --primary-foreground: 160 10% 10%;
+    --primary-hover: 160 84% 50%;
+    --primary-light: 160 30% 20%;
+    --primary-glow: 160 50% 55%;
 
     --secondary: 240 5% 18%;
     --secondary-foreground: 0 0% 95%;
@@ -99,8 +107,8 @@
     --muted: 240 5% 18%;
     --muted-foreground: 240 4% 60%;
 
-    --accent: 320 30% 20%;
-    --accent-foreground: 320 50% 80%;
+    --accent: 160 30% 20%;
+    --accent-foreground: 160 50% 80%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -112,18 +120,22 @@
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 10%;
 
+    --ifood: 4 90% 55%;
+    --ninety-nine-food: 48 96% 55%;
+    --direct-sale: 160 84% 45%;
+
     --border: 240 5% 20%;
     --input: 240 5% 20%;
-    --ring: 320 68% 70%;
+    --ring: 160 84% 45%;
 
     --sidebar-background: 240 10% 6%;
     --sidebar-foreground: 240 4% 70%;
-    --sidebar-primary: 320 68% 70%;
-    --sidebar-primary-foreground: 320 10% 10%;
-    --sidebar-accent: 320 20% 15%;
-    --sidebar-accent-foreground: 320 40% 80%;
+    --sidebar-primary: 160 84% 45%;
+    --sidebar-primary-foreground: 160 10% 10%;
+    --sidebar-accent: 160 20% 15%;
+    --sidebar-accent-foreground: 160 40% 80%;
     --sidebar-border: 240 5% 15%;
-    --sidebar-ring: 320 68% 70%;
+    --sidebar-ring: 160 84% 45%;
   }
 }
 
@@ -213,7 +225,26 @@
   .badge-primary {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
     background-color: hsl(var(--primary-light));
-    color: hsl(var(--primary-foreground));
+    color: hsl(var(--primary));
+  }
+
+  /* Platform badges */
+  .badge-ifood {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background-color: hsl(var(--ifood) / 0.1);
+    color: hsl(var(--ifood));
+  }
+
+  .badge-99food {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background-color: hsl(var(--ninety-nine-food) / 0.15);
+    color: hsl(48 70% 35%);
+  }
+
+  .badge-direct {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background-color: hsl(var(--direct-sale) / 0.1);
+    color: hsl(var(--direct-sale));
   }
 
   /* Table styles */
@@ -239,5 +270,23 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* Bottom Navigation */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-background border-t z-50;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center py-2 px-3 text-muted-foreground transition-colors;
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  .bottom-nav-item:hover {
+    @apply text-primary/80;
   }
 }

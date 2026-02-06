@@ -18,6 +18,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Catalogo from "./pages/Catalogo";
 import Planos from "./pages/Planos";
+import Precificacao from "./pages/Precificacao";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -25,7 +26,7 @@ const queryClient = new QueryClient();
 const App = () => {
   // Load theme color on mount
   useEffect(() => {
-    const savedColor = localStorage.getItem("doce-lucro-primary-color");
+    const savedColor = localStorage.getItem("fatia-lucro-primary-color");
     if (savedColor) {
       const hex = savedColor.replace("#", "");
       const r = parseInt(hex.substring(0, 2), 16) / 255;
@@ -87,6 +88,7 @@ const App = () => {
             <Route path="/compras" element={<Compras />} />
             <Route path="/catalogo" element={<Catalogo />} />
             <Route path="/planos" element={<Planos />} />
+            <Route path="/precificacao" element={<Precificacao />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

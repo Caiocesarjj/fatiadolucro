@@ -2,7 +2,9 @@ import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { BottomNav } from "./BottomNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
 
 interface AppLayoutProps {
@@ -13,6 +15,7 @@ interface AppLayoutProps {
 export function AppLayout({ children, title }: AppLayoutProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,11 +38,12 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
+        {/* Desktop sidebar - hidden on mobile */}
+        {!isMobile && <AppSidebar />}
         <main className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-10 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-full items-center gap-4 px-6">
-              <SidebarTrigger className="md:hidden" />
+              {!isMobile && <SidebarTrigger />}
               {title && (
                 <h1 className="text-xl font-semibold text-foreground">
                   {title}
@@ -47,11 +51,13 @@ export function AppLayout({ children, title }: AppLayoutProps) {
               )}
             </div>
           </header>
-          <div className="flex-1 p-6 animate-fade-in">
+          <div className={`flex-1 p-6 animate-fade-in ${isMobile ? 'pb-24' : ''}`}>
             {children}
           </div>
         </main>
       </div>
+      {/* Mobile bottom navigation */}
+      {isMobile && <BottomNav />}
     </SidebarProvider>
   );
 }
