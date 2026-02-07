@@ -20,7 +20,9 @@ import {
   Package,
   RotateCcw,
   Cake,
+  ArrowLeft,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscription, FREE_RECIPE_LIMIT_VALUE } from "@/hooks/useSubscription";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -70,6 +72,7 @@ interface PlatformResult {
 const Calculadora = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<RecipeItem[]>([]);
@@ -338,6 +341,12 @@ const Calculadora = () => {
   return (
     <>
     <AppLayout title="Calculadora de Receitas">
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/receitas")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para Receitas
+        </Button>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Inputs */}
         <div className="lg:col-span-2 space-y-6">
