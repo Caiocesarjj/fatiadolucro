@@ -18,7 +18,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Catalogo from "./pages/Catalogo";
 import Planos from "./pages/Planos";
-import Precificacao from "./pages/Precificacao";
+
 import Mais from "./pages/Mais";
 import Receitas from "./pages/Receitas";
 import { useEffect } from "react";
@@ -91,7 +91,7 @@ const App = () => {
             <Route path="/compras" element={<Compras />} />
             <Route path="/catalogo" element={<Catalogo />} />
             <Route path="/planos" element={<Planos />} />
-            <Route path="/precificacao" element={<Precificacao />} />
+            
             <Route path="/mais" element={<Mais />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />

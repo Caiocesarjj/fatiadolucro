@@ -9,6 +9,8 @@ import { Plus, Pencil, Trash2, CakeSlice } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { motion } from "framer-motion";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface RecipeWithCost {
   id: string;
@@ -26,6 +28,16 @@ const Receitas = () => {
   const [recipes, setRecipes] = useState<RecipeWithCost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { canCreate, getLimit, getCount, refreshCounts } = useFreemiumLimits();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const handleNewRecipe = () => {
+    if (!canCreate("recipes")) {
+      setShowUpgrade(true);
+      return;
+    }
+    navigate("/calculadora");
+  };
 
   useEffect(() => {
     if (user) fetchRecipes();
@@ -102,7 +114,7 @@ const Receitas = () => {
           <p className="text-sm text-muted-foreground">
             {recipes.length} receita{recipes.length !== 1 ? "s" : ""} salva{recipes.length !== 1 ? "s" : ""}
           </p>
-          <Button onClick={() => navigate("/calculadora")} className="hidden md:flex">
+          <Button onClick={handleNewRecipe} className="hidden md:flex">
             <Plus className="h-4 w-4 mr-2" />
             Nova Receita
           </Button>
@@ -128,7 +140,7 @@ const Receitas = () => {
             </div>
             <h3 className="font-semibold text-lg mb-1">Nenhuma receita salva</h3>
             <p className="text-muted-foreground text-sm mb-6">Comece agora criando sua primeira receita!</p>
-            <Button onClick={() => navigate("/calculadora")}>
+            <Button onClick={handleNewRecipe}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Receita
             </Button>
@@ -204,12 +216,19 @@ const Receitas = () => {
 
       {/* FAB for mobile */}
       <Button
-        onClick={() => navigate("/calculadora")}
+        onClick={handleNewRecipe}
         className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg md:hidden z-40"
         size="icon"
       >
         <Plus className="h-6 w-6" />
       </Button>
+
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        type="recipe_limit"
+        moduleName={`Receitas (${getCount("recipes")}/${getLimit("recipes")})`}
+      />
 
       <ConfirmationDialog
         open={!!deleteId}

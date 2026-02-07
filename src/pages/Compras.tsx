@@ -25,6 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, ShoppingCart, Check } from "lucide-react";
 import { FileText, FileSpreadsheet } from "lucide-react";
 import { motion } from "framer-motion";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface ShoppingListItem {
   id: string;
@@ -58,6 +60,8 @@ const Compras = () => {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { canCreate, getLimit, getCount } = useFreemiumLimits();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [form, setForm] = useState({
     ingredient_id: "",
@@ -313,7 +317,15 @@ const Compras = () => {
 
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
+              <Button
+                onClick={() => {
+                  if (!canCreate("shopping_lists")) {
+                    setShowUpgrade(true);
+                    return;
+                  }
+                }}
+                className="bg-primary hover:bg-primary-hover text-primary-foreground"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Item
               </Button>
@@ -529,6 +541,12 @@ const Compras = () => {
           </Card>
         </motion.div>
       </div>
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        type="module_locked"
+        moduleName={`Lista de Compras (${getCount("shopping_lists")}/${getLimit("shopping_lists")})`}
+      />
     </AppLayout>
   );
 };

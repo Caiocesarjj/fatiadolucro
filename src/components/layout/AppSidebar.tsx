@@ -1,5 +1,4 @@
 import { useLocation, Link } from "react-router-dom";
-import { useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -14,7 +13,6 @@ import {
   ShoppingCart,
   Shield,
   ShoppingBag,
-  Lock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,8 +30,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole, hasModuleAccess } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useSubscription, isModuleLockedForFree } from "@/hooks/useSubscription";
-import { UpgradeModal } from "@/components/UpgradeModal";
 
 // Sidebar order: Início > Clientes > Encomendas > Catálogo > Calculadora > Ingredientes > Compras > Financeiro > Configurações
 const allMenuItems = [
@@ -52,10 +48,8 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { isAdmin, allowedModules } = useUserRole();
-  const { planType } = useSubscription();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
-  const [upgradeModal, setUpgradeModal] = useState({ open: false, moduleName: "" });
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -63,13 +57,6 @@ export function AppSidebar() {
   const menuItems = allMenuItems.filter((item) =>
     hasModuleAccess(allowedModules, item.module)
   );
-
-  const handleNavClick = (e: React.MouseEvent, item: typeof allMenuItems[0]) => {
-    if (isModuleLockedForFree(item.module, planType)) {
-      e.preventDefault();
-      setUpgradeModal({ open: true, moduleName: item.title });
-    }
-  };
 
   return (
     <>
@@ -107,7 +94,6 @@ export function AppSidebar() {
                   >
                     <Link
                       to={item.url}
-                      onClick={(e) => handleNavClick(e, item)}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sidebar-foreground transition-all duration-200",
                         isActive(item.url)
@@ -120,9 +106,6 @@ export function AppSidebar() {
                         isActive(item.url) ? "text-sidebar-primary" : ""
                       )} />
                       <span className={cn(collapsed && "sr-only")}>{item.title}</span>
-                      {isModuleLockedForFree(item.module, planType) && !collapsed && (
-                        <Lock className="h-3 w-3 ml-auto text-muted-foreground" />
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -181,12 +164,6 @@ export function AppSidebar() {
         </div>
       </SidebarFooter>
       </Sidebar>
-      <UpgradeModal
-        open={upgradeModal.open}
-        onOpenChange={(open) => setUpgradeModal({ ...upgradeModal, open })}
-        type="module_locked"
-        moduleName={upgradeModal.moduleName}
-      />
     </>
   );
 }

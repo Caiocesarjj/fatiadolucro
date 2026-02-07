@@ -18,7 +18,7 @@ export function BottomNav() {
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path ||
-            (item.path === "/mais" && ["/clientes", "/encomendas", "/catalogo", "/precificacao", "/configuracoes"].includes(location.pathname));
+            (item.path === "/mais" && ["/clientes", "/encomendas", "/catalogo", "/configuracoes"].includes(location.pathname));
           return (
             <Link
               key={item.path}

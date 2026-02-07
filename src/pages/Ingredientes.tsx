@@ -32,6 +32,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Package, Search, Filter, Group } from "lucide-react";
 import { motion } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Ingredient {
   id: string;
@@ -55,6 +57,8 @@ const Ingredientes = () => {
   const [filterType, setFilterType] = useState<"all" | "weight" | "unit">("all");
   const [filterStore, setFilterStore] = useState<string>("all");
   const [groupByStore, setGroupByStore] = useState(false);
+  const { canCreate, getLimit, getCount } = useFreemiumLimits();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -230,8 +234,14 @@ const Ingredientes = () => {
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button
-                  onClick={() => resetForm()}
+              <Button
+                  onClick={() => {
+                    if (!editingId && !canCreate("ingredients")) {
+                      setShowUpgrade(true);
+                      return;
+                    }
+                    resetForm();
+                  }}
                   className="bg-primary hover:bg-primary-hover text-primary-foreground"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -567,6 +577,12 @@ const Ingredientes = () => {
           </Card>
         </motion.div>
       </div>
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        type="module_locked"
+        moduleName={`Ingredientes (${getCount("ingredients")}/${getLimit("ingredients")})`}
+      />
     </AppLayout>
   );
 };
