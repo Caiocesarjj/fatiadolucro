@@ -304,4 +304,11 @@
       bottom: calc(4rem + env(safe-area-inset-bottom) + 1rem);
     }
   }
+
+  /* Hide Lovable badge */
+  .lovable-badge,
+  a[href*="lovable.dev"][style*="fixed"],
+  div[style*="fixed"][style*="bottom"] a[href*="lovable.dev"] {
+    display: none !important;
+  }
 }

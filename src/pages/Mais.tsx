@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "react-router-dom";
-import { Users, ClipboardList, ShoppingBag, Settings } from "lucide-react";
+import { Users, ClipboardList, ShoppingBag, Settings, Headset } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const menuItems = [
@@ -9,6 +9,8 @@ const menuItems = [
   { icon: ShoppingBag, label: "Catálogo", description: "Vitrine de produtos", path: "/catalogo" },
   { icon: Settings, label: "Ajustes", description: "Configurações do app", path: "/configuracoes" },
 ];
+
+const SUPPORT_EMAIL = "contato.fatiadolucro@gmail.com";
 
 const Mais = () => {
   return (
@@ -29,6 +31,22 @@ const Mais = () => {
             </Card>
           </Link>
         ))}
+
+        {/* Fale Conosco */}
+        <a href={`mailto:${SUPPORT_EMAIL}`}>
+          <Card className="active:scale-[0.98] transition-transform border-primary/20">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Headset className="h-6 w-6 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-foreground">Fale Conosco</h3>
+                <p className="text-sm text-muted-foreground truncate">Dúvidas, problemas ou sugestões?</p>
+                <p className="text-xs text-primary truncate mt-0.5">{SUPPORT_EMAIL}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </a>
       </div>
     </AppLayout>
   );
