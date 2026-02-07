@@ -173,7 +173,7 @@ const Financeiro = () => {
       const transactionData = {
         user_id: user!.id,
         type: form.type,
-        entry_type: form.type === "revenue" ? form.entry_type : null,
+        entry_type: form.type === "revenue" ? (form.entry_type as "direct_sale" | "transfer") : null,
         description: form.description,
         amount,
         platform_id: form.platform_id || null,

@@ -249,6 +249,7 @@ export type Database = {
           labor_cost: number
           name: string
           photo_url: string | null
+          prep_time_minutes: number | null
           profit_margin_goal: number | null
           target_sale_price: number | null
           updated_at: string
@@ -262,6 +263,7 @@ export type Database = {
           labor_cost?: number
           name: string
           photo_url?: string | null
+          prep_time_minutes?: number | null
           profit_margin_goal?: number | null
           target_sale_price?: number | null
           updated_at?: string
@@ -275,6 +277,7 @@ export type Database = {
           labor_cost?: number
           name?: string
           photo_url?: string | null
+          prep_time_minutes?: number | null
           profit_margin_goal?: number | null
           target_sale_price?: number | null
           updated_at?: string
@@ -428,7 +431,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      entry_type: "direct_sale" | "transfer"
+      entry_type: "direct_sale" | "transfer" | "profit_withdrawal"
       order_status:
         | "pending"
         | "in_production"
@@ -565,7 +568,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      entry_type: ["direct_sale", "transfer"],
+      entry_type: ["direct_sale", "transfer", "profit_withdrawal"],
       order_status: [
         "pending",
         "in_production",
