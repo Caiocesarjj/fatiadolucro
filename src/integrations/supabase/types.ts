@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          type: Database["public"]["Enums"]["coupon_type"]
+          usage_count: number
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          type?: Database["public"]["Enums"]["coupon_type"]
+          usage_count?: number
+          value?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          type?: Database["public"]["Enums"]["coupon_type"]
+          usage_count?: number
+          value?: number
+        }
+        Relationships: []
+      }
       ingredients: {
         Row: {
           brand: string | null
@@ -439,6 +469,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      coupon_type: "percentage" | "vip_access"
       entry_type: "direct_sale" | "transfer" | "profit_withdrawal"
       order_status:
         | "pending"
@@ -576,6 +607,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      coupon_type: ["percentage", "vip_access"],
       entry_type: ["direct_sale", "transfer", "profit_withdrawal"],
       order_status: [
         "pending",
