@@ -289,4 +289,19 @@
   .bottom-nav-item:hover {
     @apply text-primary/80;
   }
+
+  /* Mobile safe-area & overflow fixes */
+  @media (max-width: 767px) {
+    .card-metric,
+    .rounded-lg {
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    /* FAB positioning above bottom nav */
+    .fixed.bottom-4,
+    .fixed.bottom-6 {
+      bottom: calc(4rem + env(safe-area-inset-bottom) + 1rem);
+    }
+  }
 }

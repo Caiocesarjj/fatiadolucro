@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Cake, Wallet, ShoppingCart, Settings } from "lucide-react";
+import { Home, Cake, Wallet, ShoppingCart, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -7,7 +7,7 @@ const navItems = [
   { icon: Cake, label: "Receitas", path: "/calculadora" },
   { icon: Wallet, label: "Financeiro", path: "/financeiro" },
   { icon: ShoppingCart, label: "Compras", path: "/compras" },
-  { icon: Settings, label: "Ajustes", path: "/configuracoes" },
+  { icon: MoreHorizontal, label: "Mais", path: "/mais" },
 ];
 
 export function BottomNav() {
@@ -17,7 +17,8 @@ export function BottomNav() {
     <nav className="bottom-nav md:hidden">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path ||
+            (item.path === "/mais" && ["/clientes", "/encomendas", "/catalogo", "/precificacao", "/configuracoes"].includes(location.pathname));
           return (
             <Link
               key={item.path}
