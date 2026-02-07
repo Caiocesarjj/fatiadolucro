@@ -24,6 +24,8 @@ import {
   Clock,
   Info,
   MessageCircle,
+  Headset,
+  Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -508,47 +510,77 @@ const Configuracoes = () => {
 
           {/* ====== ASSINATURA ====== */}
           <TabsContent value="assinatura">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Crown className="h-5 w-5 text-primary" />
-                    Seu Plano
-                  </CardTitle>
-                  <CardDescription>Gerencie sua assinatura</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 rounded-lg border-2 border-primary/30 bg-primary-light/20">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        {isPro ? <Crown className="h-5 w-5 text-primary" /> : <User className="h-5 w-5 text-muted-foreground" />}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-lg">Plano {isPro ? "PRO" : "Grátis"}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {isPro ? "Acesso completo a todos os recursos" : "Recursos limitados — faça upgrade para crescer"}
-                        </p>
+            <div className="space-y-6">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Crown className="h-5 w-5 text-primary" />
+                      Seu Plano
+                    </CardTitle>
+                    <CardDescription>Gerencie sua assinatura</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 rounded-lg border-2 border-primary/30 bg-primary-light/20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          {isPro ? <Crown className="h-5 w-5 text-primary" /> : <User className="h-5 w-5 text-muted-foreground" />}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-lg">Plano {isPro ? "PRO" : "Grátis"}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {isPro ? "Acesso completo a todos os recursos" : "Recursos limitados — faça upgrade para crescer"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {!isPro && (
-                    <div className="space-y-3">
-                      <Button onClick={() => navigate("/planos")} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
-                        <Crown className="h-4 w-4 mr-2" />
-                        Ver Planos e Fazer Upgrade
-                      </Button>
-                      <Button variant="outline" className="w-full" asChild>
-                        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          Falar com Suporte
-                        </a>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
+                    {!isPro && (
+                      <div className="space-y-3">
+                        <Button onClick={() => navigate("/planos")} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
+                          <Crown className="h-4 w-4 mr-2" />
+                          Ver Planos e Fazer Upgrade
+                        </Button>
+                        <Button variant="outline" className="w-full" asChild>
+                          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Falar com Suporte
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Suporte & Ajuda */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Headset className="h-5 w-5 text-primary" />
+                      Suporte & Ajuda
+                    </CardTitle>
+                    <CardDescription>Estamos aqui para ajudar</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <a
+                      href="mailto:contato.fatiadolucro@gmail.com"
+                      className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <Mail className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground">Fale Conosco</h3>
+                        <p className="text-sm text-muted-foreground">Dúvidas, problemas ou sugestões? Mande um e-mail.</p>
+                        <p className="text-sm text-primary font-medium mt-1 select-all">contato.fatiadolucro@gmail.com</p>
+                      </div>
+                    </a>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
