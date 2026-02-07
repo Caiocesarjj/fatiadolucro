@@ -199,8 +199,8 @@ const Compras = () => {
   };
 
   const calculateEstimatedCost = (item: ShoppingListItem) => {
-    // Calculate based on cost per unit * quantity needed
-    return item.ingredients.cost_per_unit * item.quantity_needed;
+    // Calculate based on price per package * quantity of packages
+    return item.ingredients.price_paid * item.quantity_needed;
   };
 
   const totalEstimated = items
@@ -254,7 +254,7 @@ const Compras = () => {
             ${items.map(item => `
               <tr class="${item.is_checked ? 'checked' : ''}">
                 <td>${item.ingredients.name}${item.ingredients.brand ? ` (${item.ingredients.brand})` : ''}</td>
-                <td>${item.quantity_needed} ${item.ingredients.unit_type === 'weight' ? 'g' : 'un'}</td>
+                <td>${item.quantity_needed}x ${item.ingredients.unit_type === 'weight' ? `(${item.ingredients.package_size}g)` : 'un'}</td>
                 <td>${formatCurrency(calculateEstimatedCost(item))}</td>
                 <td>${item.is_checked ? '✓' : 'Pendente'}</td>
               </tr>
@@ -278,7 +278,7 @@ const Compras = () => {
         item.ingredients.name,
         item.ingredients.brand || "",
         item.quantity_needed,
-        item.ingredients.unit_type === "weight" ? "g" : "un",
+        item.ingredients.unit_type === "weight" ? `pacote ${item.ingredients.package_size}g` : "un",
         calculateEstimatedCost(item).toFixed(2).replace(".", ","),
         item.is_checked ? "Comprado" : "Pendente"
       ].join(";"))
@@ -362,21 +362,22 @@ const Compras = () => {
                     Quantidade *{" "}
                     {selectedIngredient && (
                       <span className="text-muted-foreground">
-                        ({selectedIngredient.unit_type === "weight" ? "gramas" : "unidades"})
+                        ({selectedIngredient.unit_type === "weight"
+                          ? `pacotes de ${selectedIngredient.package_size}g`
+                          : "unidades"})
                       </span>
                     )}
                   </Label>
                   <Input
                     id="quantity"
+                    type="number"
+                    min="1"
+                    step="1"
                     value={form.quantity_needed}
                     onChange={(e) =>
                       setForm({ ...form, quantity_needed: e.target.value })
                     }
-                    placeholder={
-                      selectedIngredient?.unit_type === "weight"
-                        ? "Ex: 500"
-                        : "Ex: 12"
-                    }
+                    placeholder="Ex: 2"
                     className="input-currency"
                   />
                 </div>
@@ -388,14 +389,15 @@ const Compras = () => {
                     </p>
                     <p className="text-lg font-bold text-primary">
                       {formatCurrency(
-                        selectedIngredient.cost_per_unit *
+                        selectedIngredient.price_paid *
                           parseFloat(form.quantity_needed.replace(",", ".") || "0")
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Baseado no último preço: {formatCurrency(selectedIngredient.price_paid)} por{" "}
-                      {selectedIngredient.package_size}
-                      {selectedIngredient.unit_type === "weight" ? "g" : " un"}
+                      {parseFloat(form.quantity_needed || "0")}x {formatCurrency(selectedIngredient.price_paid)} cada
+                      {selectedIngredient.unit_type === "weight"
+                        ? ` (${selectedIngredient.package_size}g)`
+                        : ""}
                     </p>
                   </div>
                 )}
@@ -467,8 +469,10 @@ const Compras = () => {
                           )}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {item.quantity_needed}
-                          {item.ingredients.unit_type === "weight" ? "g" : " un"}
+                          {item.quantity_needed}x
+                          {item.ingredients.unit_type === "weight"
+                            ? ` (${item.ingredients.package_size}g cada)`
+                            : " un"}
                         </p>
                       </div>
                       <div className="text-right">
@@ -510,8 +514,10 @@ const Compras = () => {
                               {item.ingredients.name}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {item.quantity_needed}
-                              {item.ingredients.unit_type === "weight" ? "g" : " un"}
+                              {item.quantity_needed}x
+                              {item.ingredients.unit_type === "weight"
+                                ? ` (${item.ingredients.package_size}g cada)`
+                                : " un"}
                             </p>
                           </div>
                           <Button
