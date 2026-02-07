@@ -173,9 +173,15 @@ const Calculadora = () => {
       return;
     }
     setSelectedIngredients([
-      ...selectedIngredients,
       { ingredientId: ingredients[0].id, quantity: 0 },
+      ...selectedIngredients,
     ]);
+    // Auto-focus the new top row's select after render
+    setTimeout(() => {
+      const container = document.querySelector('[data-ingredient-list]');
+      const firstSelect = container?.querySelector('select');
+      firstSelect?.focus();
+    }, 50);
   };
 
   const removeIngredient = (index: number) => {
@@ -413,7 +419,14 @@ const Calculadora = () => {
                   </TabsList>
                   
                   <TabsContent value="ingredient">
-                    <div className="space-y-3 max-h-[350px] overflow-y-auto">
+                    {/* Add button on top */}
+                    <div className="pb-3 border-b mb-3">
+                      <Button onClick={addIngredient} size="sm" variant="outline" className="w-full">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Adicionar Ingrediente
+                      </Button>
+                    </div>
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto" data-ingredient-list>
                     {selectedIngredients.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">
                         Clique em "Adicionar Ingrediente" para começar
@@ -472,13 +485,6 @@ const Calculadora = () => {
                     })}
                   </div>
                     )}
-                    </div>
-                    {/* Sticky Add button */}
-                    <div className="pt-3 border-t mt-3">
-                      <Button onClick={addIngredient} size="sm" variant="outline" className="w-full">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Adicionar Ingrediente
-                      </Button>
                     </div>
                   </TabsContent>
 
