@@ -82,34 +82,22 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data: profiles, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [profilesRes, statsRes] = await Promise.all([
+        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+        supabase.rpc("get_admin_user_stats"),
+      ]);
 
-      if (error) throw error;
+      if (profilesRes.error) throw profilesRes.error;
 
-      // Get stats for each user
-      const usersWithStats = await Promise.all(
-        (profiles || []).map(async (profile) => {
-          const [recipesRes, transactionsRes] = await Promise.all([
-            supabase
-              .from("recipes")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", profile.user_id),
-            supabase
-              .from("transactions")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", profile.user_id),
-          ]);
-
-          return {
-            ...profile,
-            recipes_count: recipesRes.count || 0,
-            transactions_count: transactionsRes.count || 0,
-          };
-        })
+      const statsMap = new Map(
+        (statsRes.data || []).map((s: any) => [s.user_id, s])
       );
+
+      const usersWithStats = (profilesRes.data || []).map((profile) => ({
+        ...profile,
+        recipes_count: Number(statsMap.get(profile.user_id)?.recipes_count || 0),
+        transactions_count: Number(statsMap.get(profile.user_id)?.transactions_count || 0),
+      }));
 
       setUsers(usersWithStats);
     } catch (error) {
