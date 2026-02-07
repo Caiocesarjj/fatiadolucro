@@ -41,7 +41,7 @@ const allMenuItems = [
   { title: "Clientes", url: "/clientes", icon: Users, module: "clientes" },
   { title: "Encomendas", url: "/encomendas", icon: ClipboardList, module: "encomendas" },
   { title: "Catálogo", url: "/catalogo", icon: ShoppingBag, module: "catalogo" },
-  { title: "Calculadora", url: "/calculadora", icon: Calculator, module: "calculadora" },
+  { title: "Receitas", url: "/receitas", icon: Calculator, module: "calculadora" },
   { title: "Ingredientes", url: "/ingredientes", icon: Package, module: "ingredientes" },
   { title: "Lista de Compras", url: "/compras", icon: ShoppingCart, module: "compras" },
   { title: "Financeiro", url: "/financeiro", icon: Wallet, module: "financeiro" },

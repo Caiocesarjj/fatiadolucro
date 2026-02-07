@@ -20,6 +20,7 @@ import Catalogo from "./pages/Catalogo";
 import Planos from "./pages/Planos";
 import Precificacao from "./pages/Precificacao";
 import Mais from "./pages/Mais";
+import Receitas from "./pages/Receitas";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,7 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/ingredientes" element={<Ingredientes />} />
+            <Route path="/receitas" element={<Receitas />} />
             <Route path="/calculadora" element={<Calculadora />} />
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
