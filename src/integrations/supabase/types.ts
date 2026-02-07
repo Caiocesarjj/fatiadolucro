@@ -420,6 +420,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_user_stats: {
+        Args: never
+        Returns: {
+          recipes_count: number
+          transactions_count: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
