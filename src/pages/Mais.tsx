@@ -1,13 +1,12 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "react-router-dom";
-import { Users, ClipboardList, ShoppingBag, Calculator, Settings } from "lucide-react";
+import { Users, ClipboardList, ShoppingBag, Settings } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const menuItems = [
   { icon: Users, label: "Clientes", description: "Gerencie seus clientes", path: "/clientes" },
   { icon: ClipboardList, label: "Encomendas", description: "Controle de pedidos", path: "/encomendas" },
   { icon: ShoppingBag, label: "Catálogo", description: "Vitrine de produtos", path: "/catalogo" },
-  { icon: Calculator, label: "Precificação", description: "Calcule seus preços", path: "/precificacao" },
   { icon: Settings, label: "Ajustes", description: "Configurações do app", path: "/configuracoes" },
 ];
 

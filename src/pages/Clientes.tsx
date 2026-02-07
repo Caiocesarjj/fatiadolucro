@@ -25,6 +25,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Users, Search, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Client {
   id: string;
@@ -42,6 +44,9 @@ const Clientes = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const { canCreate, getLimit, getCount } = useFreemiumLimits();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -196,7 +201,13 @@ const Clientes = () => {
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => resetForm()}
+                onClick={() => {
+                  if (!editingId && !canCreate("clients")) {
+                    setShowUpgrade(true);
+                    return;
+                  }
+                  resetForm();
+                }}
                 className="bg-primary hover:bg-primary-hover text-primary-foreground"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -365,6 +376,12 @@ const Clientes = () => {
           </Card>
         </motion.div>
       </div>
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        type="module_locked"
+        moduleName={`Clientes (${getCount("clients")}/${getLimit("clients")})`}
+      />
     </AppLayout>
   );
 };

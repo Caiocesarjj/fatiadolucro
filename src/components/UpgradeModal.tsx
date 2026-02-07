@@ -36,11 +36,11 @@
                ? "Limite de Receitas Atingido!"
                : `Módulo "${moduleName}" Bloqueado`}
            </DialogTitle>
-           <DialogDescription className="text-center pt-2">
-             {type === "recipe_limit"
-               ? "Você atingiu o limite de 3 receitas do plano Grátis. Faça o upgrade para o plano PRO e crie receitas ilimitadas!"
-               : `O módulo ${moduleName} está disponível apenas no plano PRO. Faça o upgrade para desbloquear todos os recursos!`}
-           </DialogDescription>
+            <DialogDescription className="text-center pt-2">
+              {type === "recipe_limit"
+                ? "Você atingiu o limite de receitas do plano Grátis. Faça o upgrade para o plano PRO e crie receitas ilimitadas!"
+                : `Você atingiu o limite grátis de ${moduleName}. Seja PRO para lucrar sem limites!`}
+            </DialogDescription>
          </DialogHeader>
          <div className="space-y-3 pt-4">
            <Button

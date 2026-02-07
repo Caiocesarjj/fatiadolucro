@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths } from "date-fns";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { ptBR } from "date-fns/locale";
 
 type OrderStatus = "pending" | "in_production" | "ready" | "delivered" | "cancelled";
@@ -81,6 +83,8 @@ const Encomendas = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { canCreate, getLimit, getCount } = useFreemiumLimits();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [form, setForm] = useState({
     client_id: "",
@@ -259,7 +263,13 @@ const Encomendas = () => {
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => resetForm()}
+                onClick={() => {
+                  if (!editingId && !canCreate("orders")) {
+                    setShowUpgrade(true);
+                    return;
+                  }
+                  resetForm();
+                }}
                 className="bg-primary hover:bg-primary-hover text-primary-foreground"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -583,6 +593,12 @@ const Encomendas = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        type="module_locked"
+        moduleName={`Encomendas (${getCount("orders")}/${getLimit("orders")})`}
+      />
     </AppLayout>
   );
 };
