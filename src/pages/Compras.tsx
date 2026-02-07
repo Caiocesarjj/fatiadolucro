@@ -223,10 +223,10 @@ const Compras = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Lista de Compras - Doce e Lucro</title>
+         <title>Lista de Compras - Fatia do Lucro</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; }
-          h1 { color: #ea90c9; margin-bottom: 20px; }
+          h1 { color: #10B981; margin-bottom: 20px; }
           table { width: 100%; border-collapse: collapse; }
           th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
           th { background: #f5f5f5; }

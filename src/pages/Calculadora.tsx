@@ -74,6 +74,7 @@ const Calculadora = () => {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<RecipeItem[]>([]);
   const [laborCost, setLaborCost] = useState("");
+  const [prepTime, setPrepTime] = useState("");
   const [yieldAmount, setYieldAmount] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -271,6 +272,7 @@ const Calculadora = () => {
     setSelectedIngredients([]);
     setSelectedRecipes([]);
     setLaborCost("");
+    setPrepTime("");
     setYieldAmount("");
     setTargetPrice("");
     setInputMode("ingredient");
@@ -301,7 +303,8 @@ const Calculadora = () => {
           yield_amount: calculations.yield,
           labor_cost: calculations.laborCost,
           target_sale_price: calculations.targetPrice,
-        })
+          prep_time_minutes: parseInt(prepTime) || 0,
+        } as any)
         .select()
         .single();
 
@@ -401,18 +404,13 @@ const Calculadora = () => {
                   </TabsList>
                   
                   <TabsContent value="ingredient">
-                    <div className="flex justify-end mb-3">
-                      <Button onClick={addIngredient} size="sm" variant="outline">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Adicionar Ingrediente
-                      </Button>
-                    </div>
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto">
                     {selectedIngredients.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">
                         Clique em "Adicionar Ingrediente" para começar
                       </p>
                     ) : (
-                  <div className="space-y-3">
+                    <div className="space-y-3">
                     {selectedIngredients.map((item, index) => {
                       const ingredient = ingredients.find(
                         (i) => i.id === item.ingredientId
@@ -465,8 +463,16 @@ const Calculadora = () => {
                     })}
                   </div>
                     )}
+                    </div>
+                    {/* Sticky Add button */}
+                    <div className="pt-3 border-t mt-3">
+                      <Button onClick={addIngredient} size="sm" variant="outline" className="w-full">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Adicionar Ingrediente
+                      </Button>
+                    </div>
                   </TabsContent>
-                  
+
                   <TabsContent value="recipe">
                     <div className="flex justify-end mb-3">
                       <Button onClick={addRecipeAsIngredient} size="sm" variant="outline">
@@ -546,9 +552,25 @@ const Calculadora = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card>
+             <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="prepTime" className="flex items-center gap-1">
+                      Tempo de Preparo (min)
+                    </Label>
+                    <Input
+                      id="prepTime"
+                      type="number"
+                      value={prepTime}
+                      onChange={(e) => setPrepTime(e.target.value)}
+                      placeholder="Ex: 30"
+                      className="input-currency"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use a página de Precificação para calcular o custo/minuto
+                    </p>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="laborCost">Mão de Obra (R$)</Label>
                     <Input
@@ -559,11 +581,11 @@ const Calculadora = () => {
                       className="input-currency"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Custo total da mão de obra para a receita inteira
+                      Ingredientes + Embalagem + Tempo × Custo/min
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="yieldAmount">Rendimento (unidades)</Label>
+                    <Label htmlFor="yieldAmount">Rendimento (un)</Label>
                     <Input
                       id="yieldAmount"
                       type="number"
@@ -572,7 +594,7 @@ const Calculadora = () => {
                       placeholder="Ex: 12"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Quantas unidades essa receita produz
+                      Quantas unidades produz
                     </p>
                   </div>
                 </div>

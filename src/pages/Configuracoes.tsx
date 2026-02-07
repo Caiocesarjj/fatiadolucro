@@ -43,11 +43,11 @@ const Configuracoes = () => {
   const [newPlatform, setNewPlatform] = useState({ name: "", fee: "" });
   const [loading, setLoading] = useState(true);
 
-  const [primaryColor, setPrimaryColor] = useState("#ea90c9");
+  const [primaryColor, setPrimaryColor] = useState("#10B981");
 
   // Load primary color from localStorage on mount
   useEffect(() => {
-    const savedColor = localStorage.getItem("doce-lucro-primary-color");
+    const savedColor = localStorage.getItem("fatia-lucro-primary-color");
     if (savedColor) {
       setPrimaryColor(savedColor);
       applyPrimaryColor(savedColor);
@@ -97,7 +97,7 @@ const Configuracoes = () => {
   };
 
   const handleSaveTheme = () => {
-    localStorage.setItem("doce-lucro-primary-color", primaryColor);
+    localStorage.setItem("fatia-lucro-primary-color", primaryColor);
     applyPrimaryColor(primaryColor);
     toast({ title: "Tema atualizado!" });
   };
@@ -302,7 +302,7 @@ const Configuracoes = () => {
                   >
                     <div 
                       className="p-2 rounded-lg"
-                      style={{ backgroundColor: platform.color || "#ea90c9" }}
+                      style={{ backgroundColor: platform.color || "#10B981" }}
                     >
                       {platform.name.toLowerCase().includes("balcão") ? (
                         <Store className="h-4 w-4 text-white" />
@@ -345,7 +345,7 @@ const Configuracoes = () => {
                       <input
                         id={`color-${platform.id}`}
                         type="color"
-                        value={platform.color || "#ea90c9"}
+                        value={platform.color || "#10B981"}
                         onChange={(e) => {
                           const updated = platforms.map((p) =>
                             p.id === platform.id
@@ -451,11 +451,11 @@ const Configuracoes = () => {
                           applyPrimaryColor(e.target.value);
                         }
                       }}
-                      placeholder="#ea90c9"
+                      placeholder="#10B981"
                       className="w-32 font-mono"
                     />
                     <div className="flex gap-2">
-                      {["#ea90c9", "#22c55e", "#3b82f6", "#f59e0b", "#8b5cf6"].map((color) => (
+                      {["#10B981", "#ea90c9", "#3b82f6", "#f59e0b", "#8b5cf6"].map((color) => (
                         <button
                           key={color}
                           onClick={() => {

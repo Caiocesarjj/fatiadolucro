@@ -156,7 +156,7 @@ const Auth = () => {
           >
             <Cookie className="w-8 h-8 text-primary-foreground" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-foreground">Doce e Lucro</h1>
+          <h1 className="text-3xl font-bold text-foreground">Fatia do Lucro</h1>
           <p className="text-muted-foreground mt-2">
             Gestão inteligente para confeitarias
           </p>

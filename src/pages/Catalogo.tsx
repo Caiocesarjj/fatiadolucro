@@ -79,16 +79,16 @@
        <!DOCTYPE html>
        <html>
        <head>
-         <title>Catálogo - Doce e Lucro</title>
-         <style>
-           body { font-family: Arial, sans-serif; padding: 20px; }
-           h1 { text-align: center; color: #ea90c9; margin-bottom: 30px; }
-           .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-           .item { border: 1px solid #eee; border-radius: 8px; padding: 15px; text-align: center; }
-           .item img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; background: #f5f5f5; }
-           .name { font-weight: bold; margin: 10px 0 5px; }
-           .category { color: #888; font-size: 12px; }
-           .price { color: #ea90c9; font-size: 18px; font-weight: bold; margin-top: 10px; }
+          <title>Catálogo - Fatia do Lucro</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { text-align: center; color: #10B981; margin-bottom: 30px; }
+            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+            .item { border: 1px solid #eee; border-radius: 8px; padding: 15px; text-align: center; }
+            .item img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; background: #f5f5f5; }
+            .name { font-weight: bold; margin: 10px 0 5px; }
+            .category { color: #888; font-size: 12px; }
+            .price { color: #10B981; font-size: 18px; font-weight: bold; margin-top: 10px; }
            @media print { body { padding: 0; } }
          </style>
        </head>
