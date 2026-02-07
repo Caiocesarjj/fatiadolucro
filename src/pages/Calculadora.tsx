@@ -22,7 +22,7 @@ import {
   Cake,
   ArrowLeft,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscription, FREE_RECIPE_LIMIT_VALUE } from "@/hooks/useSubscription";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -73,6 +73,8 @@ const Calculadora = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<RecipeItem[]>([]);
@@ -94,6 +96,47 @@ const Calculadora = () => {
       fetchData();
     }
   }, [user]);
+
+  // Load recipe data when editing
+  useEffect(() => {
+    if (editId && user && ingredients.length > 0) {
+      loadRecipeForEdit(editId);
+    }
+  }, [editId, user, ingredients]);
+
+  const loadRecipeForEdit = async (recipeId: string) => {
+    const { data: recipe, error } = await supabase
+      .from("recipes")
+      .select("*")
+      .eq("id", recipeId)
+      .single();
+
+    if (error || !recipe) {
+      toast({ variant: "destructive", title: "Receita não encontrada" });
+      return;
+    }
+
+    setRecipeName(recipe.name);
+    setYieldAmount(String(recipe.yield_amount || ""));
+    setLaborCost(recipe.labor_cost ? String(recipe.labor_cost).replace(".", ",") : "");
+    setPrepTime(recipe.prep_time_minutes ? String(recipe.prep_time_minutes) : "");
+    setTargetPrice(recipe.target_sale_price ? String(recipe.target_sale_price).replace(".", ",") : "");
+
+    // Load recipe items
+    const { data: items } = await supabase
+      .from("recipe_items")
+      .select("ingredient_id, quantity")
+      .eq("recipe_id", recipeId);
+
+    if (items) {
+      setSelectedIngredients(
+        items.map((item) => ({
+          ingredientId: item.ingredient_id,
+          quantity: item.quantity,
+        }))
+      );
+    }
+  };
 
   const fetchData = async () => {
     const [ingredientsRes, platformsRes, recipesRes] = await Promise.all([
@@ -289,7 +332,7 @@ const Calculadora = () => {
   };
 
   const handleSaveRecipe = async () => {
-    if (!canCreateRecipe && planType === "free") {
+    if (!editId && !canCreateRecipe && planType === "free") {
       setShowUpgradeModal(true);
       return;
     }
@@ -304,24 +347,43 @@ const Calculadora = () => {
     }
 
     try {
-      const { data: recipe, error: recipeError } = await supabase
-        .from("recipes")
-        .insert({
-          user_id: user!.id,
-          name: recipeName,
-          yield_amount: calculations.yield,
-          labor_cost: calculations.laborCost,
-          target_sale_price: calculations.targetPrice,
-          prep_time_minutes: parseInt(prepTime) || 0,
-        } as any)
-        .select()
-        .single();
+      const recipeData = {
+        name: recipeName,
+        yield_amount: calculations.yield,
+        labor_cost: calculations.laborCost,
+        target_sale_price: calculations.targetPrice,
+        prep_time_minutes: parseInt(prepTime) || 0,
+      };
 
-      if (recipeError) throw recipeError;
+      let recipeId: string;
+
+      if (editId) {
+        // UPDATE existing recipe
+        const { error: recipeError } = await supabase
+          .from("recipes")
+          .update(recipeData)
+          .eq("id", editId);
+
+        if (recipeError) throw recipeError;
+        recipeId = editId;
+
+        // Delete old ingredients then re-insert
+        await supabase.from("recipe_items").delete().eq("recipe_id", editId);
+      } else {
+        // INSERT new recipe
+        const { data: recipe, error: recipeError } = await supabase
+          .from("recipes")
+          .insert({ ...recipeData, user_id: user!.id } as any)
+          .select()
+          .single();
+
+        if (recipeError) throw recipeError;
+        recipeId = recipe.id;
+      }
 
       if (selectedIngredients.length > 0) {
         const recipeItems = selectedIngredients.map((item) => ({
-          recipe_id: recipe.id,
+          recipe_id: recipeId,
           ingredient_id: item.ingredientId,
           quantity: item.quantity,
         }));
@@ -333,8 +395,8 @@ const Calculadora = () => {
         if (itemsError) throw itemsError;
       }
 
-      toast({ title: "Receita salva com sucesso!" });
-      setRecipeName("");
+      toast({ title: editId ? "Receita atualizada com sucesso!" : "Receita salva com sucesso!" });
+      navigate("/receitas");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -346,7 +408,7 @@ const Calculadora = () => {
 
   return (
     <>
-    <AppLayout title="Calculadora de Receitas">
+    <AppLayout title={editId ? "Editar Receita" : "Calculadora de Receitas"}>
       <div className="mb-4">
         <Button variant="ghost" size="sm" onClick={() => navigate("/receitas")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
