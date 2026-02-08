@@ -10,22 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
-  Save,
-  Plus,
-  Trash2,
-  User,
-  Palette,
-  Store,
-  Truck,
-  Calculator,
-  Crown,
-  Lock,
-  DollarSign,
-  Clock,
-  Info,
-  MessageCircle,
-  Headset,
-  Mail,
+  Save, Plus, Trash2, User, Palette, Store, Truck, Calculator, Crown, Lock,
+  DollarSign, Clock, Info, MessageCircle, Headset, Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -50,10 +36,7 @@ const Configuracoes = () => {
   const navigate = useNavigate();
   const isPro = planType === "pro";
 
-  const [profile, setProfile] = useState<Profile>({
-    store_name: "",
-    logo_url: "",
-  });
+  const [profile, setProfile] = useState<Profile>({ store_name: "", logo_url: "" });
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [newPlatform, setNewPlatform] = useState({ name: "", fee: "" });
   const [loading, setLoading] = useState(true);
@@ -78,9 +61,7 @@ const Configuracoes = () => {
 
   useEffect(() => {
     const savedColor = localStorage.getItem("fatia-lucro-primary-color");
-    if (savedColor) {
-      setPrimaryColor(savedColor);
-    }
+    if (savedColor) setPrimaryColor(savedColor);
   }, []);
 
   const applyPrimaryColor = (color: string) => {
@@ -88,13 +69,9 @@ const Configuracoes = () => {
     const r = parseInt(hex.substring(0, 2), 16) / 255;
     const g = parseInt(hex.substring(2, 4), 16) / 255;
     const b = parseInt(hex.substring(4, 6), 16) / 255;
-
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    let h = 0;
-    let s = 0;
-    const l = (max + min) / 2;
-
+    let h = 0; let s = 0; const l = (max + min) / 2;
     if (max !== min) {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -104,11 +81,9 @@ const Configuracoes = () => {
         case b: h = ((r - g) / d + 4) / 6; break;
       }
     }
-
     const hue = Math.round(h * 360);
     const saturation = Math.round(s * 100);
     const lightness = Math.round(l * 100);
-
     document.documentElement.style.setProperty("--primary", `${hue} ${saturation}% ${lightness}%`);
     document.documentElement.style.setProperty("--primary-hover", `${hue} ${saturation}% ${Math.max(lightness - 6, 0)}%`);
     document.documentElement.style.setProperty("--primary-light", `${hue} ${Math.max(saturation - 8, 0)}% 92%`);
@@ -133,20 +108,14 @@ const Configuracoes = () => {
         supabase.from("profiles").select("*").eq("user_id", user!.id).maybeSingle(),
         supabase.from("platforms").select("*").order("name"),
       ]);
-
       if (profileRes.data) {
-        setProfile({
-          store_name: profileRes.data.store_name || "",
-          logo_url: profileRes.data.logo_url || "",
-        });
-        // Load pricing settings
+        setProfile({ store_name: profileRes.data.store_name || "", logo_url: profileRes.data.logo_url || "" });
         if (profileRes.data.fixed_costs) setFixedCosts(String(profileRes.data.fixed_costs).replace(".", ","));
         if (profileRes.data.salary_goal) setSalaryGoal(String(profileRes.data.salary_goal).replace(".", ","));
         if (profileRes.data.work_hours_per_day) setWorkHoursPerDay(String(profileRes.data.work_hours_per_day));
         if (profileRes.data.work_days_per_month) setWorkDaysPerMonth(String(profileRes.data.work_days_per_month));
         if (profileRes.data.variable_cost_rate !== null && profileRes.data.variable_cost_rate !== undefined) setVariableCostRate(String(profileRes.data.variable_cost_rate));
       }
-
       setPlatforms(platformsRes.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -157,10 +126,7 @@ const Configuracoes = () => {
 
   const handleSaveProfile = async () => {
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ store_name: profile.store_name, logo_url: profile.logo_url })
-        .eq("user_id", user!.id);
+      const { error } = await supabase.from("profiles").update({ store_name: profile.store_name, logo_url: profile.logo_url }).eq("user_id", user!.id);
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
     } catch (error: any) {
@@ -170,10 +136,7 @@ const Configuracoes = () => {
 
   const handleUpdatePlatform = async (platform: Platform) => {
     try {
-      const { error } = await supabase
-        .from("platforms")
-        .update({ name: platform.name, fee_percentage: platform.fee_percentage, is_active: platform.is_active, color: platform.color })
-        .eq("id", platform.id);
+      const { error } = await supabase.from("platforms").update({ name: platform.name, fee_percentage: platform.fee_percentage, is_active: platform.is_active, color: platform.color }).eq("id", platform.id);
       if (error) throw error;
       toast({ title: "Plataforma atualizada!" });
     } catch (error: any) {
@@ -187,11 +150,7 @@ const Configuracoes = () => {
       return;
     }
     try {
-      const { error } = await supabase.from("platforms").insert({
-        user_id: user!.id,
-        name: newPlatform.name,
-        fee_percentage: parseFloat(newPlatform.fee.replace(",", ".")),
-      });
+      const { error } = await supabase.from("platforms").insert({ user_id: user!.id, name: newPlatform.name, fee_percentage: parseFloat(newPlatform.fee.replace(",", ".")) });
       if (error) throw error;
       toast({ title: "Plataforma adicionada!" });
       setNewPlatform({ name: "", fee: "" });
@@ -228,7 +187,7 @@ const Configuracoes = () => {
         } as any)
         .eq("user_id", user!.id);
       if (error) throw error;
-      toast({ title: "Precificação salva com sucesso!" });
+      toast({ title: "Configurações de precificação salvas!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
     } finally {
@@ -272,12 +231,7 @@ const Configuracoes = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="store_name">Nome da Confeitaria</Label>
-                    <Input
-                      id="store_name"
-                      value={profile.store_name || ""}
-                      onChange={(e) => setProfile({ ...profile, store_name: e.target.value })}
-                      placeholder="Ex: Doces da Maria"
-                    />
+                    <Input id="store_name" value={profile.store_name || ""} onChange={(e) => setProfile({ ...profile, store_name: e.target.value })} placeholder="Ex: Doces da Maria" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
@@ -293,74 +247,23 @@ const Configuracoes = () => {
             </motion.div>
           </TabsContent>
 
-          {/* ====== PRECIFICAÇÃO ====== */}
+          {/* ====== PRECIFICAÇÃO (UNIFIED) ====== */}
           <TabsContent value="precificacao">
-            <div className="space-y-6">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <Card className="border-primary/30 bg-primary-light/30">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-primary-light">
-                        <Info className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-1">Como funciona?</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Calcule o valor do seu minuto de trabalho considerando seus custos fixos e sua meta de salário. Use esse valor para precificar o tempo de preparo das suas receitas.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Variable Cost Rate */}
-                    <div className="border-t pt-4 mt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="variableCostRate" className="flex items-center gap-2">
-                          Taxa de Custos Variáveis (Gás/Energia)
-                          <span className="relative group">
-                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                              Porcentagem sobre os ingredientes para cobrir gastos difíceis de calcular (Gás, Luz, Detergente).
-                            </span>
-                          </span>
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            id="variableCostRate"
-                            type="number"
-                            value={variableCostRate}
-                            onChange={(e) => setVariableCostRate(e.target.value)}
-                            placeholder="10"
-                            className="w-24 input-currency"
-                          />
-                          <span className="text-sm text-muted-foreground">%</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Esse percentual será aplicado automaticamente sobre os ingredientes na calculadora.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Save Pricing Button */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                <Button onClick={handleSavePricing} disabled={savingPricing} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
-                  <Save className="h-4 w-4 mr-2" />
-                  {savingPricing ? "Salvando..." : "Salvar Precificação"}
-                </Button>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="h-5 w-5 text-primary" />
-                      Custo do Seu Minuto
-                    </CardTitle>
-                    <CardDescription>Preencha os campos para calcular o valor do seu tempo</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calculator className="h-5 w-5 text-primary" />
+                    Configuração de Precificação
+                  </CardTitle>
+                  <CardDescription>
+                    Calcule o valor do seu minuto de trabalho e configure os custos variáveis. Esses valores são usados automaticamente na calculadora de receitas.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Labor inputs */}
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Mão de Obra</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="fixedCosts">Custos Fixos Mensais (R$)</Label>
@@ -381,19 +284,32 @@ const Configuracoes = () => {
                         <Input id="workDays" type="number" value={workDaysPerMonth} onChange={(e) => setWorkDaysPerMonth(e.target.value)} placeholder="22" className="input-currency" />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                  </div>
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-success" />
-                      Resultados
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                  {/* Variable cost rate */}
+                  <div className="border-t pt-5">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Custos Variáveis</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="variableCostRate" className="flex items-center gap-2">
+                        Taxa de Custos Variáveis (Gás/Energia)
+                        <span className="relative group">
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                            Porcentagem sobre os ingredientes para cobrir gastos difíceis de calcular (Gás, Luz, Detergente).
+                          </span>
+                        </span>
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input id="variableCostRate" type="number" value={variableCostRate} onChange={(e) => setVariableCostRate(e.target.value)} placeholder="10" className="w-24 input-currency" />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Esse percentual será aplicado automaticamente sobre os ingredientes na calculadora.</p>
+                    </div>
+                  </div>
+
+                  {/* Results */}
+                  <div className="border-t pt-5">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Resultados</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="p-4 bg-muted/50 rounded-lg text-center">
                         <p className="text-sm text-muted-foreground mb-1">Meta Mensal Total</p>
@@ -408,7 +324,7 @@ const Configuracoes = () => {
                         <p className="text-2xl font-bold text-success">{formatCurrency(minuteRate)}</p>
                       </div>
                     </div>
-                    <div className="mt-6 p-4 border rounded-lg">
+                    <div className="mt-4 p-4 border rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Clock className="h-4 w-4 text-primary" />
                         <span className="font-medium">Como usar na Calculadora:</span>
@@ -420,10 +336,16 @@ const Configuracoes = () => {
                         <strong>Exemplo:</strong> Receita com 30 minutos de preparo = 30 × {formatCurrency(minuteRate)} = {formatCurrency(minuteRate * 30)} de mão de obra
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
+                  </div>
+
+                  {/* Single save button */}
+                  <Button onClick={handleSavePricing} disabled={savingPricing} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingPricing ? "Salvando..." : "Salvar Configurações"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
           </TabsContent>
 
           {/* ====== PERSONALIZAÇÃO (PRO) ====== */}
@@ -458,28 +380,11 @@ const Configuracoes = () => {
                         <div className="space-y-2 flex-1">
                           <Label htmlFor="primary-color">Cor Principal</Label>
                           <div className="flex items-center gap-3 flex-wrap">
-                            <input
-                              id="primary-color"
-                              type="color"
-                              value={primaryColor}
-                              onChange={(e) => { setPrimaryColor(e.target.value); applyPrimaryColor(e.target.value); }}
-                              className="w-12 h-12 rounded cursor-pointer border-0"
-                            />
-                            <Input
-                              value={primaryColor}
-                              onChange={(e) => { setPrimaryColor(e.target.value); if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) applyPrimaryColor(e.target.value); }}
-                              placeholder="#10B981"
-                              className="w-32 font-mono"
-                            />
+                            <input id="primary-color" type="color" value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); applyPrimaryColor(e.target.value); }} className="w-12 h-12 rounded cursor-pointer border-0" />
+                            <Input value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) applyPrimaryColor(e.target.value); }} placeholder="#10B981" className="w-32 font-mono" />
                             <div className="flex gap-2">
                               {["#10B981", "#ea90c9", "#3b82f6", "#f59e0b", "#8b5cf6"].map((color) => (
-                                <button
-                                  key={color}
-                                  onClick={() => { setPrimaryColor(color); applyPrimaryColor(color); }}
-                                  className="w-8 h-8 rounded-full border-2 border-transparent hover:border-foreground/20 transition-colors"
-                                  style={{ backgroundColor: color }}
-                                  title={color}
-                                />
+                                <button key={color} onClick={() => { setPrimaryColor(color); applyPrimaryColor(color); }} className="w-8 h-8 rounded-full border-2 border-transparent hover:border-foreground/20 transition-colors" style={{ backgroundColor: color }} title={color} />
                               ))}
                             </div>
                           </div>
@@ -512,57 +417,25 @@ const Configuracoes = () => {
                     {platforms.map((platform) => (
                       <div key={platform.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg flex-wrap">
                         <div className="p-2 rounded-lg" style={{ backgroundColor: platform.color || "#10B981" }}>
-                          {platform.name.toLowerCase().includes("balcão") ? (
-                            <Store className="h-4 w-4 text-white" />
-                          ) : (
-                            <Truck className="h-4 w-4 text-white" />
-                          )}
+                          {platform.name.toLowerCase().includes("balcão") ? <Store className="h-4 w-4 text-white" /> : <Truck className="h-4 w-4 text-white" />}
                         </div>
-                        <Input
-                          value={platform.name}
-                          onChange={(e) => setPlatforms(platforms.map((p) => p.id === platform.id ? { ...p, name: e.target.value } : p))}
-                          className="flex-1 min-w-[120px]"
-                        />
+                        <Input value={platform.name} onChange={(e) => setPlatforms(platforms.map((p) => p.id === platform.id ? { ...p, name: e.target.value } : p))} className="flex-1 min-w-[120px]" />
                         <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={platform.fee_percentage}
-                            onChange={(e) => setPlatforms(platforms.map((p) => p.id === platform.id ? { ...p, fee_percentage: parseFloat(e.target.value) || 0 } : p))}
-                            className="w-20 input-currency"
-                          />
+                          <Input type="number" value={platform.fee_percentage} onChange={(e) => setPlatforms(platforms.map((p) => p.id === platform.id ? { ...p, fee_percentage: parseFloat(e.target.value) || 0 } : p))} className="w-20 input-currency" />
                           <span className="text-sm text-muted-foreground">%</span>
                         </div>
-                        <input
-                          type="color"
-                          value={platform.color || "#10B981"}
-                          onChange={(e) => setPlatforms(platforms.map((p) => p.id === platform.id ? { ...p, color: e.target.value } : p))}
-                          className="w-8 h-8 rounded cursor-pointer border-0"
-                        />
-                        <Button variant="outline" size="sm" onClick={() => handleUpdatePlatform(platform)}>
-                          <Save className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeletePlatform(platform.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <input type="color" value={platform.color || "#10B981"} onChange={(e) => setPlatforms(platforms.map((p) => p.id === platform.id ? { ...p, color: e.target.value } : p))} className="w-8 h-8 rounded cursor-pointer border-0" />
+                        <Button variant="outline" size="sm" onClick={() => handleUpdatePlatform(platform)}><Save className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeletePlatform(platform.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </div>
                     ))}
                   </div>
                   <div className="border-t pt-4">
                     <Label className="mb-2 block">Adicionar Nova Plataforma</Label>
                     <div className="flex items-center gap-3 flex-wrap">
-                      <Input
-                        value={newPlatform.name}
-                        onChange={(e) => setNewPlatform({ ...newPlatform, name: e.target.value })}
-                        placeholder="Nome da plataforma"
-                        className="flex-1 min-w-[120px]"
-                      />
+                      <Input value={newPlatform.name} onChange={(e) => setNewPlatform({ ...newPlatform, name: e.target.value })} placeholder="Nome da plataforma" className="flex-1 min-w-[120px]" />
                       <div className="flex items-center gap-2">
-                        <Input
-                          value={newPlatform.fee}
-                          onChange={(e) => setNewPlatform({ ...newPlatform, fee: e.target.value })}
-                          placeholder="Taxa"
-                          className="w-20 input-currency"
-                        />
+                        <Input value={newPlatform.fee} onChange={(e) => setNewPlatform({ ...newPlatform, fee: e.target.value })} placeholder="Taxa" className="w-20 input-currency" />
                         <span className="text-sm text-muted-foreground">%</span>
                       </div>
                       <Button onClick={handleAddPlatform} className="bg-primary hover:bg-primary-hover text-primary-foreground">
@@ -596,13 +469,10 @@ const Configuracoes = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-lg">Plano {isPro ? "PRO" : "Grátis"}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {isPro ? "Acesso completo a todos os recursos" : "Recursos limitados — faça upgrade para crescer"}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{isPro ? "Acesso completo a todos os recursos" : "Recursos limitados — faça upgrade para crescer"}</p>
                         </div>
                       </div>
                     </div>
-
                     {!isPro && (
                       <div className="space-y-3">
                         <Button onClick={() => navigate("/planos")} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
@@ -620,8 +490,6 @@ const Configuracoes = () => {
                   </CardContent>
                 </Card>
               </motion.div>
-
-              {/* Suporte & Ajuda */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 <Card className="border-primary/20">
                   <CardHeader>
@@ -632,10 +500,7 @@ const Configuracoes = () => {
                     <CardDescription>Estamos aqui para ajudar</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <a
-                      href="mailto:contato.fatiadolucro@gmail.com"
-                      className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
+                    <a href="mailto:contato.fatiadolucro@gmail.com" className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                         <Mail className="h-6 w-6 text-primary" />
                       </div>
