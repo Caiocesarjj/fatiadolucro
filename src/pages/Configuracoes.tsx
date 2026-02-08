@@ -266,9 +266,17 @@ const Configuracoes = () => {
                     <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Mão de Obra</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="fixedCosts">Custos Fixos Mensais (R$)</Label>
-                        <Input id="fixedCosts" value={fixedCosts} onChange={(e) => setFixedCosts(e.target.value)} placeholder="Ex: 500,00" className="input-currency" />
-                        <p className="text-xs text-muted-foreground">Aluguel, luz, gás, embalagens fixas, etc.</p>
+                        <Label htmlFor="fixedCosts" className="flex items-center gap-2">
+                          Custos Fixos Mensais (R$)
+                          <span className="relative group">
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                              São contas que você paga todo mês, independente de vender ou não.
+                            </span>
+                          </span>
+                        </Label>
+                        <Input id="fixedCosts" value={fixedCosts} onChange={(e) => setFixedCosts(e.target.value)} placeholder="Ex: Aluguel, Internet, MEI, IPTU" className="input-currency" />
+                        <p className="text-xs text-muted-foreground">NÃO inclua Gás/Luz aqui — eles são cobertos pela taxa variável abaixo.</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="salaryGoal">Meta de Salário (R$)</Label>
@@ -291,11 +299,11 @@ const Configuracoes = () => {
                     <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Custos Variáveis</h3>
                     <div className="space-y-2">
                       <Label htmlFor="variableCostRate" className="flex items-center gap-2">
-                        Taxa de Custos Variáveis (Gás/Energia)
+                        Taxa de Gastos Variáveis (Gás, Luz, Limpeza)
                         <span className="relative group">
                           <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                           <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                            Porcentagem sobre os ingredientes para cobrir gastos difíceis de calcular (Gás, Luz, Detergente).
+                            Porcentagem adicionada para cobrir gastos que variam conforme a produção.
                           </span>
                         </span>
                       </Label>
@@ -303,7 +311,7 @@ const Configuracoes = () => {
                         <Input id="variableCostRate" type="number" value={variableCostRate} onChange={(e) => setVariableCostRate(e.target.value)} placeholder="10" className="w-24 input-currency" />
                         <span className="text-sm text-muted-foreground">%</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">Esse percentual será aplicado automaticamente sobre os ingredientes na calculadora.</p>
+                      <p className="text-xs text-muted-foreground">Porcentagem aplicada sobre os ingredientes na calculadora para cobrir gastos que variam com a produção.</p>
                     </div>
                   </div>
 
