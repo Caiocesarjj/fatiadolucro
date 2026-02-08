@@ -199,6 +199,7 @@ export type Database = {
       profiles: {
         Row: {
           allowed_modules: string[]
+          asaas_customer_id: string | null
           created_at: string
           fixed_costs: number | null
           id: string
@@ -208,6 +209,9 @@ export type Database = {
           plan_type: string
           salary_goal: number | null
           store_name: string | null
+          subscription_cycle: string | null
+          subscription_id: string | null
+          subscription_status: string | null
           updated_at: string
           user_id: string
           variable_cost_rate: number | null
@@ -216,6 +220,7 @@ export type Database = {
         }
         Insert: {
           allowed_modules?: string[]
+          asaas_customer_id?: string | null
           created_at?: string
           fixed_costs?: number | null
           id?: string
@@ -225,6 +230,9 @@ export type Database = {
           plan_type?: string
           salary_goal?: number | null
           store_name?: string | null
+          subscription_cycle?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
           user_id: string
           variable_cost_rate?: number | null
@@ -233,6 +241,7 @@ export type Database = {
         }
         Update: {
           allowed_modules?: string[]
+          asaas_customer_id?: string | null
           created_at?: string
           fixed_costs?: number | null
           id?: string
@@ -242,6 +251,9 @@ export type Database = {
           plan_type?: string
           salary_goal?: number | null
           store_name?: string | null
+          subscription_cycle?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
           user_id?: string
           variable_cost_rate?: number | null
