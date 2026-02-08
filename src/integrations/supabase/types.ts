@@ -200,35 +200,53 @@ export type Database = {
         Row: {
           allowed_modules: string[]
           created_at: string
+          fixed_costs: number | null
           id: string
           is_active: boolean
           logo_url: string | null
+          minute_rate: number | null
           plan_type: string
+          salary_goal: number | null
           store_name: string | null
           updated_at: string
           user_id: string
+          variable_cost_rate: number | null
+          work_days_per_month: number | null
+          work_hours_per_day: number | null
         }
         Insert: {
           allowed_modules?: string[]
           created_at?: string
+          fixed_costs?: number | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
+          minute_rate?: number | null
           plan_type?: string
+          salary_goal?: number | null
           store_name?: string | null
           updated_at?: string
           user_id: string
+          variable_cost_rate?: number | null
+          work_days_per_month?: number | null
+          work_hours_per_day?: number | null
         }
         Update: {
           allowed_modules?: string[]
           created_at?: string
+          fixed_costs?: number | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
+          minute_rate?: number | null
           plan_type?: string
+          salary_goal?: number | null
           store_name?: string | null
           updated_at?: string
           user_id?: string
+          variable_cost_rate?: number | null
+          work_days_per_month?: number | null
+          work_hours_per_day?: number | null
         }
         Relationships: []
       }

@@ -21,6 +21,8 @@ import {
   RotateCcw,
   Cake,
   ArrowLeft,
+  Flame,
+  Info,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -90,6 +92,9 @@ const Calculadora = () => {
   const [inputMode, setInputMode] = useState<"ingredient" | "recipe">("ingredient");
   const { canCreateRecipe, recipeCount, planType } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [minuteRate, setMinuteRate] = useState(0);
+  const [variableCostRate, setVariableCostRate] = useState(10);
+  const [laborAutoCalculated, setLaborAutoCalculated] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -139,14 +144,21 @@ const Calculadora = () => {
   };
 
   const fetchData = async () => {
-    const [ingredientsRes, platformsRes, recipesRes] = await Promise.all([
+    const [ingredientsRes, platformsRes, recipesRes, profileRes] = await Promise.all([
       supabase.from("ingredients").select("id, name, unit_type, cost_per_unit").order("name"),
       supabase.from("platforms").select("*").eq("is_active", true).order("name"),
       supabase.from("recipes").select("id, name, yield_amount, labor_cost").order("name"),
+      supabase.from("profiles").select("minute_rate, variable_cost_rate").eq("user_id", user!.id).maybeSingle(),
     ]);
 
     setIngredients(ingredientsRes.data || []);
     setPlatforms(platformsRes.data || []);
+
+    // Load pricing settings
+    if (profileRes.data) {
+      setMinuteRate((profileRes.data as any).minute_rate || 0);
+      setVariableCostRate((profileRes.data as any).variable_cost_rate ?? 10);
+    }
     
     // Calculate total cost for each recipe
     if (recipesRes.data) {
@@ -241,6 +253,17 @@ const Calculadora = () => {
     setSelectedIngredients(updated);
   };
 
+  // Auto-calculate labor cost when prep time changes
+  useEffect(() => {
+    if (minuteRate > 0 && prepTime) {
+      const autoLabor = (parseInt(prepTime) || 0) * minuteRate;
+      setLaborCost(autoLabor.toFixed(2).replace(".", ","));
+      setLaborAutoCalculated(true);
+    } else if (!prepTime) {
+      setLaborAutoCalculated(false);
+    }
+  }, [prepTime, minuteRate]);
+
   // Calculations
   const calculations = useMemo(() => {
     const ingredientsCost = selectedIngredients.reduce((total, item) => {
@@ -253,7 +276,6 @@ const Calculadora = () => {
     const recipesCost = selectedRecipes.reduce((total, item) => {
       const recipe = recipes.find((r) => r.id === item.recipeId);
       if (!recipe || !recipe.total_cost) return total;
-      // Cost per unit of the recipe * quantity
       const unitCost = recipe.total_cost / recipe.yield_amount;
       return total + unitCost * item.quantity;
     }, 0);
@@ -262,19 +284,24 @@ const Calculadora = () => {
     const yield_ = parseInt(yieldAmount) || 1;
     const price = parseFloat(targetPrice.replace(",", ".")) || 0;
 
-    const totalRecipeCost = ingredientsCost + recipesCost + labor;
+    // Hidden costs (variable costs on ingredients + recipes)
+    const materialsCost = ingredientsCost + recipesCost;
+    const hiddenCosts = materialsCost * (variableCostRate / 100);
+
+    const totalRecipeCost = materialsCost + labor + hiddenCosts;
     const unitCost = totalRecipeCost / yield_;
 
     return {
       ingredientsCost,
       recipesCost,
       laborCost: labor,
+      hiddenCosts,
       totalRecipeCost,
       unitCost,
       yield: yield_,
       targetPrice: price,
     };
-  }, [selectedIngredients, ingredients, selectedRecipes, recipes, laborCost, yieldAmount, targetPrice]);
+  }, [selectedIngredients, ingredients, selectedRecipes, recipes, laborCost, yieldAmount, targetPrice, variableCostRate]);
 
   // Platform results
   const platformResults = useMemo<PlatformResult[]>(() => {
@@ -644,22 +671,29 @@ const Calculadora = () => {
                       placeholder="Ex: 30"
                       className="input-currency"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Use a página de Precificação para calcular o custo/minuto
-                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="laborCost">Mão de Obra (R$)</Label>
                     <Input
                       id="laborCost"
                       value={laborCost}
-                      onChange={(e) => setLaborCost(e.target.value)}
+                      onChange={(e) => {
+                        setLaborCost(e.target.value);
+                        setLaborAutoCalculated(false);
+                      }}
                       placeholder="Ex: 15,00"
                       className="input-currency"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Ingredientes + Embalagem + Tempo × Custo/min
-                    </p>
+                    {laborAutoCalculated && minuteRate > 0 && (
+                      <p className="text-xs text-primary font-medium">
+                        ✨ Calculado automático: {formatCurrency(minuteRate)}/min
+                      </p>
+                    )}
+                    {!laborAutoCalculated && (
+                      <p className="text-xs text-muted-foreground">
+                        {minuteRate > 0 ? "Editado manualmente" : "Configure o custo/min em Configurações"}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="yieldAmount">Rendimento (un)</Label>
@@ -770,6 +804,17 @@ const Calculadora = () => {
                     {formatCurrency(calculations.laborCost)}
                   </span>
                 </div>
+                {calculations.hiddenCosts > 0 && (
+                  <div className="flex justify-between items-center p-2 rounded-md bg-warning/10 border border-warning/20">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <Flame className="h-3.5 w-3.5 text-warning" />
+                      Gastos Variáveis ({variableCostRate}%)
+                    </span>
+                    <span className="font-mono text-warning font-medium">
+                      {formatCurrency(calculations.hiddenCosts)}
+                    </span>
+                  </div>
+                )}
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Custo Total</span>
