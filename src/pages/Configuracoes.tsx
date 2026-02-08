@@ -66,6 +66,8 @@ const Configuracoes = () => {
   const [salaryGoal, setSalaryGoal] = useState("");
   const [workHoursPerDay, setWorkHoursPerDay] = useState("8");
   const [workDaysPerMonth, setWorkDaysPerMonth] = useState("22");
+  const [variableCostRate, setVariableCostRate] = useState("10");
+  const [savingPricing, setSavingPricing] = useState(false);
 
   // Pricing calculations
   const totalMonthlyGoal = (parseFloat(fixedCosts.replace(",", ".")) || 0) + (parseFloat(salaryGoal.replace(",", ".")) || 0);
@@ -137,6 +139,12 @@ const Configuracoes = () => {
           store_name: profileRes.data.store_name || "",
           logo_url: profileRes.data.logo_url || "",
         });
+        // Load pricing settings
+        if (profileRes.data.fixed_costs) setFixedCosts(String(profileRes.data.fixed_costs).replace(".", ","));
+        if (profileRes.data.salary_goal) setSalaryGoal(String(profileRes.data.salary_goal).replace(".", ","));
+        if (profileRes.data.work_hours_per_day) setWorkHoursPerDay(String(profileRes.data.work_hours_per_day));
+        if (profileRes.data.work_days_per_month) setWorkDaysPerMonth(String(profileRes.data.work_days_per_month));
+        if (profileRes.data.variable_cost_rate !== null && profileRes.data.variable_cost_rate !== undefined) setVariableCostRate(String(profileRes.data.variable_cost_rate));
       }
 
       setPlatforms(platformsRes.data || []);
@@ -202,6 +210,29 @@ const Configuracoes = () => {
       fetchData();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
+    }
+  };
+
+  const handleSavePricing = async () => {
+    setSavingPricing(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          fixed_costs: parseFloat(fixedCosts.replace(",", ".")) || 0,
+          salary_goal: parseFloat(salaryGoal.replace(",", ".")) || 0,
+          work_hours_per_day: parseFloat(workHoursPerDay) || 8,
+          work_days_per_month: parseFloat(workDaysPerMonth) || 22,
+          minute_rate: minuteRate,
+          variable_cost_rate: parseFloat(variableCostRate) || 10,
+        } as any)
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      toast({ title: "Precificação salva com sucesso!" });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    } finally {
+      setSavingPricing(false);
     }
   };
 
@@ -279,8 +310,45 @@ const Configuracoes = () => {
                         </p>
                       </div>
                     </div>
+
+                    {/* Variable Cost Rate */}
+                    <div className="border-t pt-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="variableCostRate" className="flex items-center gap-2">
+                          Taxa de Custos Variáveis (Gás/Energia)
+                          <span className="relative group">
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                              Porcentagem sobre os ingredientes para cobrir gastos difíceis de calcular (Gás, Luz, Detergente).
+                            </span>
+                          </span>
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="variableCostRate"
+                            type="number"
+                            value={variableCostRate}
+                            onChange={(e) => setVariableCostRate(e.target.value)}
+                            placeholder="10"
+                            className="w-24 input-currency"
+                          />
+                          <span className="text-sm text-muted-foreground">%</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Esse percentual será aplicado automaticamente sobre os ingredientes na calculadora.
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
+              </motion.div>
+
+              {/* Save Pricing Button */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                <Button onClick={handleSavePricing} disabled={savingPricing} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
+                  <Save className="h-4 w-4 mr-2" />
+                  {savingPricing ? "Salvando..." : "Salvar Precificação"}
+                </Button>
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
