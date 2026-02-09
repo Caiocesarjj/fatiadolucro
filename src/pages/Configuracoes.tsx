@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { ReferralCodeSection } from "@/components/settings/ReferralCodeSection";
 
 interface Profile {
   store_name: string | null;
@@ -460,6 +461,7 @@ const Configuracoes = () => {
           {/* ====== ASSINATURA ====== */}
           <TabsContent value="assinatura">
             <div className="space-y-6">
+              <ReferralCodeSection />
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <Card>
                   <CardHeader>

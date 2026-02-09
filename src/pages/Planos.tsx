@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, MessageCircle, Crown, Lock, Sparkles, CreditCard, QrCode, FileText, ArrowLeft, Loader2 } from "lucide-react";
+import { Check, Crown, Lock, CreditCard, QrCode, FileText, ArrowLeft, Loader2, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,12 +14,22 @@ import { toast } from "@/hooks/use-toast";
 type BillingType = "PIX" | "BOLETO" | "CREDIT_CARD";
 type Step = "plans" | "info" | "payment";
 
+const PRICE_FULL = 19.90;
+const PRICE_REFERRED = 14.99;
+
 const Planos = () => {
   const { user } = useAuth();
   const { planType } = useSubscription();
   const [step, setStep] = useState<Step>("plans");
   const [billingType, setBillingType] = useState<BillingType>("PIX");
   const [loading, setLoading] = useState(false);
+  const [hasReferral, setHasReferral] = useState(false);
+  const [loadingReferral, setLoadingReferral] = useState(true);
+
+  // Inline referral code
+  const [showReferralInput, setShowReferralInput] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [applyingCode, setApplyingCode] = useState(false);
 
   // User info
   const [name, setName] = useState("");
@@ -32,6 +42,65 @@ const Planos = () => {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCcv, setCardCcv] = useState("");
   const [cardPostalCode, setCardPostalCode] = useState("");
+
+  const currentPrice = hasReferral ? PRICE_REFERRED : PRICE_FULL;
+  const priceFormatted = currentPrice.toFixed(2).replace(".", ",");
+
+  useEffect(() => {
+    if (user) checkReferral();
+  }, [user]);
+
+  const checkReferral = async () => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("referred_by")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      setHasReferral(!!data?.referred_by);
+    } catch (error) {
+      console.error("Error checking referral:", error);
+    } finally {
+      setLoadingReferral(false);
+    }
+  };
+
+  const handleApplyReferralCode = async () => {
+    if (!referralCode.trim()) return;
+    setApplyingCode(true);
+    try {
+      const { data: affiliate } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("referral_code", referralCode.trim().toUpperCase())
+        .maybeSingle();
+
+      if (!affiliate) {
+        toast({ title: "Código inválido", variant: "destructive" });
+        return;
+      }
+
+      if (affiliate.user_id === user!.id) {
+        toast({ title: "Você não pode usar seu próprio código.", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ referred_by: affiliate.user_id } as any)
+        .eq("user_id", user!.id);
+
+      if (error) throw error;
+
+      setHasReferral(true);
+      setShowReferralInput(false);
+      toast({ title: "🎉 Desconto aplicado!", description: "Você pagará R$ 14,99/mês ao invés de R$ 19,90." });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setApplyingCode(false);
+    }
+  };
 
   const freeBenefits = [
     "Até 3 receitas",
@@ -81,6 +150,7 @@ const Planos = () => {
         name,
         email: user.email,
         mobilePhone,
+        referralCode: referralCode.trim().toUpperCase() || undefined,
       };
 
       if (billingType === "CREDIT_CARD") {
@@ -108,21 +178,12 @@ const Planos = () => {
       if (error) throw error;
 
       if (data?.invoiceUrl && billingType !== "CREDIT_CARD") {
-        toast({
-          title: "Assinatura criada!",
-          description: "Abrindo link de pagamento...",
-        });
+        toast({ title: "Assinatura criada!", description: "Abrindo link de pagamento..." });
         window.open(data.invoiceUrl, "_blank");
       } else if (billingType === "CREDIT_CARD") {
-        toast({
-          title: "Pagamento processado com sucesso!",
-          description: "Seu plano PRO já está ativo.",
-        });
+        toast({ title: "Pagamento processado com sucesso!", description: "Seu plano PRO já está ativo." });
       } else {
-        toast({
-          title: "Assinatura criada!",
-          description: "Verifique seu e-mail para o link de pagamento.",
-        });
+        toast({ title: "Assinatura criada!", description: "Verifique seu e-mail para o link de pagamento." });
       }
 
       setStep("plans");
@@ -206,8 +267,23 @@ const Planos = () => {
                     </CardTitle>
                     <CardDescription>Todas as ferramentas para crescer</CardDescription>
                     <div className="mt-4">
-                      <span className="text-3xl font-bold text-primary">R$ 9,99</span>
-                      <span className="text-muted-foreground">/mês</span>
+                      {hasReferral ? (
+                        <div>
+                          <span className="text-lg line-through text-muted-foreground mr-2">R$ 19,90</span>
+                          <span className="text-3xl font-bold text-primary">R$ 14,99</span>
+                          <span className="text-muted-foreground">/mês</span>
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                              <Gift className="h-3 w-3" /> Desconto de indicação
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-3xl font-bold text-primary">R$ 19,90</span>
+                          <span className="text-muted-foreground">/mês</span>
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -219,6 +295,38 @@ const Planos = () => {
                         </li>
                       ))}
                     </ul>
+
+                    {/* Inline referral code for non-referred users */}
+                    {!hasReferral && !loadingReferral && (
+                      <div className="mt-4">
+                        {!showReferralInput ? (
+                          <button
+                            onClick={() => setShowReferralInput(true)}
+                            className="text-xs text-primary underline hover:text-primary/80"
+                          >
+                            Tem um código de indicação?
+                          </button>
+                        ) : (
+                          <div className="flex gap-2 mt-2">
+                            <Input
+                              value={referralCode}
+                              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                              placeholder="Ex: MARIA10"
+                              className="font-mono uppercase text-sm h-9"
+                              maxLength={20}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={handleApplyReferralCode}
+                              disabled={applyingCode}
+                              className="h-9"
+                            >
+                              {applyingCode ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aplicar"}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <p className="text-sm font-semibold text-center mt-6 mb-3 text-muted-foreground">Escolha a forma de pagamento:</p>
                     <div className="grid grid-cols-3 gap-2">
@@ -256,7 +364,7 @@ const Planos = () => {
                 <CardHeader>
                   <CardTitle>Seus Dados</CardTitle>
                   <CardDescription>
-                    Pagamento via {billingType === "PIX" ? "Pix" : billingType === "BOLETO" ? "Boleto" : "Cartão de Crédito"}
+                    Pagamento via {billingType === "PIX" ? "Pix" : billingType === "BOLETO" ? "Boleto" : "Cartão de Crédito"} • R$ {priceFormatted}/mês
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -291,7 +399,7 @@ const Planos = () => {
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" /> Dados do Cartão
                   </CardTitle>
-                  <CardDescription>R$ 9,99/mês • Cartão de Crédito</CardDescription>
+                  <CardDescription>R$ {priceFormatted}/mês • Cartão de Crédito</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -318,7 +426,7 @@ const Planos = () => {
                   </div>
                   <Button className="w-full" onClick={handleCreateSubscription} disabled={loading}>
                     {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Crown className="h-4 w-4 mr-2" />}
-                    Pagar R$ 9,99 e Ativar PRO
+                    Pagar R$ {priceFormatted} e Ativar PRO
                   </Button>
                 </CardContent>
               </Card>

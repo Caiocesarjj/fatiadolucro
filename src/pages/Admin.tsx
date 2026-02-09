@@ -18,11 +18,12 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus } from "lucide-react";
+import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus, UserPlus } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
+import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
 
 // ... keep existing code (UserProfile interface and AVAILABLE_MODULES)
 interface UserProfile {
@@ -235,8 +236,9 @@ const Admin = () => {
   return (
     <AppLayout title="Administração">
       <Tabs defaultValue="usuarios" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+          <TabsTrigger value="afiliados">Afiliados</TabsTrigger>
           <TabsTrigger value="cupons">Cupons</TabsTrigger>
         </TabsList>
 
@@ -390,6 +392,11 @@ const Admin = () => {
               </Card>
             </motion.div>
           </div>
+        </TabsContent>
+
+        {/* ====== AFILIADOS TAB ====== */}
+        <TabsContent value="afiliados">
+          <AffiliatesTab />
         </TabsContent>
 
         {/* ====== CUPONS TAB ====== */}
