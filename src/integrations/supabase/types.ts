@@ -207,6 +207,8 @@ export type Database = {
           logo_url: string | null
           minute_rate: number | null
           plan_type: string
+          referral_code: string | null
+          referred_by: string | null
           salary_goal: number | null
           store_name: string | null
           subscription_cycle: string | null
@@ -228,6 +230,8 @@ export type Database = {
           logo_url?: string | null
           minute_rate?: number | null
           plan_type?: string
+          referral_code?: string | null
+          referred_by?: string | null
           salary_goal?: number | null
           store_name?: string | null
           subscription_cycle?: string | null
@@ -249,6 +253,8 @@ export type Database = {
           logo_url?: string | null
           minute_rate?: number | null
           plan_type?: string
+          referral_code?: string | null
+          referred_by?: string | null
           salary_goal?: number | null
           store_name?: string | null
           subscription_cycle?: string | null

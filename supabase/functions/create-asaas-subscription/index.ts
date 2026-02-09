@@ -7,6 +7,8 @@ const corsHeaders = {
 };
 
 const ASAAS_API_URL = "https://www.asaas.com/api/v3";
+const PRICE_FULL = 19.90;
+const PRICE_REFERRED = 14.99;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,17 +42,41 @@ Deno.serve(async (req) => {
     const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY")!;
 
     const body = await req.json();
-    const { billingType, cpfCnpj, name, email, mobilePhone, creditCard, creditCardHolderInfo } = body;
+    const { billingType, cpfCnpj, name, email, mobilePhone, creditCard, creditCardHolderInfo, referralCode } = body;
 
     console.log("Creating subscription for user:", userId, "billingType:", billingType);
 
-    // 1. Get or create Asaas customer
+    // 1. Determine price based on referral status
     const { data: profile } = await supabase
       .from("profiles")
-      .select("asaas_customer_id")
+      .select("asaas_customer_id, referred_by")
       .eq("user_id", userId)
       .maybeSingle();
 
+    let isReferred = !!profile?.referred_by;
+
+    // If not yet referred but a referral code was provided, try to apply it
+    if (!isReferred && referralCode) {
+      const { data: affiliate } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("referral_code", referralCode)
+        .maybeSingle();
+
+      if (affiliate && affiliate.user_id !== userId) {
+        await supabase
+          .from("profiles")
+          .update({ referred_by: affiliate.user_id })
+          .eq("user_id", userId);
+        isReferred = true;
+        console.log("Applied referral code at checkout:", referralCode);
+      }
+    }
+
+    const subscriptionValue = isReferred ? PRICE_REFERRED : PRICE_FULL;
+    console.log("Subscription value:", subscriptionValue, "isReferred:", isReferred);
+
+    // 2. Get or create Asaas customer
     let customerId = profile?.asaas_customer_id;
 
     if (!customerId) {
@@ -87,7 +113,7 @@ Deno.serve(async (req) => {
         .eq("user_id", userId);
     }
 
-    // 2. Create subscription
+    // 3. Create subscription
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const nextDueDate = tomorrow.toISOString().split("T")[0];
@@ -95,10 +121,10 @@ Deno.serve(async (req) => {
     const subscriptionPayload: Record<string, unknown> = {
       customer: customerId,
       billingType,
-      value: 9.99,
+      value: subscriptionValue,
       cycle: "MONTHLY",
       nextDueDate,
-      description: "Assinatura Fatia do Lucro PRO",
+      description: `Assinatura Fatia do Lucro PRO${isReferred ? " (Indicação)" : ""}`,
     };
 
     if (billingType === "CREDIT_CARD" && creditCard) {
@@ -171,6 +197,7 @@ Deno.serve(async (req) => {
         status: subData.status,
         invoiceUrl,
         billingType,
+        value: subscriptionValue,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
