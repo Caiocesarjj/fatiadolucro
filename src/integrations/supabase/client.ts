@@ -1,17 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./types";
 
-// ---------------------------------------------------------
-// COLOQUE SEUS DADOS REAIS AQUI DENTRO DAS ASPAS:
-// ---------------------------------------------------------
-const SUPABASE_URL = "https://weqxzfmghlrwrtnhbjue.supabase.co"; // <--- Cole sua URL aqui
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // <--- Cole sua chave ANON KEY gigante aqui
-// ---------------------------------------------------------
+// --- ÁREA DE EDIÇÃO MANUAL ---
+// Apague o texto entre aspas e cole o seu do Supabase
+const SUPABASE_URL = "https://weqxzfmghlrwrtnhbjue.supabase.co";
+const SUPABASE_KEY = "sb_publishable_zM14tAsDx7JKyb-MM_uK5Q_KUS-nike";
+// -----------------------------
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
