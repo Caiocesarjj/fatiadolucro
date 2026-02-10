@@ -66,6 +66,7 @@ const Inteligencia = () => {
       const { data: recipesData } = await supabase
         .from("recipes")
         .select("id, name, yield_amount, labor_cost, target_sale_price")
+        .eq("user_id", user!.id)
         .order("name");
 
       const recipesWithCost = await Promise.all(
@@ -190,7 +191,7 @@ const Inteligencia = () => {
 
   if (loading) {
     return (
-      <AppLayout title="Inteligência Financeira">
+      <AppLayout title="Simuladores">
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <Card key={i} className="animate-pulse">
@@ -203,7 +204,7 @@ const Inteligencia = () => {
   }
 
   return (
-    <AppLayout title="Inteligência Financeira">
+    <AppLayout title="Simuladores">
       <Tabs defaultValue="discount" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="discount" className="flex items-center gap-2">
