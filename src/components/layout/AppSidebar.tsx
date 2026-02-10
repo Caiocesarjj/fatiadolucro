@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Shield,
   ShoppingBag,
+  Brain,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +42,7 @@ const allMenuItems = [
   { title: "Ingredientes", url: "/ingredientes", icon: Package, module: "ingredientes" },
   { title: "Lista de Compras", url: "/compras", icon: ShoppingCart, module: "compras" },
   { title: "Financeiro", url: "/financeiro", icon: Wallet, module: "financeiro" },
+  { title: "Inteligência", url: "/inteligencia", icon: Brain, module: "inteligencia" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, module: "configuracoes" },
 ];
 
