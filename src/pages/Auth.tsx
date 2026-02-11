@@ -101,7 +101,7 @@ const Auth = () => {
           }
         }
       } else if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: `${window.location.origin}/dashboard` },
@@ -112,7 +112,19 @@ const Auth = () => {
           } else {
             toast({ variant: "destructive", title: "Erro ao criar conta", description: "Ocorreu um erro. Tente novamente." });
           }
-        } else {
+        } else if (data.user) {
+          // Ensure profile exists for the new user
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert({
+              user_id: data.user.id,
+              plan_type: "free",
+              is_active: true,
+              allowed_modules: ["all"],
+            } as any, { onConflict: "user_id" });
+          if (profileError && import.meta.env.DEV) {
+            console.error("Error creating profile:", profileError);
+          }
           toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
         }
       } else if (mode === "forgot") {
