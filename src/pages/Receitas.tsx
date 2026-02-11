@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { Plus, Pencil, Trash2, CakeSlice } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -51,7 +52,7 @@ const Receitas = () => {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      toast({ variant: "destructive", title: "Erro ao carregar receitas", description: error.message });
+      toast({ variant: "destructive", title: "Erro ao carregar receitas", description: mapErrorToUserMessage(error) });
       setLoading(false);
       return;
     }
@@ -83,7 +84,7 @@ const Receitas = () => {
     await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
     const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
     if (error) {
-      toast({ variant: "destructive", title: "Erro ao excluir", description: error.message });
+      toast({ variant: "destructive", title: "Erro ao excluir", description: mapErrorToUserMessage(error) });
     } else {
       toast({ title: "Receita excluída!" });
       setRecipes((prev) => prev.filter((r) => r.id !== deleteId));

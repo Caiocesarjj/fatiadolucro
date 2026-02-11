@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,7 +120,7 @@ const Compras = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };
@@ -137,7 +138,7 @@ const Compras = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };
@@ -156,7 +157,7 @@ const Compras = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };
@@ -178,7 +179,7 @@ const Compras = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };

@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import {
   Calculator as CalcIcon,
   Plus,
@@ -428,7 +429,7 @@ const Calculadora = () => {
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };

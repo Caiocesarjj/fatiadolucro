@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
   Save, Plus, Trash2, User, Palette, Store, Truck, Calculator, Crown, Lock,
@@ -131,7 +132,7 @@ const Configuracoes = () => {
       if (error) throw error;
       toast({ title: "Perfil atualizado!" });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -141,7 +142,7 @@ const Configuracoes = () => {
       if (error) throw error;
       toast({ title: "Plataforma atualizada!" });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -157,7 +158,7 @@ const Configuracoes = () => {
       setNewPlatform({ name: "", fee: "" });
       fetchData();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -169,7 +170,7 @@ const Configuracoes = () => {
       toast({ title: "Plataforma excluída!" });
       fetchData();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -190,7 +191,7 @@ const Configuracoes = () => {
       if (error) throw error;
       toast({ title: "Configurações de precificação salvas!" });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     } finally {
       setSavingPricing(false);
     }

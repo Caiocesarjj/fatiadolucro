@@ -92,7 +92,7 @@ const Auth = () => {
             toast({
               variant: "destructive",
               title: "Erro ao entrar",
-              description: error.message,
+              description: "Ocorreu um erro. Tente novamente.",
             });
           }
         }
@@ -118,7 +118,7 @@ const Auth = () => {
             toast({
               variant: "destructive",
               title: "Erro ao criar conta",
-              description: error.message,
+              description: "Ocorreu um erro. Tente novamente.",
             });
           }
         } else {
