@@ -236,16 +236,21 @@ const Inteligencia = () => {
                   <Label>Produto (Receita)</Label>
                   <Select value={selectedRecipeId} onValueChange={setSelectedRecipeId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um produto..." />
+                      <SelectValue placeholder={recipes.length === 0 ? "Nenhuma receita cadastrada" : "Selecione um produto..."} />
                     </SelectTrigger>
                     <SelectContent>
                       {recipes
                         .filter((r) => r.target_sale_price && r.target_sale_price > 0)
                         .map((r) => (
                           <SelectItem key={r.id} value={r.id}>
-                            {r.name}
+                            {r.name} — {formatCurrency(r.target_sale_price!)}
                           </SelectItem>
                         ))}
+                      {recipes.filter((r) => r.target_sale_price && r.target_sale_price > 0).length === 0 && recipes.length > 0 && (
+                        <div className="p-3 text-sm text-muted-foreground text-center">
+                          Suas receitas não têm preço de venda definido.
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -472,16 +477,21 @@ const Inteligencia = () => {
                   <Label>Produto Principal</Label>
                   <Select value={breakEvenRecipeId} onValueChange={setBreakEvenRecipeId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o produto..." />
+                      <SelectValue placeholder={recipes.length === 0 ? "Nenhuma receita cadastrada" : "Selecione o produto..."} />
                     </SelectTrigger>
                     <SelectContent>
                       {recipes
                         .filter((r) => r.target_sale_price && r.target_sale_price > 0)
                         .map((r) => (
                           <SelectItem key={r.id} value={r.id}>
-                            {r.name}
+                            {r.name} — {formatCurrency(r.target_sale_price!)}
                           </SelectItem>
                         ))}
+                      {recipes.filter((r) => r.target_sale_price && r.target_sale_price > 0).length === 0 && recipes.length > 0 && (
+                        <div className="p-3 text-sm text-muted-foreground text-center">
+                          Suas receitas não têm preço de venda definido.
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
