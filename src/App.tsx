@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -80,21 +81,20 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/ingredientes" element={<Ingredientes />} />
-            <Route path="/receitas" element={<Receitas />} />
-            <Route path="/calculadora" element={<Calculadora />} />
-            <Route path="/financeiro" element={<Financeiro />} />
-            <Route path="/configuracoes" element={<Configuracoes />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/encomendas" element={<Encomendas />} />
-            <Route path="/compras" element={<Compras />} />
-            <Route path="/catalogo" element={<Catalogo />} />
             <Route path="/planos" element={<Planos />} />
-            <Route path="/inteligencia" element={<Inteligencia />} />
-            
-            <Route path="/mais" element={<Mais />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/ingredientes" element={<ProtectedRoute><Ingredientes /></ProtectedRoute>} />
+            <Route path="/receitas" element={<ProtectedRoute><Receitas /></ProtectedRoute>} />
+            <Route path="/calculadora" element={<ProtectedRoute><Calculadora /></ProtectedRoute>} />
+            <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
+            <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+            <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+            <Route path="/encomendas" element={<ProtectedRoute><Encomendas /></ProtectedRoute>} />
+            <Route path="/compras" element={<ProtectedRoute><Compras /></ProtectedRoute>} />
+            <Route path="/catalogo" element={<ProtectedRoute><Catalogo /></ProtectedRoute>} />
+            <Route path="/inteligencia" element={<ProtectedRoute><Inteligencia /></ProtectedRoute>} />
+            <Route path="/mais" element={<ProtectedRoute><Mais /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

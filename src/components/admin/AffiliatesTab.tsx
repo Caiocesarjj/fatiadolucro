@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { validateReferralCode } from "@/lib/referralValidation";
 import { Loader2, Search, UserPlus, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -101,11 +102,16 @@ export const AffiliatesTab = () => {
       toast({ variant: "destructive", title: "Selecione um usuário e defina um código." });
       return;
     }
+    const validation = validateReferralCode(newCode);
+    if (!validation.valid) {
+      toast({ variant: "destructive", title: (validation as { valid: false; error: string }).error });
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ referral_code: newCode.trim().toUpperCase() } as any)
+        .update({ referral_code: validation.code } as any)
         .eq("user_id", selectedUser.user_id);
 
       if (error) throw error;
