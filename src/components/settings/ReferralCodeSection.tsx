@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { validateReferralCode } from "@/lib/referralValidation";
 import { Gift, Loader2, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -52,8 +53,9 @@ export const ReferralCodeSection = () => {
   };
 
   const handleRedeem = async () => {
-    if (!code.trim()) {
-      toast({ variant: "destructive", title: "Digite um código de indicação." });
+    const validation = validateReferralCode(code);
+    if (!validation.valid) {
+      toast({ variant: "destructive", title: (validation as { valid: false; error: string }).error });
       return;
     }
 
@@ -63,7 +65,7 @@ export const ReferralCodeSection = () => {
       const { data: affiliate, error: findError } = await supabase
         .from("profiles")
         .select("user_id")
-        .eq("referral_code", code.trim().toUpperCase())
+        .eq("referral_code", validation.code)
         .maybeSingle();
 
       if (findError) throw findError;

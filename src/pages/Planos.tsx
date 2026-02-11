@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { validateReferralCode } from "@/lib/referralValidation";
 import { toast } from "@/hooks/use-toast";
 
 type BillingType = "PIX" | "BOLETO" | "CREDIT_CARD";
@@ -66,13 +67,17 @@ const Planos = () => {
   };
 
   const handleApplyReferralCode = async () => {
-    if (!referralCode.trim()) return;
+    const validation = validateReferralCode(referralCode);
+    if (!validation.valid) {
+      toast({ title: (validation as { valid: false; error: string }).error, variant: "destructive" });
+      return;
+    }
     setApplyingCode(true);
     try {
       const { data: affiliate } = await supabase
         .from("profiles")
         .select("user_id")
-        .eq("referral_code", referralCode.trim().toUpperCase())
+        .eq("referral_code", validation.code)
         .maybeSingle();
 
       if (!affiliate) {
