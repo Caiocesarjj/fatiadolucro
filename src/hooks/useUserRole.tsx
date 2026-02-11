@@ -27,13 +27,14 @@ export const useUserRole = (): UserRoleData => {
   const fetchUserRole = async () => {
     try {
       // Check if user has admin role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user!.id)
         .eq("role", "admin")
         .maybeSingle();
 
+      console.log("useUserRole check:", { userId: user!.id, roleData, roleError });
       setIsAdmin(!!roleData);
 
       // Get profile data for is_active and allowed_modules
