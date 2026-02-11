@@ -357,7 +357,7 @@ const Admin = () => {
                         {users.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.store_name || "Sem nome"}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs font-mono">{user.user_id.slice(0, 8)}...</TableCell>
+                            <TableCell className="text-muted-foreground text-xs font-mono">{user.user_id?.slice(0, 8) ?? "N/A"}...</TableCell>
                             <TableCell className="text-center">{user.recipes_count}</TableCell>
                             <TableCell className="text-center">{user.transactions_count}</TableCell>
                             <TableCell className="text-center">
