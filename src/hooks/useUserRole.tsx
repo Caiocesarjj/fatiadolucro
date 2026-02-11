@@ -39,15 +39,16 @@ export const useUserRole = (): UserRoleData => {
       }
       setIsAdmin(!!roleData);
 
-      // Get profile data for is_active
+      // Get profile data for is_active and allowed_modules
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("is_active")
+        .select("is_active, allowed_modules")
         .eq("user_id", user!.id)
         .maybeSingle();
 
       if (profileData) {
         setIsActive(profileData.is_active ?? true);
+        setAllowedModules((profileData as any).allowed_modules ?? ["all"]);
       }
     } catch (error) {
       if (import.meta.env.DEV) console.error("Error fetching user role:", error);
