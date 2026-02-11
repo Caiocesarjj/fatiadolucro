@@ -79,9 +79,15 @@ const Compras = () => {
         supabase
           .from("shopping_list_items")
           .select("*, ingredients(name, brand, price_paid, package_size, unit_type, cost_per_unit)")
+          .eq("user_id", user!.id)
           .order("is_checked", { ascending: true }),
         supabase.from("ingredients").select("*").order("name"),
       ]);
+
+      if (itemsRes.error) {
+        if (import.meta.env.DEV) console.error("Error fetching shopping list:", itemsRes.error);
+        toast({ variant: "destructive", title: "Erro ao carregar lista", description: mapErrorToUserMessage(itemsRes.error) });
+      }
 
       setItems(itemsRes.data || []);
       setIngredients(ingredientsRes.data || []);

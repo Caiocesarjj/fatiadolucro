@@ -168,7 +168,11 @@ const Admin = () => {
 
   const handleChangePlan = async (user: UserProfile, newPlan: "free" | "pro") => {
     try {
-      const { error } = await supabase.from("profiles").update({ plan_type: newPlan }).eq("id", user.id);
+      const { error, count } = await supabase
+        .from("profiles")
+        .update({ plan_type: newPlan })
+        .eq("user_id", user.user_id)
+        .select();
       if (error) throw error;
       toast({ title: `Plano alterado para ${newPlan === "pro" ? "PRO" : "Grátis"}` });
       fetchUsers();
@@ -179,7 +183,7 @@ const Admin = () => {
 
   const handleToggleActive = async (user: UserProfile) => {
     try {
-      const { error } = await supabase.from("profiles").update({ is_active: !user.is_active }).eq("id", user.id);
+      const { error } = await supabase.from("profiles").update({ is_active: !user.is_active }).eq("user_id", user.user_id);
       if (error) throw error;
       toast({ title: user.is_active ? "Usuário bloqueado" : "Usuário desbloqueado" });
       fetchUsers();
@@ -200,7 +204,7 @@ const Admin = () => {
       const { error } = await supabase
         .from("profiles")
         .update({ allowed_modules: selectedModules.length > 0 ? selectedModules : ["all"] })
-        .eq("id", selectedUser.id);
+        .eq("user_id", selectedUser.user_id);
       if (error) throw error;
       toast({ title: "Módulos atualizados!" });
       setModulesDialogOpen(false);
