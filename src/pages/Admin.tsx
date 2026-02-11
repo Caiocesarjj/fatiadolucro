@@ -203,7 +203,7 @@ const Admin = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ allowed_modules: selectedModules.length > 0 ? selectedModules : ["all"] })
+        .update({ allowed_modules: selectedModules.length > 0 ? selectedModules : ["all"] } as any)
         .eq("user_id", selectedUser.user_id);
       if (error) throw error;
       toast({ title: "Módulos atualizados!" });
