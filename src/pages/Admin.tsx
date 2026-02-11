@@ -97,11 +97,12 @@ const Admin = () => {
         supabase.rpc("get_admin_user_stats"),
       ]);
       if (profilesRes.error) throw profilesRes.error;
-      const statsMap = new Map((statsRes.data || []).map((s: any) => [s.user_id, s]));
+      const statsData = (statsRes.data || []) as Array<{ user_id: string; recipes_count: number; transactions_count: number }>;
+      const statsMap = new Map(statsData.map((s) => [s.user_id, s]));
       const usersWithStats = (profilesRes.data || []).map((profile) => ({
         ...profile,
-        recipes_count: Number(statsMap.get(profile.user_id)?.recipes_count || 0),
-        transactions_count: Number(statsMap.get(profile.user_id)?.transactions_count || 0),
+        recipes_count: Number(statsMap.get(profile.user_id)?.recipes_count ?? 0),
+        transactions_count: Number(statsMap.get(profile.user_id)?.transactions_count ?? 0),
       }));
       setUsers(usersWithStats);
     } catch (error) {
