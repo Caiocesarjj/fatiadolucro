@@ -120,7 +120,7 @@ const Inteligencia = () => {
         setDesiredProfit(String(profile.salary_goal).replace(".", ","));
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      if (import.meta.env.DEV) console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

@@ -35,7 +35,7 @@ export const useUserRole = (): UserRoleData => {
         .maybeSingle();
 
       if (roleError) {
-        console.error("Error checking admin role:", roleError);
+        if (import.meta.env.DEV) console.error("Error checking admin role:", roleError);
       }
       setIsAdmin(!!roleData);
 
@@ -51,7 +51,7 @@ export const useUserRole = (): UserRoleData => {
         setAllowedModules(profileData.allowed_modules ?? ["all"]);
       }
     } catch (error) {
-      console.error("Error fetching user role:", error);
+      if (import.meta.env.DEV) console.error("Error fetching user role:", error);
     } finally {
       setLoading(false);
     }

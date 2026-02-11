@@ -83,7 +83,7 @@ const Ingredientes = () => {
       if (error) throw error;
       setIngredients(data || []);
     } catch (error) {
-      console.error("Error fetching ingredients:", error);
+      if (import.meta.env.DEV) console.error("Error fetching ingredients:", error);
     } finally {
       setLoading(false);
     }

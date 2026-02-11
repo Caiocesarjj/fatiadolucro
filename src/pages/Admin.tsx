@@ -106,7 +106,7 @@ const Admin = () => {
       }));
       setUsers(usersWithStats);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      if (import.meta.env.DEV) console.error("Error fetching users:", error);
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ const Admin = () => {
       if (error) throw error;
       setCoupons((data as any[]) || []);
     } catch (error) {
-      console.error("Error fetching coupons:", error);
+      if (import.meta.env.DEV) console.error("Error fetching coupons:", error);
     } finally {
       setCouponsLoading(false);
     }

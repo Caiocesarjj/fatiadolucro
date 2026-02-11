@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,33 @@ const corsHeaders = {
 const ASAAS_API_URL = "https://www.asaas.com/api/v3";
 const PRICE_FULL = 19.90;
 const PRICE_REFERRED = 14.99;
+
+const creditCardSchema = z.object({
+  holderName: z.string().min(2).max(100),
+  number: z.string().min(13).max(19),
+  expiryMonth: z.string().min(1).max(2),
+  expiryYear: z.string().min(4).max(4),
+  ccv: z.string().min(3).max(4),
+}).optional();
+
+const creditCardHolderInfoSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email().max(255),
+  cpfCnpj: z.string().min(11).max(14),
+  postalCode: z.string().min(8).max(8),
+  phone: z.string().max(20).optional(),
+}).optional();
+
+const subscriptionSchema = z.object({
+  billingType: z.enum(["BOLETO", "CREDIT_CARD", "PIX"]),
+  cpfCnpj: z.string().min(11).max(18),
+  name: z.string().min(2).max(100),
+  email: z.string().email().max(255),
+  mobilePhone: z.string().max(20).optional(),
+  referralCode: z.string().max(50).optional(),
+  creditCard: creditCardSchema,
+  creditCardHolderInfo: creditCardHolderInfoSchema,
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -41,8 +69,17 @@ Deno.serve(async (req) => {
     const userId = claimsData.user.id;
     const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY")!;
 
-    const body = await req.json();
-    const { billingType, cpfCnpj, name, email, mobilePhone, creditCard, creditCardHolderInfo, referralCode } = body;
+    // Validate input
+    const rawBody = await req.json();
+    const parseResult = subscriptionSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return new Response(
+        JSON.stringify({ error: "Dados inválidos", details: parseResult.error.flatten().fieldErrors }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { billingType, cpfCnpj, name, email, mobilePhone, creditCard, creditCardHolderInfo, referralCode } = parseResult.data;
 
     console.log("Creating subscription for user:", userId, "billingType:", billingType);
 
@@ -100,7 +137,7 @@ Deno.serve(async (req) => {
 
       if (!customerRes.ok || !customerData.id) {
         return new Response(
-          JSON.stringify({ error: "Erro ao criar cliente no Asaas", details: customerData }),
+          JSON.stringify({ error: "Erro ao criar cliente no Asaas" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -147,7 +184,7 @@ Deno.serve(async (req) => {
 
     if (!subRes.ok || !subData.id) {
       return new Response(
-        JSON.stringify({ error: "Erro ao criar assinatura", details: subData }),
+        JSON.stringify({ error: "Erro ao criar assinatura" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

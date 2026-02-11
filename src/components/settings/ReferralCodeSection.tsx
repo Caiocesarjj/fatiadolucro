@@ -45,7 +45,7 @@ export const ReferralCodeSection = () => {
 
       setVisible(diffDays <= 7);
     } catch (error) {
-      console.error("Error checking referral visibility:", error);
+      if (import.meta.env.DEV) console.error("Error checking referral visibility:", error);
     } finally {
       setCheckingVisibility(false);
     }

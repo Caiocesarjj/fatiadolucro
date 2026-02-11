@@ -69,7 +69,7 @@ const Clientes = () => {
       if (error) throw error;
       setClients(data || []);
     } catch (error) {
-      console.error("Error fetching clients:", error);
+      if (import.meta.env.DEV) console.error("Error fetching clients:", error);
     } finally {
       setLoading(false);
     }
