@@ -34,7 +34,9 @@ export const useUserRole = (): UserRoleData => {
         .eq("role", "admin")
         .maybeSingle();
 
-      console.log("useUserRole check:", { userId: user!.id, roleData, roleError });
+      if (roleError) {
+        console.error("Error checking admin role:", roleError);
+      }
       setIsAdmin(!!roleData);
 
       // Get profile data for is_active and allowed_modules
