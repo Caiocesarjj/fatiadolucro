@@ -98,16 +98,22 @@ const Admin = () => {
         supabase.rpc("get_admin_user_stats"),
       ]);
       if (profilesRes.error) throw profilesRes.error;
+      const profiles = profilesRes.data || [];
       const statsData = (statsRes.data || []) as Array<{ user_id: string; recipes_count: number; transactions_count: number }>;
       const statsMap = new Map(statsData.map((s) => [s.user_id, s]));
-      const usersWithStats = (profilesRes.data || []).map((profile) => ({
+      const usersWithStats = profiles.map((profile: any) => ({
         ...profile,
+        allowed_modules: profile.allowed_modules ?? ["all"],
+        plan_type: profile.plan_type ?? "free",
+        store_name: profile.business_name ?? profile.store_name ?? null,
+        is_active: profile.is_active ?? true,
         recipes_count: Number(statsMap.get(profile.user_id)?.recipes_count ?? 0),
         transactions_count: Number(statsMap.get(profile.user_id)?.transactions_count ?? 0),
       }));
       setUsers(usersWithStats);
     } catch (error) {
       if (import.meta.env.DEV) console.error("Error fetching users:", error);
+      toast({ variant: "destructive", title: "Erro ao carregar usuários", description: mapErrorToUserMessage(error) });
     } finally {
       setLoading(false);
     }
