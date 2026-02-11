@@ -71,7 +71,7 @@ export const AffiliatesTab = () => {
 
       setAffiliates(affiliatesWithCount);
     } catch (error) {
-      console.error("Error fetching affiliates:", error);
+      if (import.meta.env.DEV) console.error("Error fetching affiliates:", error);
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ export const AffiliatesTab = () => {
       if (error) throw error;
       setSearchResults(data || []);
     } catch (error) {
-      console.error("Error searching users:", error);
+      if (import.meta.env.DEV) console.error("Error searching users:", error);
     } finally {
       setSearching(false);
     }

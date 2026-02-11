@@ -46,7 +46,7 @@
  
        setRecipeCount(recipesRes.count || 0);
      } catch (error) {
-       console.error("Error fetching subscription data:", error);
+       if (import.meta.env.DEV) console.error("Error fetching subscription data:", error);
      } finally {
        setLoading(false);
      }

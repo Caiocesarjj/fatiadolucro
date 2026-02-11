@@ -140,7 +140,7 @@ const Financeiro = () => {
       setPlatforms(platformsRes.data || []);
       setClients(clientsRes.data || []);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      if (import.meta.env.DEV) console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }

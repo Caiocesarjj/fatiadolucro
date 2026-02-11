@@ -59,7 +59,7 @@ const Planos = () => {
         .maybeSingle();
       setHasReferral(!!data?.referred_by);
     } catch (error) {
-      console.error("Error checking referral:", error);
+      if (import.meta.env.DEV) console.error("Error checking referral:", error);
     } finally {
       setLoadingReferral(false);
     }
@@ -188,7 +188,7 @@ const Planos = () => {
 
       setStep("plans");
     } catch (error: unknown) {
-      console.error("Subscription error:", error);
+      if (import.meta.env.DEV) console.error("Subscription error:", error);
       const msg = error instanceof Error ? error.message : "Erro ao criar assinatura";
       toast({ title: msg, variant: "destructive" });
     } finally {
