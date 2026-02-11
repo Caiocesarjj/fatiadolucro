@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { validateReferralCode } from "@/lib/referralValidation";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { Gift, Loader2, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -95,7 +96,7 @@ export const ReferralCodeSection = () => {
         description: "Desconto de R$ 19,90 por R$ 14,99 ativado com sucesso!",
       });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     } finally {
       setLoading(false);
     }

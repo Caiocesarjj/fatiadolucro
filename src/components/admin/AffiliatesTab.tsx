@@ -8,6 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { useToast } from "@/hooks/use-toast";
 import { validateReferralCode } from "@/lib/referralValidation";
 import { Loader2, Search, UserPlus, Users } from "lucide-react";
@@ -123,7 +124,7 @@ export const AffiliatesTab = () => {
       setSearchResults([]);
       fetchAffiliates();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     } finally {
       setSaving(false);
     }

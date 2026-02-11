@@ -28,6 +28,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -203,7 +204,7 @@ const Financeiro = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };
@@ -241,7 +242,7 @@ const Financeiro = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     } finally {
       setDeleteDialogOpen(false);

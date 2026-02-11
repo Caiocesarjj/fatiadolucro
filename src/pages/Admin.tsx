@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -147,7 +148,7 @@ const Admin = () => {
       setNewCoupon({ code: "", type: "percentage", value: "", is_active: true });
       fetchCoupons();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -161,7 +162,7 @@ const Admin = () => {
       toast({ title: coupon.is_active ? "Cupom desativado" : "Cupom ativado" });
       fetchCoupons();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -172,7 +173,7 @@ const Admin = () => {
       toast({ title: `Plano alterado para ${newPlan === "pro" ? "PRO" : "Grátis"}` });
       fetchUsers();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -183,7 +184,7 @@ const Admin = () => {
       toast({ title: user.is_active ? "Usuário bloqueado" : "Usuário desbloqueado" });
       fetchUsers();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 
@@ -205,7 +206,7 @@ const Admin = () => {
       setModulesDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
   };
 

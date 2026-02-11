@@ -6,6 +6,8 @@
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/hooks/useAuth";
  import { useToast } from "@/hooks/use-toast";
+ import { mapErrorToUserMessage } from "@/lib/errorHandler";
+ import { escapeHtml, isSafeImageUrl } from "@/lib/htmlEscape";
  import { ShoppingBag, FileText, Search, ImageIcon } from "lucide-react";
  import { motion } from "framer-motion";
  
@@ -40,11 +42,11 @@
        if (error) throw error;
        setRecipes(data || []);
      } catch (error: any) {
-       toast({
-         variant: "destructive",
-         title: "Erro ao carregar receitas",
-         description: error.message,
-       });
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar receitas",
+          description: mapErrorToUserMessage(error),
+        });
      } finally {
        setLoading(false);
      }
@@ -95,19 +97,19 @@
        <body>
          <h1>Catálogo de Produtos</h1>
          <div class="grid">
-           ${filteredRecipes.map(recipe => `
-             <div class="item">
-               <div style="height: 120px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
-                 ${recipe.photo_url 
-                   ? `<img src="${recipe.photo_url}" alt="${recipe.name}" />`
-                   : '<span style="color: #ccc;">Sem foto</span>'
-                 }
-               </div>
-               <div class="name">${recipe.name}</div>
-               <div class="category">${recipe.category || "Sem categoria"}</div>
-               <div class="price">${formatCurrency(recipe.target_sale_price)}</div>
-             </div>
-           `).join("")}
+            ${filteredRecipes.map(recipe => `
+              <div class="item">
+                <div style="height: 120px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                  ${recipe.photo_url && isSafeImageUrl(recipe.photo_url)
+                    ? `<img src="${escapeHtml(recipe.photo_url)}" alt="${escapeHtml(recipe.name)}" />`
+                    : '<span style="color: #ccc;">Sem foto</span>'
+                  }
+                </div>
+                <div class="name">${escapeHtml(recipe.name)}</div>
+                <div class="category">${escapeHtml(recipe.category || "Sem categoria")}</div>
+                <div class="price">${formatCurrency(recipe.target_sale_price)}</div>
+              </div>
+            `).join("")}
          </div>
          <script>window.print();</script>
        </body>

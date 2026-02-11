@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -162,7 +163,7 @@ const Encomendas = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };
@@ -193,7 +194,7 @@ const Encomendas = () => {
       toast({
         variant: "destructive",
         title: "Erro ao excluir",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };
@@ -212,7 +213,7 @@ const Encomendas = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: error.message,
+        description: mapErrorToUserMessage(error),
       });
     }
   };
