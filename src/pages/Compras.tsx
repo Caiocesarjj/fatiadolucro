@@ -33,7 +33,7 @@ interface ShoppingListItem {
   id: string;
   ingredient_id: string;
   quantity_needed: number;
-  is_checked: boolean;
+  checked: boolean;
   ingredients: {
     name: string;
     brand: string | null;
@@ -80,7 +80,7 @@ const Compras = () => {
           .from("shopping_list_items")
           .select("*, ingredients(name, brand, price_paid, package_size, unit_type, cost_per_unit)")
           .eq("user_id", user!.id)
-          .order("is_checked", { ascending: true }),
+          .order("checked", { ascending: true }),
         supabase.from("ingredients").select("*").order("name"),
       ]);
 
@@ -135,7 +135,7 @@ const Compras = () => {
     try {
       const { error } = await supabase
         .from("shopping_list_items")
-        .update({ is_checked: !item.is_checked })
+        .update({ checked: !item.checked } as any)
         .eq("id", item.id);
 
       if (error) throw error;
@@ -175,7 +175,7 @@ const Compras = () => {
       const { error } = await supabase
         .from("shopping_list_items")
         .delete()
-        .eq("is_checked", true)
+        .eq("checked", true)
         .eq("user_id", user!.id);
 
       if (error) throw error;
@@ -211,11 +211,11 @@ const Compras = () => {
   };
 
   const totalEstimated = items
-    .filter((item) => !item.is_checked)
+    .filter((item) => !item.checked)
     .reduce((sum, item) => sum + calculateEstimatedCost(item), 0);
 
-  const checkedItems = items.filter((item) => item.is_checked);
-  const uncheckedItems = items.filter((item) => !item.is_checked);
+  const checkedItems = items.filter((item) => item.checked);
+  const uncheckedItems = items.filter((item) => !item.checked);
 
   const selectedIngredient = ingredients.find((i) => i.id === form.ingredient_id);
 
@@ -259,11 +259,11 @@ const Compras = () => {
           </thead>
           <tbody>
             ${items.map(item => `
-              <tr class="${item.is_checked ? 'checked' : ''}">
+              <tr class="${item.checked ? 'checked' : ''}">
                 <td>${item.ingredients.name}${item.ingredients.brand ? ` (${item.ingredients.brand})` : ''}</td>
                 <td>${item.quantity_needed}x ${item.ingredients.unit_type === 'weight' ? `(${item.ingredients.package_size}g)` : 'un'}</td>
                 <td>${formatCurrency(calculateEstimatedCost(item))}</td>
-                <td>${item.is_checked ? '✓' : 'Pendente'}</td>
+                <td>${item.checked ? '✓' : 'Pendente'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -287,7 +287,7 @@ const Compras = () => {
         item.quantity_needed,
         item.ingredients.unit_type === "weight" ? `pacote ${item.ingredients.package_size}g` : "un",
         calculateEstimatedCost(item).toFixed(2).replace(".", ","),
-        item.is_checked ? "Comprado" : "Pendente"
+        item.checked ? "Comprado" : "Pendente"
       ].join(";"))
     ].join("\n");
 
@@ -463,7 +463,7 @@ const Compras = () => {
                       className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg"
                     >
                       <Checkbox
-                        checked={item.is_checked}
+                        checked={item.checked}
                         onCheckedChange={() => handleToggleCheck(item)}
                       />
                       <div className="flex-1">
@@ -513,7 +513,7 @@ const Compras = () => {
                           className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg opacity-60"
                         >
                           <Checkbox
-                            checked={item.is_checked}
+                            checked={item.checked}
                             onCheckedChange={() => handleToggleCheck(item)}
                           />
                           <div className="flex-1">
