@@ -605,6 +605,24 @@ const Admin = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Usuário</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o usuário <strong>{userToDelete?.store_name || "Sem nome"}</strong> ({userToDelete?.user_id?.slice(0, 8)}...)? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDeleteUser} disabled={deleting}>
+              {deleting ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Excluindo...</> : <><Trash2 className="h-4 w-4 mr-1" />Excluir</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
