@@ -147,19 +147,13 @@ const Auth = () => {
               user_id: data.user.id,
               full_name: fullName.trim(),
               phone: phone.trim() || null,
-              plan_type: "free",
-              is_active: true,
-              allowed_modules: ["all"],
-            } as any, { onConflict: "user_id" });
+            }, { onConflict: "user_id" });
           if (profileError) {
             console.error("Error creating profile:", profileError);
-            toast({ variant: "destructive", title: "Erro ao criar perfil", description: "A conta foi criada, mas houve um erro ao configurar o perfil. Tente fazer login." });
+            toast({ title: "Conta criada!", description: "Verifique seu e-mail. O perfil será configurado no primeiro login." });
           } else {
             toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
           }
-        } else if (!error) {
-          console.error("Sign up succeeded but no user ID was returned");
-          toast({ variant: "destructive", title: "Erro no cadastro", description: "Não foi possível obter o ID do usuário. Tente novamente." });
         }
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
