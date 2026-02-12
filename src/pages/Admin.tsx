@@ -385,12 +385,18 @@ const Admin = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {users.map((user) => (
+                        {users.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                              Nenhum usuário encontrado.
+                            </TableCell>
+                          </TableRow>
+                        ) : users.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.store_name || "Sem nome"}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs font-mono">{user.user_id?.slice(0, 8) ?? "N/A"}...</TableCell>
-                            <TableCell className="text-center">{user.recipes_count}</TableCell>
-                            <TableCell className="text-center">{user.transactions_count}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs font-mono">{user.user_id ? `${user.user_id.slice(0, 8)}...` : "N/A"}</TableCell>
+                            <TableCell className="text-center">{user.recipes_count ?? 0}</TableCell>
+                            <TableCell className="text-center">{user.transactions_count ?? 0}</TableCell>
                             <TableCell className="text-center">
                               <Select value={user.plan_type || "free"} onValueChange={(value: "free" | "pro") => handleChangePlan(user, value)}>
                                 <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
