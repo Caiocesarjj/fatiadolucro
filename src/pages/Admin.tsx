@@ -396,11 +396,11 @@ const Admin = () => {
                               Nenhum usuário encontrado.
                             </TableCell>
                           </TableRow>
-                        ) : users.map((user) => (
-                          <TableRow key={user.id}>
+                        ) : users.map((user, index) => (
+                          <TableRow key={user.user_id || user.id || `user-${index}`}>
                             <TableCell className="font-medium">{user.full_name || user.email || "Sem nome"}</TableCell>
                             <TableCell className="text-muted-foreground text-sm">{user.store_name || "—"}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs font-mono">{user.user_id ? `${user.user_id.slice(0, 8)}...` : "N/A"}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs font-mono">{user.user_id ? `${user.user_id.slice(0, 8)}...` : (user.id ? `${user.id.slice(0, 8)}...` : "N/A")}</TableCell>
                             <TableCell className="text-center">{user.recipes_count ?? 0}</TableCell>
                             <TableCell className="text-center">{user.transactions_count ?? 0}</TableCell>
                             <TableCell className="text-center">
