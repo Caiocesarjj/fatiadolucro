@@ -45,12 +45,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        ensureProfile(session.user.id);
+        // Force refresh to sync with latest server state
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        const freshSession = refreshed?.session ?? session;
+        setSession(freshSession);
+        setUser(freshSession.user);
+        setLoading(false);
+        ensureProfile(freshSession.user.id);
+      } else {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
       }
     });
 
