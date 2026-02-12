@@ -244,7 +244,7 @@ const Admin = () => {
     if (!userToDelete) return;
     setDeleting(true);
     try {
-      const { error } = await supabase.from("profiles").delete().eq("user_id", userToDelete.user_id);
+      const { error } = await supabase.rpc("delete_user_by_admin", { target_user_id: userToDelete.user_id });
       if (error) throw error;
       toast({ title: "Usuário excluído com sucesso!" });
       setDeleteDialogOpen(false);
