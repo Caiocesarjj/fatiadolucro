@@ -30,6 +30,8 @@ import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
 interface UserProfile {
   id: string;
   user_id: string;
+  full_name: string | null;
+  phone: string | null;
   store_name: string | null;
   is_active: boolean;
   allowed_modules: string[];
@@ -106,6 +108,8 @@ const Admin = () => {
       const statsMap = new Map(statsData.map((s) => [s.user_id, s]));
       const usersWithStats = profiles.map((profile: any) => ({
         ...profile,
+        full_name: profile.full_name ?? null,
+        phone: profile.phone ?? null,
         allowed_modules: profile.allowed_modules ?? ["all"],
         plan_type: profile.plan_type ?? "free",
         store_name: profile.business_name ?? profile.store_name ?? null,
@@ -113,7 +117,7 @@ const Admin = () => {
         recipes_count: Number(statsMap.get(profile.user_id)?.recipes_count ?? 0),
         transactions_count: Number(statsMap.get(profile.user_id)?.transactions_count ?? 0),
       }));
-      setUsers(usersWithStats);
+      setUsers(usersWithStats ?? []);
     } catch (error) {
       if (import.meta.env.DEV) console.error("Error fetching users:", error);
       toast({ variant: "destructive", title: "Erro ao carregar usuários", description: mapErrorToUserMessage(error) });
@@ -375,6 +379,7 @@ const Admin = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Nome / E-mail</TableHead>
                           <TableHead>Confeitaria</TableHead>
                           <TableHead>ID do Usuário</TableHead>
                           <TableHead className="text-center">Receitas</TableHead>
@@ -387,13 +392,14 @@ const Admin = () => {
                       <TableBody>
                         {users.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                               Nenhum usuário encontrado.
                             </TableCell>
                           </TableRow>
                         ) : users.map((user) => (
                           <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.store_name || "Sem nome"}</TableCell>
+                            <TableCell className="font-medium">{user.full_name || user.email || "Sem nome"}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{user.store_name || "—"}</TableCell>
                             <TableCell className="text-muted-foreground text-xs font-mono">{user.user_id ? `${user.user_id.slice(0, 8)}...` : "N/A"}</TableCell>
                             <TableCell className="text-center">{user.recipes_count ?? 0}</TableCell>
                             <TableCell className="text-center">{user.transactions_count ?? 0}</TableCell>
