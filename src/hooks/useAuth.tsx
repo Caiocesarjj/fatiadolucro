@@ -17,48 +17,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const ensureProfile = async (userId: string) => {
-      try {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle();
-        if (!data) {
-          await supabase
-            .from("profiles")
-            .insert({ user_id: userId });
-        }
-      } catch (err) {
-        console.error("Profile ensure error:", err);
-      }
-    };
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        if (event === "SIGNED_IN" && session?.user) {
-          setTimeout(() => ensureProfile(session.user.id), 0);
-        }
       }
     );
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        // Force refresh to sync with latest server state
         const { data: refreshed } = await supabase.auth.refreshSession();
         const freshSession = refreshed?.session ?? session;
         setSession(freshSession);
         setUser(freshSession.user);
-        setLoading(false);
-        ensureProfile(freshSession.user.id);
       } else {
         setSession(null);
         setUser(null);
-        setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

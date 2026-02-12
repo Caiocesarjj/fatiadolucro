@@ -140,20 +140,8 @@ const Auth = () => {
           } else {
             toast({ variant: "destructive", title: "Erro ao criar conta", description: "Ocorreu um erro. Tente novamente." });
           }
-        } else if (data.user && data.user.id) {
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert({
-              user_id: data.user.id,
-              full_name: fullName.trim(),
-              phone: phone.trim() || null,
-            }, { onConflict: "user_id" });
-          if (profileError) {
-            console.error("Error creating profile:", profileError);
-            toast({ title: "Conta criada!", description: "Verifique seu e-mail. O perfil será configurado no primeiro login." });
-          } else {
-            toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
-          }
+        } else if (data.user) {
+          toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
         }
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
