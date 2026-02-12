@@ -17,11 +17,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const ensureProfile = async (userId: string) => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (!data) {
+          await supabase
+            .from("profiles")
+            .insert({ user_id: userId });
+        }
+      } catch (err) {
+        console.error("Profile ensure error:", err);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        if (event === "SIGNED_IN" && session?.user) {
+          setTimeout(() => ensureProfile(session.user.id), 0);
+        }
       }
     );
 
@@ -29,6 +49,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        ensureProfile(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
