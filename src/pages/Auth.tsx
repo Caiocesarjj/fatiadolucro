@@ -112,8 +112,8 @@ const Auth = () => {
           } else {
             toast({ variant: "destructive", title: "Erro ao criar conta", description: "Ocorreu um erro. Tente novamente." });
           }
-        } else if (data.user) {
-          // Ensure profile exists for the new user
+        } else if (data.user && data.user.id) {
+          // Only create profile if we have a valid user ID
           const { error: profileError } = await supabase
             .from("profiles")
             .upsert({
@@ -122,10 +122,16 @@ const Auth = () => {
               is_active: true,
               allowed_modules: ["all"],
             } as any, { onConflict: "user_id" });
-          if (profileError && import.meta.env.DEV) {
+          if (profileError) {
             console.error("Error creating profile:", profileError);
+            toast({ variant: "destructive", title: "Erro ao criar perfil", description: "A conta foi criada, mas houve um erro ao configurar o perfil. Tente fazer login." });
+          } else {
+            toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
           }
-          toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
+        } else if (!error) {
+          // User ID not returned - don't create orphan profile
+          console.error("Sign up succeeded but no user ID was returned");
+          toast({ variant: "destructive", title: "Erro no cadastro", description: "Não foi possível obter o ID do usuário. Tente novamente." });
         }
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
