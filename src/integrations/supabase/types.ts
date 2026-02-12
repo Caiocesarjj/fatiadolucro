@@ -202,10 +202,12 @@ export type Database = {
           asaas_customer_id: string | null
           created_at: string
           fixed_costs: number | null
+          full_name: string | null
           id: string
           is_active: boolean
           logo_url: string | null
           minute_rate: number | null
+          phone: string | null
           plan_type: string
           referral_code: string | null
           referred_by: string | null
@@ -225,10 +227,12 @@ export type Database = {
           asaas_customer_id?: string | null
           created_at?: string
           fixed_costs?: number | null
+          full_name?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           minute_rate?: number | null
+          phone?: string | null
           plan_type?: string
           referral_code?: string | null
           referred_by?: string | null
@@ -248,10 +252,12 @@ export type Database = {
           asaas_customer_id?: string | null
           created_at?: string
           fixed_costs?: number | null
+          full_name?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           minute_rate?: number | null
+          phone?: string | null
           plan_type?: string
           referral_code?: string | null
           referred_by?: string | null

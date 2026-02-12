@@ -6,23 +6,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Cookie, Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Loader2, Cookie, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone } from "lucide-react";
 import { z } from "zod";
 import { motion } from "framer-motion";
 
-const authSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email("Digite um e-mail válido"),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
 });
+
+const signupSchema = z.object({
+  fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  phone: z.string().min(8, "Telefone deve ter pelo menos 8 dígitos").optional().or(z.literal("")),
+  email: z.string().email("Digite um e-mail válido"),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
+});
+
+type FormErrors = {
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup" | "forgot" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -48,8 +69,8 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const validateForm = () => {
-    const fieldErrors: typeof errors = {};
+  const validateForm = (): boolean => {
+    const fieldErrors: FormErrors = {};
 
     if (mode === "forgot") {
       if (!email || !z.string().email().safeParse(email).success) {
@@ -59,26 +80,33 @@ const Auth = () => {
       return Object.keys(fieldErrors).length === 0;
     }
 
-    try {
-      authSchema.parse({ email, password });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        error.errors.forEach((err) => {
-          if (err.path[0] === "email") fieldErrors.email = err.message;
-          if (err.path[0] === "password") fieldErrors.password = err.message;
-        });
-      }
-    }
-
-    if (mode === "signup" && password !== confirmPassword) {
-      fieldErrors.confirmPassword = "As senhas não coincidem.";
-    }
-
     if (mode === "reset") {
       if (password.length < 6) fieldErrors.password = "A senha deve ter pelo menos 6 caracteres";
       if (password !== confirmPassword) fieldErrors.confirmPassword = "As senhas não coincidem.";
+      setErrors(fieldErrors);
+      return Object.keys(fieldErrors).length === 0;
     }
 
+    if (mode === "signup") {
+      const result = signupSchema.safeParse({ fullName, phone, email, password, confirmPassword });
+      if (!result.success) {
+        result.error.errors.forEach((err) => {
+          const field = err.path[0] as keyof FormErrors;
+          if (field) fieldErrors[field] = err.message;
+        });
+      }
+      setErrors(fieldErrors);
+      return Object.keys(fieldErrors).length === 0;
+    }
+
+    // login
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof FormErrors;
+        if (field) fieldErrors[field] = err.message;
+      });
+    }
     setErrors(fieldErrors);
     return Object.keys(fieldErrors).length === 0;
   };
@@ -113,11 +141,12 @@ const Auth = () => {
             toast({ variant: "destructive", title: "Erro ao criar conta", description: "Ocorreu um erro. Tente novamente." });
           }
         } else if (data.user && data.user.id) {
-          // Only create profile if we have a valid user ID
           const { error: profileError } = await supabase
             .from("profiles")
             .upsert({
               user_id: data.user.id,
+              full_name: fullName.trim(),
+              phone: phone.trim() || null,
               plan_type: "free",
               is_active: true,
               allowed_modules: ["all"],
@@ -129,7 +158,6 @@ const Auth = () => {
             toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
           }
         } else if (!error) {
-          // User ID not returned - don't create orphan profile
           console.error("Sign up succeeded but no user ID was returned");
           toast({ variant: "destructive", title: "Erro no cadastro", description: "Não foi possível obter o ID do usuário. Tente novamente." });
         }
@@ -176,6 +204,18 @@ const Auth = () => {
     }
   };
 
+  const switchMode = (newMode: typeof mode) => {
+    setMode(newMode);
+    setErrors({});
+    if (newMode !== "signup") {
+      setFullName("");
+      setPhone("");
+    }
+    if (newMode === "login") {
+      setConfirmPassword("");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary-light/30 to-background p-4">
       <motion.div
@@ -202,7 +242,7 @@ const Auth = () => {
             {(mode === "forgot" || mode === "reset") && (
               <button
                 type="button"
-                onClick={() => { setMode("login"); setErrors({}); }}
+                onClick={() => switchMode("login")}
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-2 w-fit"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -214,6 +254,46 @@ const Auth = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAuth} className="space-y-4">
+              {/* Full Name - signup only */}
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nome Completo</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Seu nome completo"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className={`pl-10 ${errors.fullName ? "border-destructive" : ""}`}
+                      disabled={loading}
+                    />
+                  </div>
+                  {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
+                </div>
+              )}
+
+              {/* Phone - signup only */}
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="(00) 00000-0000"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className={`pl-10 ${errors.phone ? "border-destructive" : ""}`}
+                      disabled={loading}
+                    />
+                  </div>
+                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+                </div>
+              )}
+
               {/* Email - shown on login, signup, forgot */}
               {mode !== "reset" && (
                 <div className="space-y-2">
@@ -301,14 +381,14 @@ const Auth = () => {
                 <>
                   <button
                     type="button"
-                    onClick={() => { setMode("forgot"); setErrors({}); }}
+                    onClick={() => switchMode("forgot")}
                     className="block w-full text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     Esqueci minha senha
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setMode("signup"); setErrors({}); setConfirmPassword(""); }}
+                    onClick={() => switchMode("signup")}
                     className="block w-full text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     Não tem conta? Criar agora
@@ -318,7 +398,7 @@ const Auth = () => {
               {mode === "signup" && (
                 <button
                   type="button"
-                  onClick={() => { setMode("login"); setErrors({}); }}
+                  onClick={() => switchMode("login")}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   Já tem conta? Entrar
