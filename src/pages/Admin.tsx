@@ -13,13 +13,13 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus, UserPlus } from "lucide-react";
+import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus, UserPlus, Trash2 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -70,6 +70,9 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [modulesDialogOpen, setModulesDialogOpen] = useState(false);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Coupons state
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -233,6 +236,23 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("profiles").delete().eq("user_id", userToDelete.user_id);
+      if (error) throw error;
+      toast({ title: "Usuário excluído com sucesso!" });
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+      fetchUsers();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao excluir", description: mapErrorToUserMessage(error) });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (roleLoading || loading) {
     return (
       <AppLayout title="Administração">
@@ -392,6 +412,9 @@ const Admin = () => {
                                 </Button>
                                 <Button variant={user.is_active ? "destructive" : "default"} size="sm" onClick={() => handleToggleActive(user)}>
                                   <Ban className="h-4 w-4 mr-1" />{user.is_active ? "Bloquear" : "Desbloquear"}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => { setUserToDelete(user); setDeleteDialogOpen(true); }}>
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
