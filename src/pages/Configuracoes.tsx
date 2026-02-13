@@ -12,7 +12,7 @@ import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
   Save, Plus, Trash2, User, Palette, Store, Truck, Calculator, Crown, Lock,
-  DollarSign, Clock, Info, MessageCircle, Headset, Mail,
+  DollarSign, Clock, Info, MessageCircle, Headset, Mail, ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -53,6 +53,11 @@ const Configuracoes = () => {
   const [workDaysPerMonth, setWorkDaysPerMonth] = useState("22");
   const [variableCostRate, setVariableCostRate] = useState("10");
   const [savingPricing, setSavingPricing] = useState(false);
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   // Pricing calculations
   const totalMonthlyGoal = (parseFloat(fixedCosts.replace(",", ".")) || 0) + (parseFloat(salaryGoal.replace(",", ".")) || 0);
@@ -200,6 +205,33 @@ const Configuracoes = () => {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({ variant: "destructive", title: "Preencha todos os campos" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ variant: "destructive", title: "A senha deve ter no mínimo 6 caracteres" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ variant: "destructive", title: "As senhas não coincidem" });
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast({ title: "Senha alterada com sucesso!" });
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao alterar senha", description: mapErrorToUserMessage(error) });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const whatsappNumber = "5511999999999";
   const whatsappMessage = encodeURIComponent("Olá! Quero fazer o upgrade para o plano PRO do Fatia do Lucro.");
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
@@ -208,8 +240,9 @@ const Configuracoes = () => {
     <AppLayout title="Configurações">
       <div className="max-w-2xl">
         <Tabs defaultValue="perfil" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
             <TabsTrigger value="perfil" className="text-xs sm:text-sm">Perfil</TabsTrigger>
+            <TabsTrigger value="seguranca" className="text-xs sm:text-sm">Segurança</TabsTrigger>
             <TabsTrigger value="precificacao" className="text-xs sm:text-sm">Precificação</TabsTrigger>
             <TabsTrigger value="personalizacao" className="text-xs sm:text-sm relative">
               Cores
@@ -243,6 +276,35 @@ const Configuracoes = () => {
                   <Button onClick={handleSaveProfile} className="bg-primary hover:bg-primary-hover text-primary-foreground">
                     <Save className="h-4 w-4 mr-2" />
                     Salvar Perfil
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* ====== SEGURANÇA ====== */}
+          <TabsContent value="seguranca">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    Alterar Senha
+                  </CardTitle>
+                  <CardDescription>Defina uma nova senha para sua conta</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">Nova Senha</Label>
+                    <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                    <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a nova senha" />
+                  </div>
+                  <Button onClick={handleChangePassword} disabled={savingPassword} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingPassword ? "Salvando..." : "Alterar Senha"}
                   </Button>
                 </CardContent>
               </Card>
