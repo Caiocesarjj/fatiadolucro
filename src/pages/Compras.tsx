@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -23,7 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ShoppingCart, Check } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Check, Pencil, Store } from "lucide-react";
 import { FileText, FileSpreadsheet } from "lucide-react";
 import { motion } from "framer-motion";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
@@ -41,6 +42,7 @@ interface ShoppingListItem {
     package_size: number;
     unit_type: "weight" | "unit";
     cost_per_unit: number;
+    store: string | null;
   };
 }
 
@@ -52,6 +54,7 @@ interface Ingredient {
   package_size: number;
   unit_type: "weight" | "unit";
   cost_per_unit: number;
+  store: string | null;
 }
 
 const Compras = () => {
@@ -61,12 +64,22 @@ const Compras = () => {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ShoppingListItem | null>(null);
+  const [groupByStore, setGroupByStore] = useState(false);
   const { canCreate, getLimit, getCount } = useFreemiumLimits();
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [form, setForm] = useState({
     ingredient_id: "",
     quantity_needed: "",
+    store: "",
+    price_paid: "",
+  });
+
+  const [editForm, setEditForm] = useState({
+    store: "",
+    price_paid: "",
   });
 
   useEffect(() => {
@@ -78,7 +91,7 @@ const Compras = () => {
       const [itemsRes, ingredientsRes] = await Promise.all([
         supabase
           .from("shopping_list_items")
-          .select("*, ingredients(name, brand, price_paid, package_size, unit_type, cost_per_unit)")
+          .select("*, ingredients(name, brand, price_paid, package_size, unit_type, cost_per_unit, store)")
           .eq("user_id", user!.id)
           .order("checked", { ascending: true }),
         supabase.from("ingredients").select("*").order("name"),
@@ -111,6 +124,15 @@ const Compras = () => {
     }
 
     try {
+      // Update ingredient store/price if changed
+      if (form.store || form.price_paid) {
+        const updateData: Record<string, any> = {};
+        if (form.store) updateData.store = form.store;
+        if (form.price_paid) updateData.price_paid = parseFloat(form.price_paid.replace(",", "."));
+        
+        await supabase.from("ingredients").update(updateData).eq("id", form.ingredient_id);
+      }
+
       const { error } = await supabase.from("shopping_list_items").insert({
         user_id: user!.id,
         ingredient_id: form.ingredient_id,
@@ -131,6 +153,44 @@ const Compras = () => {
     }
   };
 
+  const handleEditSave = async () => {
+    if (!editingItem) return;
+
+    try {
+      const updateData: Record<string, any> = {};
+      if (editForm.store !== undefined) updateData.store = editForm.store || null;
+      if (editForm.price_paid) updateData.price_paid = parseFloat(editForm.price_paid.replace(",", "."));
+
+      if (Object.keys(updateData).length > 0) {
+        const { error } = await supabase
+          .from("ingredients")
+          .update(updateData)
+          .eq("id", editingItem.ingredient_id);
+        if (error) throw error;
+      }
+
+      toast({ title: "Ingrediente atualizado!" });
+      setEditDialogOpen(false);
+      setEditingItem(null);
+      fetchData();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: mapErrorToUserMessage(error),
+      });
+    }
+  };
+
+  const openEditDialog = (item: ShoppingListItem) => {
+    setEditingItem(item);
+    setEditForm({
+      store: item.ingredients.store || "",
+      price_paid: item.ingredients.price_paid.toString().replace(".", ","),
+    });
+    setEditDialogOpen(true);
+  };
+
   const handleToggleCheck = async (item: ShoppingListItem) => {
     try {
       const { error } = await supabase
@@ -139,13 +199,18 @@ const Compras = () => {
         .eq("id", item.id);
 
       if (error) throw error;
-      fetchData();
+
+      // Optimistic update for instant feedback
+      setItems(prev =>
+        prev.map(i => i.id === item.id ? { ...i, checked: !i.checked } : i)
+      );
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erro",
         description: mapErrorToUserMessage(error),
       });
+      fetchData();
     }
   };
 
@@ -191,10 +256,7 @@ const Compras = () => {
   };
 
   const resetForm = () => {
-    setForm({
-      ingredient_id: "",
-      quantity_needed: "",
-    });
+    setForm({ ingredient_id: "", quantity_needed: "", store: "", price_paid: "" });
     setDialogOpen(false);
   };
 
@@ -206,27 +268,48 @@ const Compras = () => {
   };
 
   const calculateEstimatedCost = (item: ShoppingListItem) => {
-    // Calculate based on price per package * quantity of packages
     return item.ingredients.price_paid * item.quantity_needed;
   };
-
-  const totalEstimated = items
-    .filter((item) => !item.checked)
-    .reduce((sum, item) => sum + calculateEstimatedCost(item), 0);
 
   const checkedItems = items.filter((item) => item.checked);
   const uncheckedItems = items.filter((item) => !item.checked);
 
+  const totalChecked = checkedItems.reduce((sum, item) => sum + calculateEstimatedCost(item), 0);
+  const totalUnchecked = uncheckedItems.reduce((sum, item) => sum + calculateEstimatedCost(item), 0);
+  const totalEstimated = totalChecked + totalUnchecked;
+
   const selectedIngredient = ingredients.find((i) => i.id === form.ingredient_id);
+
+  // When selecting an ingredient, pre-fill store and price
+  const handleIngredientChange = (value: string) => {
+    const ing = ingredients.find(i => i.id === value);
+    setForm({
+      ...form,
+      ingredient_id: value,
+      store: ing?.store || "",
+      price_paid: ing?.price_paid ? ing.price_paid.toString().replace(".", ",") : "",
+    });
+  };
+
+  // Group items by store
+  const groupItemsByStore = (itemsList: ShoppingListItem[]) => {
+    const groups: Record<string, ShoppingListItem[]> = {};
+    itemsList.forEach(item => {
+      const store = item.ingredients.store || "Sem Loja";
+      if (!groups[store]) groups[store] = [];
+      groups[store].push(item);
+    });
+    return Object.entries(groups).sort(([a], [b]) => {
+      if (a === "Sem Loja") return 1;
+      if (b === "Sem Loja") return -1;
+      return a.localeCompare(b);
+    });
+  };
 
   const exportToPDF = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Permita pop-ups para gerar o PDF",
-      });
+      toast({ variant: "destructive", title: "Erro", description: "Permita pop-ups para gerar o PDF" });
       return;
     }
 
@@ -300,24 +383,147 @@ const Compras = () => {
     toast({ title: "Lista exportada para Excel!" });
   };
 
+  const renderItem = (item: ShoppingListItem, isChecked: boolean) => (
+    <div
+      key={item.id}
+      className={`flex items-center gap-3 p-3 rounded-lg ${isChecked ? 'bg-muted/30 opacity-60' : 'bg-muted/50'}`}
+    >
+      <Checkbox
+        checked={item.checked}
+        onCheckedChange={() => handleToggleCheck(item)}
+      />
+      <div className="flex-1 min-w-0">
+        <p className={`font-medium ${isChecked ? 'line-through' : ''}`}>
+          {item.ingredients.name}
+          {item.ingredients.brand && (
+            <span className="text-muted-foreground ml-1">({item.ingredients.brand})</span>
+          )}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {item.quantity_needed}x
+          {item.ingredients.unit_type === "weight"
+            ? ` (${item.ingredients.package_size}g cada)`
+            : " un"}
+          {item.ingredients.store && (
+            <span className="ml-1">· {item.ingredients.store}</span>
+          )}
+        </p>
+      </div>
+      {!isChecked && (
+        <div className="text-right shrink-0">
+          <p className="font-medium text-primary">
+            {formatCurrency(calculateEstimatedCost(item))}
+          </p>
+          <p className="text-xs text-muted-foreground">estimado</p>
+        </div>
+      )}
+      <div className="flex gap-1 shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => openEditDialog(item)} className="h-8 w-8">
+          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="h-8 w-8">
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderItemsList = () => {
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-12 text-muted-foreground">
+          <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Lista de compras vazia</p>
+          <p className="text-sm">Clique em "Adicionar Item" para começar</p>
+        </div>
+      );
+    }
+
+    if (groupByStore) {
+      const grouped = groupItemsByStore(items);
+      return (
+        <div className="space-y-4">
+          {grouped.map(([storeName, storeItems]) => {
+            const storeUnchecked = storeItems.filter(i => !i.checked);
+            const storeChecked = storeItems.filter(i => i.checked);
+            return (
+              <div key={storeName} className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <Store className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-sm">{storeName}</h3>
+                  <span className="text-xs text-muted-foreground">
+                    ({storeUnchecked.length} pendentes)
+                  </span>
+                </div>
+                {storeUnchecked.map(item => renderItem(item, false))}
+                {storeChecked.map(item => renderItem(item, true))}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {uncheckedItems.map(item => renderItem(item, false))}
+        {checkedItems.length > 0 && (
+          <>
+            <div className="border-t my-4" />
+            <p className="text-sm text-muted-foreground mb-2">Comprados</p>
+            {checkedItems.map(item => renderItem(item, true))}
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <AppLayout title="Lista de Compras">
-      <div className="space-y-6">
+      <div className="space-y-6 pb-36">
+        {/* Totals Bar */}
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="bg-muted/40">
+            <CardContent className="p-3 text-center">
+              <p className="text-xs text-muted-foreground">Total Estimado</p>
+              <p className="text-lg font-bold">{formatCurrency(totalEstimated)}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-primary/10 border-primary/20">
+            <CardContent className="p-3 text-center">
+              <p className="text-xs text-muted-foreground">Já Comprado</p>
+              <p className="text-lg font-bold text-primary">{formatCurrency(totalChecked)}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-destructive/10 border-destructive/20">
+            <CardContent className="p-3 text-center">
+              <p className="text-xs text-muted-foreground">Falta Pagar</p>
+              <p className="text-lg font-bold text-destructive">{formatCurrency(totalUnchecked)}</p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={exportToPDF}>
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <div className="flex gap-2 flex-wrap items-center">
+            <div className="flex items-center gap-2 mr-2">
+              <Switch checked={groupByStore} onCheckedChange={setGroupByStore} />
+              <Label className="text-sm cursor-pointer" onClick={() => setGroupByStore(!groupByStore)}>
+                Agrupar por Loja
+              </Label>
+            </div>
+            <Button variant="outline" size="sm" onClick={exportToPDF}>
               <FileText className="h-4 w-4 mr-2" />
-              Exportar PDF
+              PDF
             </Button>
-            <Button variant="outline" onClick={exportToExcel}>
+            <Button variant="outline" size="sm" onClick={exportToExcel}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Exportar Excel
+              Excel
             </Button>
             {checkedItems.length > 0 && (
-              <Button variant="outline" onClick={handleClearChecked}>
+              <Button variant="outline" size="sm" onClick={handleClearChecked}>
                 <Check className="h-4 w-4 mr-2" />
-                Limpar Marcados ({checkedItems.length})
+                Limpar ({checkedItems.length})
               </Button>
             )}
           </div>
@@ -334,7 +540,7 @@ const Compras = () => {
                 className="bg-primary hover:bg-primary-hover text-primary-foreground"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Adicionar Item
+                Adicionar
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -346,9 +552,7 @@ const Compras = () => {
                   <Label>Ingrediente *</Label>
                   <Select
                     value={form.ingredient_id}
-                    onValueChange={(value) =>
-                      setForm({ ...form, ingredient_id: value })
-                    }
+                    onValueChange={handleIngredientChange}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um ingrediente" />
@@ -381,47 +585,52 @@ const Compras = () => {
                     min="1"
                     step="1"
                     value={form.quantity_needed}
-                    onChange={(e) =>
-                      setForm({ ...form, quantity_needed: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, quantity_needed: e.target.value })}
                     placeholder="Ex: 2"
                     className="input-currency"
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="store">Loja</Label>
+                    <Input
+                      id="store"
+                      value={form.store}
+                      onChange={(e) => setForm({ ...form, store: e.target.value })}
+                      placeholder="Ex: Atacadão"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Preço (R$)</Label>
+                    <Input
+                      id="price"
+                      value={form.price_paid}
+                      onChange={(e) => setForm({ ...form, price_paid: e.target.value })}
+                      placeholder="Ex: 12,90"
+                    />
+                  </div>
+                </div>
+
                 {selectedIngredient && form.quantity_needed && (
                   <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      Custo Estimado:
-                    </p>
+                    <p className="text-sm text-muted-foreground">Custo Estimado:</p>
                     <p className="text-lg font-bold text-primary">
                       {formatCurrency(
-                        selectedIngredient.price_paid *
+                        (form.price_paid
+                          ? parseFloat(form.price_paid.replace(",", "."))
+                          : selectedIngredient.price_paid) *
                           parseFloat(form.quantity_needed.replace(",", ".") || "0")
                       )}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {parseFloat(form.quantity_needed || "0")}x {formatCurrency(selectedIngredient.price_paid)} cada
-                      {selectedIngredient.unit_type === "weight"
-                        ? ` (${selectedIngredient.package_size}g)`
-                        : ""}
                     </p>
                   </div>
                 )}
 
                 <div className="flex gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={resetForm}
-                    className="flex-1"
-                  >
+                  <Button type="button" variant="outline" onClick={resetForm} className="flex-1">
                     Cancelar
                   </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
-                  >
+                  <Button type="submit" className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground">
                     Adicionar
                   </Button>
                 </div>
@@ -431,10 +640,7 @@ const Compras = () => {
         </div>
 
         {/* Shopping List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -445,115 +651,46 @@ const Compras = () => {
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {items.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Lista de compras vazia</p>
-                  <p className="text-sm">
-                    Clique em "Adicionar Item" para começar
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {/* Unchecked items */}
-                  {uncheckedItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg"
-                    >
-                      <Checkbox
-                        checked={item.checked}
-                        onCheckedChange={() => handleToggleCheck(item)}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {item.ingredients.name}
-                          {item.ingredients.brand && (
-                            <span className="text-muted-foreground ml-1">
-                              ({item.ingredients.brand})
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.quantity_needed}x
-                          {item.ingredients.unit_type === "weight"
-                            ? ` (${item.ingredients.package_size}g cada)`
-                            : " un"}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-primary">
-                          {formatCurrency(calculateEstimatedCost(item))}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          estimado
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-
-                  {/* Checked items */}
-                  {checkedItems.length > 0 && (
-                    <>
-                      <div className="border-t my-4" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Comprados
-                      </p>
-                      {checkedItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg opacity-60"
-                        >
-                          <Checkbox
-                            checked={item.checked}
-                            onCheckedChange={() => handleToggleCheck(item)}
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium line-through">
-                              {item.ingredients.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {item.quantity_needed}x
-                              {item.ingredients.unit_type === "weight"
-                                ? ` (${item.ingredients.package_size}g cada)`
-                                : " un"}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-            </CardContent>
-            {uncheckedItems.length > 0 && (
-              <CardFooter className="border-t bg-muted/30">
-                <div className="w-full flex justify-between items-center py-2">
-                  <span className="font-medium">Total Estimado:</span>
-                  <span className="text-2xl font-bold text-primary">
-                    {formatCurrency(totalEstimated)}
-                  </span>
-                </div>
-              </CardFooter>
-            )}
+            <CardContent>{renderItemsList()}</CardContent>
           </Card>
         </motion.div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar {editingItem?.ingredients.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Loja</Label>
+              <Input
+                value={editForm.store}
+                onChange={(e) => setEditForm({ ...editForm, store: e.target.value })}
+                placeholder="Ex: Atacadão"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Preço (R$)</Label>
+              <Input
+                value={editForm.price_paid}
+                onChange={(e) => setEditForm({ ...editForm, price_paid: e.target.value })}
+                placeholder="Ex: 12,90"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleEditSave} className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground">
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
