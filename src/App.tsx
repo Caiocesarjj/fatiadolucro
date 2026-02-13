@@ -22,6 +22,7 @@ import Planos from "./pages/Planos";
 import Inteligencia from "./pages/Inteligencia";
 import Mais from "./pages/Mais";
 import Receitas from "./pages/Receitas";
+import ResetPassword from "./pages/auth/ResetPassword";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -82,6 +83,7 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/planos" element={<Planos />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/ingredientes" element={<ProtectedRoute><Ingredientes /></ProtectedRoute>} />
             <Route path="/receitas" element={<ProtectedRoute><Receitas /></ProtectedRoute>} />
