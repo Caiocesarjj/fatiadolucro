@@ -145,7 +145,7 @@ const Auth = () => {
         }
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: 'https://www.fatiadolucro.com.br/auth/reset-password',
         });
         if (error) {
           toast({ variant: "destructive", title: "Erro", description: "Ocorreu um erro. Tente novamente." });
