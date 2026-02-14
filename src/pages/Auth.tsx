@@ -35,7 +35,7 @@ type FormErrors = {
 };
 
 const Auth = () => {
-  const [mode, setMode] = useState<"login" | "signup" | "forgot" | "reset">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot" | "reset" | "mfa">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,24 +44,43 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (event === "PASSWORD_RECOVERY") {
           setMode("reset");
           return;
         }
         if (session) {
+          // Check if user has MFA enrolled - if so, don't redirect until verified
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const hasMfa = factorsData?.totp?.some((f: any) => f.status === "verified");
+          if (hasMfa) {
+            const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (aalData?.currentLevel !== "aal2") {
+              // MFA not yet verified, don't navigate
+              return;
+            }
+          }
           navigate("/dashboard");
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
+        const { data: factorsData } = await supabase.auth.mfa.listFactors();
+        const hasMfa = factorsData?.totp?.some((f: any) => f.status === "verified");
+        if (hasMfa) {
+          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aalData?.currentLevel !== "aal2") return;
+        }
         navigate("/dashboard");
       }
     });
@@ -118,7 +137,7 @@ const Auth = () => {
 
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
             toast({ variant: "destructive", title: "Erro ao entrar", description: "E-mail ou senha incorretos." });
@@ -127,6 +146,37 @@ const Auth = () => {
           } else {
             toast({ variant: "destructive", title: "Erro ao entrar", description: "Ocorreu um erro. Tente novamente." });
           }
+        } else if (data?.session) {
+          // Check if MFA is required
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const verifiedFactor = factorsData?.totp?.find((f: any) => f.status === "verified");
+          if (verifiedFactor) {
+            // Need MFA verification
+            const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: verifiedFactor.id });
+            if (challengeError) {
+              toast({ variant: "destructive", title: "Erro ao iniciar 2FA", description: challengeError.message });
+            } else {
+              setMfaFactorId(verifiedFactor.id);
+              setMfaChallengeId(challenge.id);
+              setMode("mfa");
+            }
+          }
+        }
+      } else if (mode === "mfa") {
+        if (!mfaFactorId || !mfaChallengeId || mfaCode.length !== 6) {
+          toast({ variant: "destructive", title: "Digite o código de 6 dígitos" });
+          setLoading(false);
+          return;
+        }
+        const { error } = await supabase.auth.mfa.verify({
+          factorId: mfaFactorId,
+          challengeId: mfaChallengeId,
+          code: mfaCode,
+        });
+        if (error) {
+          toast({ variant: "destructive", title: "Código inválido", description: "Verifique o código e tente novamente." });
+        } else {
+          navigate("/dashboard");
         }
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
@@ -174,6 +224,7 @@ const Auth = () => {
       case "signup": return "Criar conta";
       case "forgot": return "Esqueci minha senha";
       case "reset": return "Redefinir senha";
+      case "mfa": return "Verificação 2FA";
     }
   };
 
@@ -183,6 +234,7 @@ const Auth = () => {
       case "signup": return "Crie sua conta para começar";
       case "forgot": return "Informe seu e-mail para receber o link de redefinição";
       case "reset": return "Digite sua nova senha";
+      case "mfa": return "Digite o código do seu aplicativo autenticador";
     }
   };
 
@@ -221,7 +273,7 @@ const Auth = () => {
 
         <Card className="shadow-lg border-0 bg-card/80 backdrop-blur">
           <CardHeader className="space-y-1 pb-4">
-            {(mode === "forgot" || mode === "reset") && (
+            {(mode === "forgot" || mode === "reset" || mode === "mfa") && (
               <button
                 type="button"
                 onClick={() => switchMode("login")}
@@ -277,7 +329,7 @@ const Auth = () => {
               )}
 
               {/* Email - shown on login, signup, forgot */}
-              {mode !== "reset" && (
+              {mode !== "reset" && mode !== "mfa" && (
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail</Label>
                   <div className="relative">
@@ -297,7 +349,7 @@ const Auth = () => {
               )}
 
               {/* Password - shown on login, signup, reset */}
-              {mode !== "forgot" && (
+              {mode !== "forgot" && mode !== "mfa" && (
                 <div className="space-y-2">
                   <Label htmlFor="password">{mode === "reset" ? "Nova senha" : "Senha"}</Label>
                   <div className="relative">
@@ -343,17 +395,39 @@ const Auth = () => {
                 </div>
               )}
 
+              {/* MFA Code Input */}
+              {mode === "mfa" && (
+                <div className="space-y-2">
+                  <Label htmlFor="mfaCode">Código 2FA</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="mfaCode"
+                      type="text"
+                      placeholder="000000"
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      className="pl-10 text-center text-lg tracking-widest"
+                      maxLength={6}
+                      disabled={loading}
+                      autoFocus
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Abra seu app autenticador e digite o código de 6 dígitos</p>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary-hover text-primary-foreground"
-                disabled={loading}
+                disabled={loading || (mode === "mfa" && mfaCode.length !== 6)}
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {mode === "login" ? "Entrando..." : mode === "signup" ? "Criando conta..." : mode === "forgot" ? "Enviando..." : "Redefinindo..."}
+                    {mode === "login" ? "Entrando..." : mode === "signup" ? "Criando conta..." : mode === "forgot" ? "Enviando..." : mode === "mfa" ? "Verificando..." : "Redefinindo..."}
                   </>
-                ) : mode === "login" ? "Entrar" : mode === "signup" ? "Criar conta" : mode === "forgot" ? "Enviar link" : "Redefinir senha"}
+                ) : mode === "login" ? "Entrar" : mode === "signup" ? "Criar conta" : mode === "forgot" ? "Enviar link" : mode === "mfa" ? "Verificar" : "Redefinir senha"}
               </Button>
             </form>
 

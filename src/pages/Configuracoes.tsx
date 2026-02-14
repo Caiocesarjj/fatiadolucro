@@ -12,7 +12,7 @@ import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
   Save, Plus, Trash2, User, Palette, Store, Truck, Calculator, Crown, Lock,
-  DollarSign, Clock, Info, MessageCircle, Headset, Mail, ShieldCheck,
+  DollarSign, Clock, Info, MessageCircle, Headset, Mail, ShieldCheck, Smartphone, Loader2 as Loader2Icon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +58,16 @@ const Configuracoes = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
+
+  // MFA state
+  const [mfaEnrolling, setMfaEnrolling] = useState(false);
+  const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaVerifyCode, setMfaVerifyCode] = useState("");
+  const [mfaVerifying, setMfaVerifying] = useState(false);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaLoading, setMfaLoading] = useState(true);
+  const [mfaUnenrolling, setMfaUnenrolling] = useState(false);
 
   // Pricing calculations
   const totalMonthlyGoal = (parseFloat(fixedCosts.replace(",", ".")) || 0) + (parseFloat(salaryGoal.replace(",", ".")) || 0);
@@ -232,6 +242,80 @@ const Configuracoes = () => {
     }
   };
 
+  // Check MFA status on mount
+  useEffect(() => {
+    const checkMfa = async () => {
+      try {
+        const { data, error } = await supabase.auth.mfa.listFactors();
+        if (!error && data?.totp && data.totp.length > 0) {
+          const verified = data.totp.find((f: any) => f.status === "verified");
+          setMfaEnabled(!!verified);
+        }
+      } catch {}
+      setMfaLoading(false);
+    };
+    checkMfa();
+  }, []);
+
+  const handleEnrollMfa = async () => {
+    setMfaEnrolling(true);
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
+      if (error) throw error;
+      setMfaQrCode(data.totp.qr_code);
+      setMfaFactorId(data.id);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao ativar 2FA", description: error.message });
+    } finally {
+      setMfaEnrolling(false);
+    }
+  };
+
+  const handleVerifyMfa = async () => {
+    if (!mfaFactorId || mfaVerifyCode.length !== 6) {
+      toast({ variant: "destructive", title: "Digite o código de 6 dígitos" });
+      return;
+    }
+    setMfaVerifying(true);
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaVerifyCode,
+      });
+      if (verifyError) throw verifyError;
+      toast({ title: "Autenticação de dois fatores ativada com sucesso!" });
+      setMfaEnabled(true);
+      setMfaQrCode(null);
+      setMfaFactorId(null);
+      setMfaVerifyCode("");
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Código inválido", description: error.message });
+    } finally {
+      setMfaVerifying(false);
+    }
+  };
+
+  const handleUnenrollMfa = async () => {
+    setMfaUnenrolling(true);
+    try {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const verified = data?.totp?.find((f: any) => f.status === "verified");
+      if (verified) {
+        const { error } = await supabase.auth.mfa.unenroll({ factorId: verified.id });
+        if (error) throw error;
+        setMfaEnabled(false);
+        toast({ title: "2FA desativado com sucesso" });
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao desativar 2FA", description: error.message });
+    } finally {
+      setMfaUnenrolling(false);
+    }
+  };
+
   const whatsappNumber = "5511999999999";
   const whatsappMessage = encodeURIComponent("Olá! Quero fazer o upgrade para o plano PRO do Fatia do Lucro.");
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
@@ -282,33 +366,97 @@ const Configuracoes = () => {
             </motion.div>
           </TabsContent>
 
-          {/* ====== SEGURANÇA ====== */}
           <TabsContent value="seguranca">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                    Alterar Senha
-                  </CardTitle>
-                  <CardDescription>Defina uma nova senha para sua conta</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">Nova Senha</Label>
-                    <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                    <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a nova senha" />
-                  </div>
-                  <Button onClick={handleChangePassword} disabled={savingPassword} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-                    <Save className="h-4 w-4 mr-2" />
-                    {savingPassword ? "Salvando..." : "Alterar Senha"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
+            <div className="space-y-6">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                      Alterar Senha
+                    </CardTitle>
+                    <CardDescription>Defina uma nova senha para sua conta</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">Nova Senha</Label>
+                      <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                      <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a nova senha" />
+                    </div>
+                    <Button onClick={handleChangePassword} disabled={savingPassword} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+                      <Save className="h-4 w-4 mr-2" />
+                      {savingPassword ? "Salvando..." : "Alterar Senha"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* MFA Section */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Smartphone className="h-5 w-5 text-primary" />
+                      Autenticação de Dois Fatores (2FA)
+                    </CardTitle>
+                    <CardDescription>
+                      Adicione uma camada extra de segurança usando o Google Authenticator ou similar.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {mfaLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2Icon className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : mfaEnabled ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                          <ShieldCheck className="h-4 w-4" />
+                          <span>2FA está ativado na sua conta</span>
+                        </div>
+                        <Button variant="destructive" onClick={handleUnenrollMfa} disabled={mfaUnenrolling}>
+                          {mfaUnenrolling ? "Desativando..." : "Desativar 2FA"}
+                        </Button>
+                      </div>
+                    ) : mfaQrCode ? (
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Escaneie o QR Code abaixo com o Google Authenticator e digite o código de 6 dígitos.
+                        </p>
+                        <div className="flex justify-center">
+                          <img src={mfaQrCode} alt="QR Code 2FA" className="w-48 h-48 border rounded-lg" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="mfa-code">Código de Verificação</Label>
+                          <Input
+                            id="mfa-code"
+                            value={mfaVerifyCode}
+                            onChange={(e) => setMfaVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            placeholder="000000"
+                            maxLength={6}
+                            className="text-center text-lg tracking-widest"
+                          />
+                        </div>
+                        <Button onClick={handleVerifyMfa} disabled={mfaVerifying || mfaVerifyCode.length !== 6} className="w-full">
+                          {mfaVerifying ? "Verificando..." : "Confirmar"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button onClick={handleEnrollMfa} disabled={mfaEnrolling} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+                        {mfaEnrolling ? (
+                          <><Loader2Icon className="h-4 w-4 animate-spin mr-2" />Ativando...</>
+                        ) : (
+                          <><Smartphone className="h-4 w-4 mr-2" />Ativar Autenticação de Dois Fatores</>
+                        )}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
           </TabsContent>
 
           {/* ====== PRECIFICAÇÃO (UNIFIED) ====== */}

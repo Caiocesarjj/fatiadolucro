@@ -82,8 +82,37 @@ export const FinanceiroTab = ({
     }
   };
 
-  const handleTestConnection = () => {
-    toast({ title: "Credenciais salvas com sucesso" });
+  const [testing, setTesting] = useState(false);
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ variant: "destructive", title: "Sessão expirada. Faça login novamente." });
+        return;
+      }
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-mercadopago`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.success) {
+        toast({ title: `Conexão Aprovada! Integrado com ${result.account_name}` });
+      } else {
+        toast({ variant: "destructive", title: result.error || "Falha na conexão. Verifique se o Access Token está correto." });
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao testar conexão", description: error.message });
+    } finally {
+      setTesting(false);
+    }
   };
 
   if (loading) {
@@ -143,8 +172,8 @@ export const FinanceiroTab = ({
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Salvar
             </Button>
-            <Button variant="outline" onClick={handleTestConnection}>
-              <TestTube className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleTestConnection} disabled={testing}>
+              {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <TestTube className="h-4 w-4 mr-2" />}
               Testar Conexão
             </Button>
           </div>
