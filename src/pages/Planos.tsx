@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Check, Crown, Lock, CreditCard, QrCode, FileText, ArrowLeft, Loader2, Gift } from "lucide-react";
+import { Check, Crown, Lock, Loader2, Gift, AlertTriangle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,9 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { validateReferralCode } from "@/lib/referralValidation";
 import { toast } from "@/hooks/use-toast";
-
-type BillingType = "PIX" | "BOLETO" | "CREDIT_CARD";
-type Step = "plans" | "info" | "payment";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 const PRICE_FULL = 19.90;
 const PRICE_REFERRED = 14.99;
@@ -21,34 +18,36 @@ const PRICE_REFERRED = 14.99;
 const Planos = () => {
   const { user } = useAuth();
   const { planType } = useSubscription();
-  const [step, setStep] = useState<Step>("plans");
-  const [billingType, setBillingType] = useState<BillingType>("PIX");
   const [loading, setLoading] = useState(false);
   const [hasReferral, setHasReferral] = useState(false);
   const [loadingReferral, setLoadingReferral] = useState(true);
 
-  // Inline referral code
+  // Referral
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [referralCode, setReferralCode] = useState("");
   const [applyingCode, setApplyingCode] = useState(false);
 
-  // User info
-  const [name, setName] = useState("");
-  const [cpfCnpj, setCpfCnpj] = useState("");
-  const [mobilePhone, setMobilePhone] = useState("");
+  // Coupon
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
-  // Credit card
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCcv, setCardCcv] = useState("");
-  const [cardPostalCode, setCardPostalCode] = useState("");
+  // Subscription management
+  const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-  const currentPrice = hasReferral ? PRICE_REFERRED : PRICE_FULL;
+  const basePrice = hasReferral ? PRICE_REFERRED : PRICE_FULL;
+  const currentPrice = couponApplied ? Math.max(basePrice * (1 - couponDiscount / 100), 1) : basePrice;
   const priceFormatted = currentPrice.toFixed(2).replace(".", ",");
 
   useEffect(() => {
-    if (user) checkReferral();
+    if (user) {
+      checkReferral();
+      checkSubscription();
+    }
   }, [user]);
 
   const checkReferral = async () => {
@@ -59,10 +58,26 @@ const Planos = () => {
         .eq("user_id", user!.id)
         .maybeSingle();
       setHasReferral(!!data?.referred_by);
-    } catch (error) {
-      if (import.meta.env.DEV) console.error("Error checking referral:", error);
+    } catch {
+      // ignore
     } finally {
       setLoadingReferral(false);
+    }
+  };
+
+  const checkSubscription = async () => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_id, subscription_status")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (data) {
+        setSubscriptionId(data.subscription_id);
+        setSubscriptionStatus(data.subscription_status);
+      }
+    } catch {
+      // ignore
     }
   };
 
@@ -84,7 +99,6 @@ const Planos = () => {
         toast({ title: "Código inválido", variant: "destructive" });
         return;
       }
-
       if (affiliate.user_id === user!.id) {
         toast({ title: "Você não pode usar seu próprio código.", variant: "destructive" });
         return;
@@ -94,7 +108,6 @@ const Planos = () => {
         .from("profiles")
         .update({ referred_by: affiliate.user_id } as any)
         .eq("user_id", user!.id);
-
       if (error) throw error;
 
       setHasReferral(true);
@@ -104,6 +117,77 @@ const Planos = () => {
       toast({ title: error.message, variant: "destructive" });
     } finally {
       setApplyingCode(false);
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast({ title: "Digite um cupom", variant: "destructive" });
+      return;
+    }
+    setApplyingCoupon(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("validate-coupon", {
+        body: { code: couponCode.trim().toUpperCase() },
+      });
+      if (error) throw error;
+      if (data?.valid && data.type === "percentage") {
+        setCouponDiscount(data.value);
+        setCouponApplied(true);
+        toast({ title: `🎉 Cupom aplicado! ${data.value}% de desconto.` });
+      } else {
+        toast({ title: "Cupom inválido ou expirado", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro ao validar cupom", variant: "destructive" });
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    if (!user) {
+      toast({ title: "Faça login para assinar", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-subscription", {
+        body: {
+          price: basePrice,
+          title: "Fatia do Lucro PRO",
+          coupon_code: couponApplied ? couponCode.trim().toUpperCase() : undefined,
+        },
+      });
+      if (error) throw error;
+
+      if (data?.init_point) {
+        toast({ title: "Assinatura criada!", description: "Abrindo página de pagamento..." });
+        setSubscriptionId(data.subscription_id);
+        setSubscriptionStatus("pending");
+        window.open(data.init_point, "_blank");
+      } else {
+        toast({ title: "Assinatura criada!", description: "Verifique seu e-mail." });
+      }
+    } catch (error: any) {
+      toast({ title: error.message || "Erro ao criar assinatura", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-subscription");
+      if (error) throw error;
+      toast({ title: "Assinatura cancelada com sucesso." });
+      setSubscriptionStatus("cancelled");
+    } catch (error: any) {
+      toast({ title: error.message || "Erro ao cancelar", variant: "destructive" });
+    } finally {
+      setCancelling(false);
+      setShowCancelDialog(false);
     }
   };
 
@@ -124,83 +208,7 @@ const Planos = () => {
     "Suporte prioritário",
   ];
 
-  const handleSelectPlan = (type: BillingType) => {
-    setBillingType(type);
-    setStep("info");
-  };
-
-  const handleSubmitInfo = () => {
-    if (!name.trim() || !cpfCnpj.trim()) {
-      toast({ title: "Preencha nome e CPF/CNPJ", variant: "destructive" });
-      return;
-    }
-    if (billingType === "CREDIT_CARD") {
-      setStep("payment");
-    } else {
-      handleCreateSubscription();
-    }
-  };
-
-  const handleCreateSubscription = async () => {
-    if (!user) {
-      toast({ title: "Faça login para assinar", variant: "destructive" });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const payload: Record<string, unknown> = {
-        billingType,
-        cpfCnpj,
-        name,
-        email: user.email,
-        mobilePhone,
-        referralCode: referralCode.trim().toUpperCase() || undefined,
-      };
-
-      if (billingType === "CREDIT_CARD") {
-        const [expMonth, expYear] = cardExpiry.split("/");
-        payload.creditCard = {
-          holderName: cardName,
-          number: cardNumber.replace(/\s/g, ""),
-          expiryMonth: expMonth,
-          expiryYear: expYear,
-          ccv: cardCcv,
-        };
-        payload.creditCardHolderInfo = {
-          name,
-          email: user.email,
-          cpfCnpj: cpfCnpj.replace(/\D/g, ""),
-          postalCode: cardPostalCode.replace(/\D/g, ""),
-          phone: mobilePhone?.replace(/\D/g, ""),
-        };
-      }
-
-      const { data, error } = await supabase.functions.invoke("create-asaas-subscription", {
-        body: payload,
-      });
-
-      if (error) throw error;
-
-      if (data?.invoiceUrl && billingType !== "CREDIT_CARD") {
-        toast({ title: "Assinatura criada!", description: "Abrindo link de pagamento..." });
-        window.open(data.invoiceUrl, "_blank");
-      } else if (billingType === "CREDIT_CARD") {
-        toast({ title: "Pagamento processado com sucesso!", description: "Seu plano PRO já está ativo." });
-      } else {
-        toast({ title: "Assinatura criada!", description: "Verifique seu e-mail para o link de pagamento." });
-      }
-
-      setStep("plans");
-    } catch (error: unknown) {
-      if (import.meta.env.DEV) console.error("Subscription error:", error);
-      const msg = error instanceof Error ? error.message : "Erro ao criar assinatura";
-      toast({ title: msg, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Already PRO
   if (planType === "pro") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -212,31 +220,100 @@ const Planos = () => {
             <CardTitle>Você já é PRO! 🎉</CardTitle>
             <CardDescription>Aproveite todos os recursos ilimitados.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Button asChild className="w-full">
               <Link to="/dashboard">Voltar ao Dashboard</Link>
             </Button>
+            {subscriptionId && subscriptionStatus !== "cancelled" && (
+              <>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
+                </Button>
+                <ConfirmationDialog
+                  open={showCancelDialog}
+                  onOpenChange={setShowCancelDialog}
+                  title="Cancelar Assinatura"
+                  description="Tem certeza que deseja cancelar? Você perderá o acesso aos recursos PRO."
+                  confirmText={cancelling ? "Cancelando..." : "Sim, cancelar"}
+                  onConfirm={handleCancelSubscription}
+                  variant="destructive"
+                />
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // Has active subscription but not yet PRO (pending)
+  const hasActiveSubscription = subscriptionId && subscriptionStatus !== "cancelled";
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
         <AnimatePresence mode="wait">
-          {step === "plans" && (
-            <motion.div key="plans" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                  <Lock className="h-8 w-8 text-primary" />
-                </div>
-                <h1 className="text-3xl font-bold mb-2">Faça o Upgrade!</h1>
-                <p className="text-muted-foreground">Desbloqueie todos os recursos do Fatia do Lucro</p>
+          <motion.div key="plans" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                <Lock className="h-8 w-8 text-primary" />
               </div>
+              <h1 className="text-3xl font-bold mb-2">Faça o Upgrade!</h1>
+              <p className="text-muted-foreground">Desbloqueie todos os recursos do Fatia do Lucro</p>
+            </div>
 
+            {/* Test mode warning */}
+            <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 dark:text-yellow-400 rounded-lg p-3 mb-6 text-sm max-w-2xl mx-auto">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Modo de Teste: Cobrança Diária (Cancele após testar)</span>
+            </div>
+
+            {/* Active subscription card */}
+            {hasActiveSubscription && (
+              <Card className="max-w-md mx-auto mb-6 border-primary">
+                <CardHeader className="text-center">
+                  <CardTitle className="flex items-center justify-center gap-2">
+                    <Crown className="h-5 w-5 text-primary" />
+                    Assinatura {subscriptionStatus === "pending" ? "Pendente" : "Ativa"}
+                  </CardTitle>
+                  <CardDescription>
+                    {subscriptionStatus === "pending"
+                      ? "Seu pagamento está sendo processado. Assim que confirmado, o plano PRO será ativado."
+                      : "Sua assinatura está ativa."}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => setShowCancelDialog(true)}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
+                  </Button>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to="/dashboard">Voltar ao Dashboard</Link>
+                  </Button>
+                  <ConfirmationDialog
+                    open={showCancelDialog}
+                    onOpenChange={setShowCancelDialog}
+                    title="Cancelar Assinatura"
+                    description="Tem certeza que deseja cancelar? Você perderá o acesso aos recursos PRO."
+                    confirmText={cancelling ? "Cancelando..." : "Sim, cancelar"}
+                    onConfirm={handleCancelSubscription}
+                    variant="destructive"
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Plans grid - only show if no active subscription */}
+            {!hasActiveSubscription && (
               <div className="grid md:grid-cols-2 gap-6">
+                {/* Free plan */}
                 <Card className="h-full">
                   <CardHeader>
                     <CardTitle className="text-xl">Plano Grátis</CardTitle>
@@ -261,6 +338,7 @@ const Planos = () => {
                   </CardContent>
                 </Card>
 
+                {/* PRO plan */}
                 <Card className="h-full border-primary relative overflow-hidden">
                   <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-bl-lg font-medium">
                     RECOMENDADO
@@ -272,20 +350,27 @@ const Planos = () => {
                     </CardTitle>
                     <CardDescription>Todas as ferramentas para crescer</CardDescription>
                     <div className="mt-4">
-                      {hasReferral ? (
+                      {hasReferral || couponApplied ? (
                         <div>
-                          <span className="text-lg line-through text-muted-foreground mr-2">R$ 19,90</span>
-                          <span className="text-3xl font-bold text-primary">R$ 14,99</span>
+                          <span className="text-lg line-through text-muted-foreground mr-2">R$ {PRICE_FULL.toFixed(2).replace(".", ",")}</span>
+                          <span className="text-3xl font-bold text-primary">R$ {priceFormatted}</span>
                           <span className="text-muted-foreground">/mês</span>
-                          <div className="mt-1">
-                            <span className="inline-flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                              <Gift className="h-3 w-3" /> Desconto de indicação
-                            </span>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {hasReferral && (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                <Gift className="h-3 w-3" /> Indicação
+                              </span>
+                            )}
+                            {couponApplied && (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">
+                                🎟️ Cupom {couponDiscount}%
+                              </span>
+                            )}
                           </div>
                         </div>
                       ) : (
                         <div>
-                          <span className="text-3xl font-bold text-primary">R$ 19,90</span>
+                          <span className="text-3xl font-bold text-primary">R$ {priceFormatted}</span>
                           <span className="text-muted-foreground">/mês</span>
                         </div>
                       )}
@@ -301,7 +386,7 @@ const Planos = () => {
                       ))}
                     </ul>
 
-                    {/* Inline referral code for non-referred users */}
+                    {/* Referral code */}
                     {!hasReferral && !loadingReferral && (
                       <div className="mt-4">
                         {!showReferralInput ? (
@@ -320,12 +405,7 @@ const Planos = () => {
                               className="font-mono uppercase text-sm h-9"
                               maxLength={20}
                             />
-                            <Button
-                              size="sm"
-                              onClick={handleApplyReferralCode}
-                              disabled={applyingCode}
-                              className="h-9"
-                            >
+                            <Button size="sm" onClick={handleApplyReferralCode} disabled={applyingCode} className="h-9">
                               {applyingCode ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aplicar"}
                             </Button>
                           </div>
@@ -333,110 +413,40 @@ const Planos = () => {
                       </div>
                     )}
 
-                    <p className="text-sm font-semibold text-center mt-6 mb-3 text-muted-foreground">Escolha a forma de pagamento:</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={() => handleSelectPlan("PIX")}>
-                        <QrCode className="h-5 w-5" />
-                        <span className="text-xs">Pix</span>
-                      </Button>
-                      <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={() => handleSelectPlan("BOLETO")}>
-                        <FileText className="h-5 w-5" />
-                        <span className="text-xs">Boleto</span>
-                      </Button>
-                      <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={() => handleSelectPlan("CREDIT_CARD")}>
-                        <CreditCard className="h-5 w-5" />
-                        <span className="text-xs">Cartão</span>
-                      </Button>
-                    </div>
+                    {/* Coupon code */}
+                    {!couponApplied && (
+                      <div className="mt-3">
+                        <div className="flex gap-2">
+                          <Input
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            placeholder="Cupom de desconto"
+                            className="font-mono uppercase text-sm h-9"
+                            maxLength={50}
+                          />
+                          <Button size="sm" variant="outline" onClick={handleApplyCoupon} disabled={applyingCoupon} className="h-9">
+                            {applyingCoupon ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aplicar"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Subscribe button */}
+                    <Button className="w-full mt-6" onClick={handleSubscribe} disabled={loading}>
+                      {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Crown className="h-4 w-4 mr-2" />}
+                      Assinar Agora • R$ {priceFormatted}/mês
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
+            )}
 
-              <div className="text-center mt-8">
-                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground underline">
-                  Voltar ao Dashboard
-                </Link>
-              </div>
-            </motion.div>
-          )}
-
-          {step === "info" && (
-            <motion.div key="info" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="max-w-md mx-auto">
-              <Button variant="ghost" className="mb-4" onClick={() => setStep("plans")}>
-                <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
-              </Button>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Seus Dados</CardTitle>
-                  <CardDescription>
-                    Pagamento via {billingType === "PIX" ? "Pix" : billingType === "BOLETO" ? "Boleto" : "Cartão de Crédito"} • R$ {priceFormatted}/mês
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome completo" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF ou CNPJ</Label>
-                    <Input id="cpf" value={cpfCnpj} onChange={(e) => setCpfCnpj(e.target.value)} placeholder="000.000.000-00" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Celular (opcional)</Label>
-                    <Input id="phone" value={mobilePhone} onChange={(e) => setMobilePhone(e.target.value)} placeholder="(11) 99999-9999" />
-                  </div>
-                  <Button className="w-full" onClick={handleSubmitInfo} disabled={loading}>
-                    {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    {billingType === "CREDIT_CARD" ? "Próximo: Dados do Cartão" : "Gerar Link de Pagamento"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {step === "payment" && (
-            <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="max-w-md mx-auto">
-              <Button variant="ghost" className="mb-4" onClick={() => setStep("info")}>
-                <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
-              </Button>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" /> Dados do Cartão
-                  </CardTitle>
-                  <CardDescription>R$ {priceFormatted}/mês • Cartão de Crédito</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Número do Cartão</Label>
-                    <Input id="cardNumber" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} placeholder="0000 0000 0000 0000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cardName">Nome no Cartão</Label>
-                    <Input id="cardName" value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="NOME COMO NO CARTÃO" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardExpiry">Validade</Label>
-                      <Input id="cardExpiry" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} placeholder="MM/AAAA" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cardCcv">CVV</Label>
-                      <Input id="cardCcv" value={cardCcv} onChange={(e) => setCardCcv(e.target.value)} placeholder="123" maxLength={4} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cardPostalCode">CEP</Label>
-                    <Input id="cardPostalCode" value={cardPostalCode} onChange={(e) => setCardPostalCode(e.target.value)} placeholder="00000-000" />
-                  </div>
-                  <Button className="w-full" onClick={handleCreateSubscription} disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Crown className="h-4 w-4 mr-2" />}
-                    Pagar R$ {priceFormatted} e Ativar PRO
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+            <div className="text-center mt-8">
+              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground underline">
+                Voltar ao Dashboard
+              </Link>
+            </div>
+          </motion.div>
         </AnimatePresence>
       </div>
     </div>
