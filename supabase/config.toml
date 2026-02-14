@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.cancel-subscription]
 verify_jwt = false
+
+[functions.create-mp-subscription]
+verify_jwt = false

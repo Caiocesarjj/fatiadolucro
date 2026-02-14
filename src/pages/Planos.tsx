@@ -174,7 +174,7 @@ const Planos = () => {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-subscription", {
+      const { data, error } = await supabase.functions.invoke("create-mp-subscription", {
         body: {
           price: basePrice,
           title: "Fatia do Lucro PRO",
