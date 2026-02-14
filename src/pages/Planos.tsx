@@ -82,13 +82,35 @@ const Planos = () => {
   };
 
   const handleApplyReferralCode = async () => {
-    const validation = validateReferralCode(referralCode);
-    if (!validation.valid) {
-      toast({ title: (validation as { valid: false; error: string }).error, variant: "destructive" });
+    const code = referralCode.trim().toUpperCase();
+    if (!code) {
+      toast({ title: "Digite um código", variant: "destructive" });
       return;
     }
     setApplyingCode(true);
     try {
+      // Step 1: Check coupons table FIRST
+      const { data: couponData, error: couponError } = await supabase.functions.invoke("validate-coupon", {
+        body: { code },
+      });
+
+      if (!couponError && couponData?.valid && couponData.type === "percentage") {
+        // It's a coupon — apply discount, no affiliate logic
+        setCouponCode(code);
+        setCouponDiscount(couponData.value);
+        setCouponApplied(true);
+        setShowReferralInput(false);
+        toast({ title: `🎉 Cupom aplicado! ${couponData.value}% de desconto.` });
+        return;
+      }
+
+      // Step 2: Not a coupon — check if it's an affiliate referral code
+      const validation = validateReferralCode(code);
+      if (!validation.valid) {
+        toast({ title: (validation as { valid: false; error: string }).error, variant: "destructive" });
+        return;
+      }
+
       const { data: affiliate } = await supabase
         .from("profiles")
         .select("user_id")
