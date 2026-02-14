@@ -90,9 +90,8 @@ const Planos = () => {
     setApplyingCode(true);
     try {
       // Step 1: Check coupons table FIRST
-      const { data: couponData, error: couponError } = await supabase.functions.invoke("validate-coupon", {
-        body: { code },
-      });
+      const { data: couponData, error: couponError } = await supabase
+        .rpc('validate_coupon', { coupon_code: code });
 
       if (!couponError && couponData?.valid && couponData.type === "percentage") {
         // It's a coupon — apply discount, no affiliate logic
@@ -149,9 +148,8 @@ const Planos = () => {
     }
     setApplyingCoupon(true);
     try {
-      const { data, error } = await supabase.functions.invoke("validate-coupon", {
-        body: { code: couponCode.trim().toUpperCase() },
-      });
+      const { data, error } = await supabase
+        .rpc('validate_coupon', { coupon_code: couponCode.trim().toUpperCase() });
       if (error) throw error;
       if (data?.valid && data.type === "percentage") {
         setCouponDiscount(data.value);
