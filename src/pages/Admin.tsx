@@ -19,12 +19,13 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus, UserPlus, Trash2 } from "lucide-react";
+import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus, UserPlus, Trash2, CreditCard, Eye, EyeOff, Save, TestTube } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
+import { FinanceiroTab } from "@/components/admin/FinanceiroTab";
 
 // ... keep existing code (UserProfile interface and AVAILABLE_MODULES)
 interface UserProfile {
@@ -81,6 +82,14 @@ const Admin = () => {
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [couponDialogOpen, setCouponDialogOpen] = useState(false);
   const [newCoupon, setNewCoupon] = useState({ code: "", type: "percentage" as "percentage" | "vip_access", value: "", is_active: true });
+
+  // Financeiro state
+  const [mpPublicKey, setMpPublicKey] = useState("");
+  const [mpAccessToken, setMpAccessToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [financeiroLoading, setFinanceiroLoading] = useState(false);
+  const [savingFinanceiro, setSavingFinanceiro] = useState(false);
+  const [configId, setConfigId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -272,10 +281,11 @@ const Admin = () => {
   return (
     <AppLayout title="Administração">
       <Tabs defaultValue="usuarios" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="afiliados">Afiliados</TabsTrigger>
           <TabsTrigger value="cupons">Cupons</TabsTrigger>
+          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
         </TabsList>
 
         {/* ====== USUÁRIOS TAB ====== */}
@@ -523,6 +533,25 @@ const Admin = () => {
               </Card>
             </motion.div>
           </div>
+        </TabsContent>
+
+        {/* ====== FINANCEIRO TAB ====== */}
+        <TabsContent value="financeiro">
+          <FinanceiroTab
+            mpPublicKey={mpPublicKey}
+            setMpPublicKey={setMpPublicKey}
+            mpAccessToken={mpAccessToken}
+            setMpAccessToken={setMpAccessToken}
+            showToken={showToken}
+            setShowToken={setShowToken}
+            loading={financeiroLoading}
+            saving={savingFinanceiro}
+            configId={configId}
+            setConfigId={setConfigId}
+            setLoading={setFinanceiroLoading}
+            setSaving={setSavingFinanceiro}
+            toast={toast}
+          />
         </TabsContent>
       </Tabs>
 
