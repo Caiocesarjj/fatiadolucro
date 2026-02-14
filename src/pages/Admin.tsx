@@ -188,6 +188,18 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteCoupon = async (coupon: Coupon) => {
+    if (!confirm(`Tem certeza que deseja excluir o cupom "${coupon.code}"?`)) return;
+    try {
+      const { error } = await supabase.from("coupons").delete().eq("id", coupon.id);
+      if (error) throw error;
+      toast({ title: "Cupom excluído!" });
+      fetchCoupons();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
+    }
+  };
+
   const handleChangePlan = async (user: UserProfile, newPlan: "free" | "pro") => {
     try {
       const { error, count } = await supabase
@@ -517,11 +529,19 @@ const Admin = () => {
                                   {coupon.is_active ? "Ativo" : "Inativo"}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right flex items-center justify-end gap-2">
                                 <Switch
                                   checked={coupon.is_active}
                                   onCheckedChange={() => handleToggleCoupon(coupon)}
                                 />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteCoupon(coupon)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
