@@ -86,7 +86,7 @@ export const AffiliatesTab = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, user_id, store_name, referral_code")
-        .ilike("store_name", `%${searchQuery}%`)
+        .or(`store_name.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
         .limit(10);
 
       if (error) throw error;
