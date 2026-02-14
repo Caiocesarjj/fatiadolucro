@@ -23,6 +23,7 @@ import Inteligencia from "./pages/Inteligencia";
 import Mais from "./pages/Mais";
 import Receitas from "./pages/Receitas";
 import ResetPassword from "./pages/auth/ResetPassword";
+import AdminFinanceiro from "./pages/admin/AdminFinanceiro";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -97,6 +98,7 @@ const App = () => {
             <Route path="/inteligencia" element={<ProtectedRoute><Inteligencia /></ProtectedRoute>} />
             <Route path="/mais" element={<ProtectedRoute><Mais /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+            <Route path="/admin/financeiro" element={<ProtectedRoute requireAdmin><AdminFinanceiro /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
