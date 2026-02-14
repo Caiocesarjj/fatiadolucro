@@ -172,22 +172,22 @@ const Planos = () => {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-mp-subscription", {
-        body: {
-          price: basePrice,
-          title: "Fatia do Lucro PRO",
-          coupon_code: couponApplied ? couponCode.trim().toUpperCase() : undefined,
-        },
+      const { data, error } = await supabase.rpc('create_mp_subscription_rpc', {
+        title: 'Assinatura Fatia do Lucro',
+        price: currentPrice,
+        frequency: 1,
+        frequency_type: 'days',
+        payer_email: user.email ?? '',
       });
       if (error) throw error;
 
       if (data?.init_point) {
-        toast({ title: "Assinatura criada!", description: "Abrindo página de pagamento..." });
-        setSubscriptionId(data.subscription_id);
+        toast({ title: "Assinatura criada!", description: "Redirecionando para pagamento..." });
+        setSubscriptionId(data.id || data.subscription_id);
         setSubscriptionStatus("pending");
-        window.open(data.init_point, "_blank");
+        window.location.href = data.init_point;
       } else {
-        toast({ title: "Assinatura criada!", description: "Verifique seu e-mail." });
+        toast({ title: "Erro: resposta sem link de pagamento", variant: "destructive" });
       }
     } catch (error: any) {
       toast({ title: error.message || "Erro ao criar assinatura", variant: "destructive" });
