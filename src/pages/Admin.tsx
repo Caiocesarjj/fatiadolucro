@@ -505,7 +505,7 @@ const Admin = () => {
                           <TableRow>
                             <TableHead>Código</TableHead>
                             <TableHead>Tipo</TableHead>
-                            <TableHead className="text-center">Valor</TableHead>
+                            <TableHead className="text-center">Desconto (%)</TableHead>
                             <TableHead className="text-center">Usos</TableHead>
                             <TableHead className="text-center">Status</TableHead>
                             <TableHead className="text-right">Ação</TableHead>
