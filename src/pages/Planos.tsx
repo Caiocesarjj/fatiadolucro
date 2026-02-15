@@ -172,12 +172,12 @@ const Planos = () => {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('create_mp_subscription_rpc', {
-        title: 'Assinatura Fatia do Lucro',
-        price: currentPrice,
-        frequency: 1,
-        frequency_type: 'days',
-        payer_email: user.email ?? '',
+      const { data, error } = await supabase.functions.invoke('create-mp-subscription', {
+        body: {
+          price: currentPrice,
+          title: 'Assinatura Fatia do Lucro',
+          coupon_code: couponApplied ? couponCode.trim().toUpperCase() : undefined,
+        },
       });
       if (error) throw error;
 
