@@ -199,9 +199,13 @@ const Planos = () => {
   const handleCancelSubscription = async () => {
     setCancelling(true);
     try {
-      const { data, error } = await supabase.functions.invoke("cancel-subscription");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ subscription_status: "inactive", subscription_id: null } as any)
+        .eq("user_id", user!.id);
       if (error) throw error;
       toast({ title: "Assinatura cancelada com sucesso." });
+      setSubscriptionId(null);
       setSubscriptionStatus("cancelled");
     } catch (error: any) {
       toast({ title: error.message || "Erro ao cancelar", variant: "destructive" });
