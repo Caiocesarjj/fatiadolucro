@@ -42,6 +42,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
@@ -417,10 +418,32 @@ const Auth = () => {
                 </div>
               )}
 
+              {/* Terms checkbox - signup only */}
+              {mode === "signup" && (
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-border accent-primary"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Li e concordo com os{" "}
+                    <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary-hover">
+                      Termos de Uso
+                    </a>{" "}
+                    e{" "}
+                    <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary-hover">
+                      Política de Privacidade
+                    </a>.
+                  </span>
+                </label>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary-hover text-primary-foreground"
-                disabled={loading || (mode === "mfa" && mfaCode.length !== 6)}
+                disabled={loading || (mode === "mfa" && mfaCode.length !== 6) || (mode === "signup" && !acceptedTerms)}
               >
                 {loading ? (
                   <>
