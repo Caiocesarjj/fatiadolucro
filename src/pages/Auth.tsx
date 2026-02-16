@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,41 +50,51 @@ const Auth = () => {
   const [mfaCode, setMfaCode] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const mfaFlagRef = useRef<(v: boolean) => void>(() => {});
 
   useEffect(() => {
+    // Track if MFA flow is active to prevent onAuthStateChange from navigating
+    let mfaInProgress = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (event === "PASSWORD_RECOVERY") {
           setMode("reset");
           return;
         }
-        if (session) {
-          // Check if user has MFA enrolled - if so, don't redirect until verified
-          const { data: factorsData } = await supabase.auth.mfa.listFactors();
-          const hasMfa = factorsData?.totp?.some((f: any) => f.status === "verified");
-          if (hasMfa) {
-            const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-            if (aalData?.currentLevel !== "aal2") {
-              // MFA not yet verified, don't navigate
-              return;
-            }
-          }
-          navigate("/dashboard");
+        if (session && !mfaInProgress) {
+          // Use setTimeout to avoid blocking the auth state update
+          setTimeout(() => {
+            checkMfaAndNavigate();
+          }, 0);
         }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const { data: factorsData } = await supabase.auth.mfa.listFactors();
-        const hasMfa = factorsData?.totp?.some((f: any) => f.status === "verified");
-        if (hasMfa) {
-          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-          if (aalData?.currentLevel !== "aal2") return;
+    const checkMfaAndNavigate = async () => {
+      try {
+        const [factorsRes, aalRes] = await Promise.all([
+          supabase.auth.mfa.listFactors(),
+          supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        ]);
+        const hasMfa = factorsRes.data?.totp?.some((f: any) => f.status === "verified");
+        if (hasMfa && aalRes.data?.currentLevel !== "aal2") {
+          return; // MFA pending, don't navigate
         }
         navigate("/dashboard");
+      } catch {
+        navigate("/dashboard");
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        checkMfaAndNavigate();
       }
     });
+
+    // Expose mfaInProgress setter for handleAuth
+    mfaFlagRef.current = (v: boolean) => { mfaInProgress = v; };
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -148,14 +158,16 @@ const Auth = () => {
             toast({ variant: "destructive", title: "Erro ao entrar", description: "Ocorreu um erro. Tente novamente." });
           }
         } else if (data?.session) {
-          // Check if MFA is required
+          // Check if MFA is required — listFactors + challenge in parallel-ready way
           const { data: factorsData } = await supabase.auth.mfa.listFactors();
           const verifiedFactor = factorsData?.totp?.find((f: any) => f.status === "verified");
           if (verifiedFactor) {
-            // Need MFA verification
+            // Flag to prevent onAuthStateChange from navigating during MFA
+            mfaFlagRef.current(true);
             const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: verifiedFactor.id });
             if (challengeError) {
               toast({ variant: "destructive", title: "Erro ao iniciar 2FA", description: challengeError.message });
+              mfaFlagRef.current(false);
             } else {
               setMfaFactorId(verifiedFactor.id);
               setMfaChallengeId(challenge.id);
@@ -177,6 +189,7 @@ const Auth = () => {
         if (error) {
           toast({ variant: "destructive", title: "Código inválido", description: "Verifique o código e tente novamente." });
         } else {
+          mfaFlagRef.current(false);
           navigate("/dashboard");
         }
       } else if (mode === "signup") {
