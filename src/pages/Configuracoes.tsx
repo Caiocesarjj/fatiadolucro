@@ -17,6 +17,7 @@ import {
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ReferralCodeSection } from "@/components/settings/ReferralCodeSection";
+import { APP_THEMES, applyTheme, getStoredThemeId } from "@/lib/themes";
 
 interface Profile {
   store_name: string | null;
@@ -45,6 +46,7 @@ const Configuracoes = () => {
 
   // Theme state
   const [primaryColor, setPrimaryColor] = useState("#10B981");
+  const [activeTheme, setActiveTheme] = useState(getStoredThemeId());
 
   // Pricing state
   const [fixedCosts, setFixedCosts] = useState("");
@@ -329,8 +331,7 @@ const Configuracoes = () => {
             <TabsTrigger value="seguranca" className="text-xs sm:text-sm">Segurança</TabsTrigger>
             <TabsTrigger value="precificacao" className="text-xs sm:text-sm">Precificação</TabsTrigger>
             <TabsTrigger value="personalizacao" className="text-xs sm:text-sm relative">
-              Cores
-              {!isPro && <Lock className="h-3 w-3 ml-1 inline-block" />}
+              Aparência
             </TabsTrigger>
             <TabsTrigger value="plataformas" className="text-xs sm:text-sm">Plataformas</TabsTrigger>
             <TabsTrigger value="assinatura" className="text-xs sm:text-sm">Plano</TabsTrigger>
@@ -568,53 +569,75 @@ const Configuracoes = () => {
             </motion.div>
           </TabsContent>
 
-          {/* ====== PERSONALIZAÇÃO (PRO) ====== */}
+          {/* ====== APARÊNCIA ====== */}
           <TabsContent value="personalizacao">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card className={!isPro ? "opacity-75" : ""}>
+              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Palette className="h-5 w-5 text-primary" />
-                    Tema e Cores
-                    {!isPro && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                        <Crown className="h-3 w-3" /> PRO
-                      </span>
-                    )}
+                    Aparência
                   </CardTitle>
-                  <CardDescription>Personalize a cor principal do sistema</CardDescription>
+                  <CardDescription>Escolha o tema visual do aplicativo. A mudança é instantânea!</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {!isPro ? (
-                    <div className="text-center py-6">
-                      <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-muted-foreground mb-4">A personalização de cores está disponível no plano PRO.</p>
-                      <Button onClick={() => navigate("/planos")} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-                        <Crown className="h-4 w-4 mr-2" />
-                        Fazer Upgrade
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-4">
-                        <div className="space-y-2 flex-1">
-                          <Label htmlFor="primary-color">Cor Principal</Label>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <input id="primary-color" type="color" value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); applyPrimaryColor(e.target.value); }} className="w-12 h-12 rounded cursor-pointer border-0" />
-                            <Input value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) applyPrimaryColor(e.target.value); }} placeholder="#10B981" className="w-32 font-mono" />
-                            <div className="flex gap-2">
-                              {["#10B981", "#ea90c9", "#3b82f6", "#f59e0b", "#8b5cf6"].map((color) => (
-                                <button key={color} onClick={() => { setPrimaryColor(color); applyPrimaryColor(color); }} className="w-8 h-8 rounded-full border-2 border-transparent hover:border-foreground/20 transition-colors" style={{ backgroundColor: color }} title={color} />
-                              ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {APP_THEMES.map((theme) => {
+                      const isActive = activeTheme === theme.id;
+                      return (
+                        <button
+                          key={theme.id}
+                          onClick={() => {
+                            setActiveTheme(theme.id);
+                            applyTheme(theme.id);
+                            toast({ title: `Tema "${theme.name}" aplicado!` });
+                          }}
+                          className={`relative text-left p-4 rounded-xl border-2 transition-all duration-200 hover:scale-[1.02] ${
+                            isActive
+                              ? "border-primary ring-2 ring-primary/30 shadow-lg"
+                              : "border-border hover:border-muted-foreground/30"
+                          }`}
+                          style={{ backgroundColor: theme.preview.bg }}
+                        >
+                          {isActive && (
+                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: theme.preview.accent, color: theme.preview.bg }}>
+                              ✓
+                            </div>
+                          )}
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-2xl">{theme.emoji}</span>
+                            <div>
+                              <p className="font-semibold text-sm" style={{ color: theme.preview.text }}>{theme.name}</p>
+                              <p className="text-xs opacity-70" style={{ color: theme.preview.text }}>{theme.description}</p>
                             </div>
                           </div>
-                        </div>
+                          {/* Mini preview bar */}
+                          <div className="flex gap-2 items-center">
+                            <div className="h-3 flex-1 rounded-full" style={{ backgroundColor: theme.preview.accent }} />
+                            <div className="h-3 w-8 rounded-full opacity-40" style={{ backgroundColor: theme.preview.text }} />
+                            <div className="h-3 w-12 rounded-full opacity-20" style={{ backgroundColor: theme.preview.text }} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pro custom color option */}
+                  {isPro && (
+                    <div className="border-t pt-4 mt-2">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Crown className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">Cor personalizada (PRO)</span>
                       </div>
-                      <Button onClick={handleSaveTheme} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-                        <Save className="h-4 w-4 mr-2" />
-                        Salvar Tema
-                      </Button>
-                    </>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <input type="color" value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); applyPrimaryColor(e.target.value); setActiveTheme("custom"); }} className="w-10 h-10 rounded cursor-pointer border-0" />
+                        <Input value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) { applyPrimaryColor(e.target.value); setActiveTheme("custom"); } }} placeholder="#10B981" className="w-28 font-mono text-sm" />
+                        <Button size="sm" onClick={handleSaveTheme} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+                          <Save className="h-3 w-3 mr-1" />
+                          Salvar
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </CardContent>
               </Card>
