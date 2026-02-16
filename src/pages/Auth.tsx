@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Cookie, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone } from "lucide-react";
+import { Loader2, Cookie, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone, Gift } from "lucide-react";
 import { z } from "zod";
+import { validateReferralCode } from "@/lib/referralValidation";
 import { motion } from "framer-motion";
 
 const loginSchema = z.object({
@@ -42,6 +43,8 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [showReferralInput, setShowReferralInput] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -205,6 +208,33 @@ const Auth = () => {
             toast({ variant: "destructive", title: "Erro ao criar conta", description: "Ocorreu um erro. Tente novamente." });
           }
         } else if (data.user) {
+          // Apply referral code if provided
+          if (referralCode.trim()) {
+            const code = referralCode.trim().toUpperCase();
+            try {
+              // First check if it's a coupon
+              const { data: couponData } = await supabase.rpc('validate_coupon', { coupon_code: code });
+              if (!couponData?.valid) {
+                // Try as referral code
+                const validation = validateReferralCode(code);
+                if (validation.valid) {
+                  const { data: affiliate } = await supabase
+                    .from("profiles")
+                    .select("user_id")
+                    .eq("referral_code", validation.code)
+                    .maybeSingle();
+                  if (affiliate && affiliate.user_id !== data.user.id) {
+                    await supabase
+                      .from("profiles")
+                      .update({ referred_by: affiliate.user_id } as any)
+                      .eq("user_id", data.user.id);
+                  }
+                }
+              }
+            } catch {
+              // Non-blocking: don't fail signup because of referral
+            }
+          }
           toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
         }
       } else if (mode === "forgot") {
@@ -258,6 +288,8 @@ const Auth = () => {
     if (newMode !== "signup") {
       setFullName("");
       setPhone("");
+      setReferralCode("");
+      setShowReferralInput(false);
     }
     if (newMode === "login") {
       setConfirmPassword("");
@@ -428,6 +460,36 @@ const Auth = () => {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">Abra seu app autenticador e digite o código de 6 dígitos</p>
+                </div>
+              )}
+
+              {/* Referral / Coupon code - signup only */}
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  {!showReferralInput ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowReferralInput(true)}
+                      className="flex items-center gap-1 text-xs text-primary underline hover:text-primary/80"
+                    >
+                      <Gift className="h-3 w-3" />
+                      Tem um código de indicação ou cupom?
+                    </button>
+                  ) : (
+                    <div className="space-y-1">
+                      <Label htmlFor="referralCode" className="text-sm">Código de Indicação / Cupom</Label>
+                      <Input
+                        id="referralCode"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                        placeholder="Ex: MARIA10"
+                        className="font-mono uppercase text-sm"
+                        maxLength={20}
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-muted-foreground">Desconto vitalício de R$ 14,99/mês</p>
+                    </div>
+                  )}
                 </div>
               )}
 
