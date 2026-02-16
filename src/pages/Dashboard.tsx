@@ -70,17 +70,15 @@ const Dashboard = () => {
 
   const syncSubscriptionStatus = async () => {
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("subscription_status, plan_type, subscription_id")
-        .eq("user_id", user!.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("sync_subscription_status");
 
-      if (data?.subscription_id && data.subscription_status === "active" && data.plan_type !== "pro") {
-        await supabase
-          .from("profiles")
-          .update({ plan_type: "pro" })
-          .eq("user_id", user!.id);
+      if (error) {
+        if (import.meta.env.DEV) console.error("Error calling sync_subscription_status RPC:", error);
+        return;
+      }
+
+      if (data?.synced && data?.plan_type === "pro") {
+        if (import.meta.env.DEV) console.log("Subscription synced: user upgraded to PRO");
       }
     } catch (error) {
       if (import.meta.env.DEV) console.error("Error syncing subscription:", error);
