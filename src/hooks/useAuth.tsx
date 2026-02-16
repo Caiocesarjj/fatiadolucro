@@ -25,17 +25,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        const freshSession = refreshed?.session ?? session;
-        setSession(freshSession);
-        setUser(freshSession.user);
-      } else {
-        setSession(null);
-        setUser(null);
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
+
+      // Refresh em background, sem bloquear
+      if (session?.user) {
+        supabase.auth.refreshSession().then(({ data: refreshed }) => {
+          if (refreshed?.session) {
+            setSession(refreshed.session);
+            setUser(refreshed.session.user);
+          }
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
