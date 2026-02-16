@@ -244,16 +244,24 @@ const Encomendas = () => {
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getOrdersForDate = (date: Date) => {
-    return orders.filter((order) => isSameDay(new Date(order.delivery_date), date));
+    return orders.filter((order) => {
+      // Fix timezone: parse date string as local date (not UTC)
+      const [year, month, day] = order.delivery_date.split("-").map(Number);
+      const orderDate = new Date(year, month - 1, day);
+      return isSameDay(orderDate, date);
+    });
   };
 
   const upcomingOrders = orders
-    .filter(
-      (order) =>
+    .filter((order) => {
+      const [year, month, day] = order.delivery_date.split("-").map(Number);
+      const orderDate = new Date(year, month - 1, day);
+      return (
         order.status !== "delivered" &&
         order.status !== "cancelled" &&
-        new Date(order.delivery_date) >= new Date()
-    )
+        orderDate >= new Date(new Date().setHours(0, 0, 0, 0))
+      );
+    })
     .slice(0, 10);
 
   return (

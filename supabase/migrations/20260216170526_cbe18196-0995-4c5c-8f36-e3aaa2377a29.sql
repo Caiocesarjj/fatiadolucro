@@ -1,0 +1,1 @@
+ALTER TABLE public.coupons ADD COLUMN valid_until timestamp with time zone DEFAULT NULL;
