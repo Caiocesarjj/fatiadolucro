@@ -26,29 +26,29 @@ export const useUserRole = (): UserRoleData => {
 
   const fetchUserRole = async () => {
     try {
-      // Check if user has admin role
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id)
-        .eq("role", "admin")
-        .maybeSingle();
+      // Run both queries in parallel instead of sequentially
+      const [roleRes, profileRes] = await Promise.all([
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user!.id)
+          .eq("role", "admin")
+          .maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("is_active, allowed_modules")
+          .eq("user_id", user!.id)
+          .maybeSingle(),
+      ]);
 
-      if (roleError) {
-        if (import.meta.env.DEV) console.error("Error checking admin role:", roleError);
+      if (roleRes.error) {
+        if (import.meta.env.DEV) console.error("Error checking admin role:", roleRes.error);
       }
-      setIsAdmin(!!roleData);
+      setIsAdmin(!!roleRes.data);
 
-      // Get profile data for is_active and allowed_modules
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("is_active, allowed_modules")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
-      if (profileData) {
-        setIsActive(profileData.is_active ?? true);
-        setAllowedModules((profileData as any).allowed_modules ?? ["all"]);
+      if (profileRes.data) {
+        setIsActive(profileRes.data.is_active ?? true);
+        setAllowedModules((profileRes.data as any).allowed_modules ?? ["all"]);
       }
     } catch (error) {
       if (import.meta.env.DEV) console.error("Error fetching user role:", error);
