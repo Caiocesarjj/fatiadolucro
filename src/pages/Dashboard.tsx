@@ -61,18 +61,19 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 1. Carrega dados do dashboard imediatamente (cache local)
   useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    }
+    if (user) fetchDashboardData();
   }, [user]);
 
-  // Sync em background após o Dashboard já estar visível
+  // 2. Sync com Mercado Pago em background, SÓ depois de montado
   useEffect(() => {
-    if (!user || loading) return;
-    const timer = setTimeout(() => syncSubscriptionStatus(), 300);
+    if (!user) return;
+    const timer = setTimeout(() => {
+      syncSubscriptionStatus();
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [user, loading]);
+  }, [user]);
 
   const syncSubscriptionStatus = async () => {
     try {
