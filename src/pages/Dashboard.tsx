@@ -63,10 +63,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) {
-      syncSubscriptionStatus();
       fetchDashboardData();
     }
   }, [user]);
+
+  // Sync em background após o Dashboard já estar visível
+  useEffect(() => {
+    if (!user || loading) return;
+    const timer = setTimeout(() => syncSubscriptionStatus(), 300);
+    return () => clearTimeout(timer);
+  }, [user, loading]);
 
   const syncSubscriptionStatus = async () => {
     try {
