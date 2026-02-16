@@ -243,19 +243,22 @@ const Encomendas = () => {
   const monthEnd = endOfMonth(currentMonth);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  const parseDeliveryDate = (dateStr: string) => {
+    const datePart = dateStr.split("T")[0]; // Handle both "2026-02-18" and "2026-02-18T00:00:00+00:00"
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const getOrdersForDate = (date: Date) => {
     return orders.filter((order) => {
-      // Fix timezone: parse date string as local date (not UTC)
-      const [year, month, day] = order.delivery_date.split("-").map(Number);
-      const orderDate = new Date(year, month - 1, day);
+      const orderDate = parseDeliveryDate(order.delivery_date);
       return isSameDay(orderDate, date);
     });
   };
 
   const upcomingOrders = orders
     .filter((order) => {
-      const [year, month, day] = order.delivery_date.split("-").map(Number);
-      const orderDate = new Date(year, month - 1, day);
+      const orderDate = parseDeliveryDate(order.delivery_date);
       return (
         order.status !== "delivered" &&
         order.status !== "cancelled" &&
@@ -548,10 +551,7 @@ const Encomendas = () => {
                             </p>
                             <p className="text-sm mt-1">
                               <span className="text-muted-foreground">Entrega:</span>{" "}
-                              {(() => {
-                                const [y, m, d] = order.delivery_date.split("-").map(Number);
-                                return format(new Date(y, m - 1, d), "dd/MM/yyyy", { locale: ptBR });
-                              })()}
+                              {format(parseDeliveryDate(order.delivery_date), "dd/MM/yyyy", { locale: ptBR })}
                               {" • "}
                               <span className="font-medium">
                                 {formatCurrency(order.total_amount)}
