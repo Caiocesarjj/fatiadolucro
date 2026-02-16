@@ -81,7 +81,7 @@ const Admin = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [couponDialogOpen, setCouponDialogOpen] = useState(false);
-  const [newCoupon, setNewCoupon] = useState({ code: "", type: "percentage" as "percentage" | "vip_access", value: "", is_active: true });
+  const [newCoupon, setNewCoupon] = useState({ code: "", type: "percentage" as "percentage" | "vip_access", value: "", is_active: true, valid_until: "" });
 
   // Financeiro state
   const [mpPublicKey, setMpPublicKey] = useState("");
@@ -163,11 +163,12 @@ const Admin = () => {
         type: newCoupon.type,
         value: parseFloat(newCoupon.value),
         is_active: newCoupon.is_active,
+        valid_until: newCoupon.valid_until || null,
       } as any);
       if (error) throw error;
       toast({ title: "Cupom criado!" });
       setCouponDialogOpen(false);
-      setNewCoupon({ code: "", type: "percentage", value: "", is_active: true });
+      setNewCoupon({ code: "", type: "percentage", value: "", is_active: true, valid_until: "" });
       fetchCoupons();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
@@ -506,7 +507,8 @@ const Admin = () => {
                             <TableHead>Código</TableHead>
                             <TableHead>Tipo</TableHead>
                             <TableHead className="text-center">Desconto (%)</TableHead>
-                            <TableHead className="text-center">Usos</TableHead>
+                             <TableHead className="text-center">Usos</TableHead>
+                            <TableHead className="text-center">Validade</TableHead>
                             <TableHead className="text-center">Status</TableHead>
                             <TableHead className="text-right">Ação</TableHead>
                           </TableRow>
@@ -524,6 +526,11 @@ const Admin = () => {
                                 {coupon.type === "percentage" ? `${coupon.value}%` : `${coupon.value} dias`}
                               </TableCell>
                               <TableCell className="text-center">{coupon.usage_count}</TableCell>
+                              <TableCell className="text-center text-sm">
+                                {(coupon as any).valid_until
+                                  ? new Date((coupon as any).valid_until).toLocaleDateString("pt-BR")
+                                  : <span className="text-muted-foreground">Vitalício</span>}
+                              </TableCell>
                               <TableCell className="text-center">
                                 <Badge variant={coupon.is_active ? "default" : "secondary"}>
                                   {coupon.is_active ? "Ativo" : "Inativo"}
@@ -650,6 +657,16 @@ const Admin = () => {
                 placeholder={newCoupon.type === "percentage" ? "Ex: 100" : "Ex: 30"}
                 className="input-currency"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="coupon-valid-until">Data de Validade (opcional)</Label>
+              <Input
+                id="coupon-valid-until"
+                type="date"
+                value={newCoupon.valid_until}
+                onChange={(e) => setNewCoupon({ ...newCoupon, valid_until: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Deixe em branco para cupom vitalício.</p>
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="coupon-active">Ativo</Label>

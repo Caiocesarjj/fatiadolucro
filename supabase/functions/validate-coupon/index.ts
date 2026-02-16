@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
     const { data: coupon, error: queryError } = await supabase
       .from("coupons")
-      .select("code, value, type, is_active")
+      .select("code, value, type, is_active, valid_until")
       .eq("code", code)
       .eq("is_active", true)
       .maybeSingle();
@@ -83,6 +83,14 @@ Deno.serve(async (req) => {
 
     if (!coupon) {
       return new Response(JSON.stringify({ valid: false }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check expiry
+    if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+      return new Response(JSON.stringify({ valid: false, error: "Cupom expirado" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

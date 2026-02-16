@@ -79,6 +79,7 @@ export type Database = {
           is_active: boolean
           type: Database["public"]["Enums"]["coupon_type"]
           usage_count: number
+          valid_until: string | null
           value: number
         }
         Insert: {
@@ -88,6 +89,7 @@ export type Database = {
           is_active?: boolean
           type?: Database["public"]["Enums"]["coupon_type"]
           usage_count?: number
+          valid_until?: string | null
           value?: number
         }
         Update: {
@@ -97,6 +99,7 @@ export type Database = {
           is_active?: boolean
           type?: Database["public"]["Enums"]["coupon_type"]
           usage_count?: number
+          valid_until?: string | null
           value?: number
         }
         Relationships: []
