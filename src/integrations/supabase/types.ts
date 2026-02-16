@@ -231,6 +231,8 @@ export type Database = {
           is_active: boolean
           logo_url: string | null
           minute_rate: number | null
+          mp_manage_subscription_url: string | null
+          next_payment_date: string | null
           phone: string | null
           plan_type: string
           referral_code: string | null
@@ -256,6 +258,8 @@ export type Database = {
           is_active?: boolean
           logo_url?: string | null
           minute_rate?: number | null
+          mp_manage_subscription_url?: string | null
+          next_payment_date?: string | null
           phone?: string | null
           plan_type?: string
           referral_code?: string | null
@@ -281,6 +285,8 @@ export type Database = {
           is_active?: boolean
           logo_url?: string | null
           minute_rate?: number | null
+          mp_manage_subscription_url?: string | null
+          next_payment_date?: string | null
           phone?: string | null
           plan_type?: string
           referral_code?: string | null

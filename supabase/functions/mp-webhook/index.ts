@@ -85,9 +85,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Build update payload with extra MP data
+    const updatePayload: Record<string, unknown> = { subscription_status: newStatus };
+
+    if (mpData.next_payment_date) {
+      updatePayload.next_payment_date = mpData.next_payment_date;
+    }
+    if (mpData.init_point) {
+      updatePayload.mp_manage_subscription_url = mpData.init_point;
+    }
+
+    if (newStatus === "active") {
+      updatePayload.plan_type = "pro";
+    } else if (newStatus === "inactive") {
+      updatePayload.plan_type = "free";
+    }
+
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ subscription_status: newStatus })
+      .update(updatePayload)
       .eq("subscription_id", subscriptionId);
 
     if (updateError) {
