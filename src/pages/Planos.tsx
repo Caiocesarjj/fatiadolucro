@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Check, Crown, Lock, Loader2, Gift, AlertTriangle, XCircle } from "lucide-react";
+import { Check, Crown, Lock, Loader2, Gift, AlertTriangle, XCircle, RefreshCw, ExternalLink, CalendarDays } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,131 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 const PRICE_FULL = 19.90;
 const PRICE_REFERRED = 14.99;
 
+const formatDateFriendly = (dateStr: string | null): string | null => {
+  if (!dateStr) return null;
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
+  } catch {
+    return null;
+  }
+};
+
+// --- Sub-components ---
+
+interface ProStatusCardProps {
+  subscriptionId: string | null;
+  subscriptionStatus: string | null;
+  nextPaymentDate: string | null;
+  manageUrl: string | null;
+  onVerify: () => void;
+  verifying: boolean;
+  onCancelClick: () => void;
+}
+
+const ProStatusCard = ({
+  subscriptionId, subscriptionStatus, nextPaymentDate, manageUrl,
+  onVerify, verifying, onCancelClick,
+}: ProStatusCardProps) => {
+  const friendlyDate = formatDateFriendly(nextPaymentDate);
+  return (
+    <Card className="max-w-md w-full text-center">
+      <CardHeader>
+        <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <Crown className="h-8 w-8 text-primary" />
+        </div>
+        <CardTitle>Você já é PRO! 🎉</CardTitle>
+        <CardDescription>Aproveite todos os recursos ilimitados.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {friendlyDate && (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted rounded-lg p-3">
+            <CalendarDays className="h-4 w-4" />
+            <span>Próxima cobrança: <strong className="text-foreground">{friendlyDate}</strong></span>
+          </div>
+        )}
+        {manageUrl && (
+          <Button variant="outline" className="w-full" asChild>
+            <a href={manageUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4 mr-2" /> Gerenciar Pagamento
+            </a>
+          </Button>
+        )}
+        <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying}>
+          {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          Verificar Assinatura
+        </Button>
+        <Button asChild className="w-full">
+          <Link to="/dashboard">Voltar ao Dashboard</Link>
+        </Button>
+        {subscriptionId && subscriptionStatus !== "cancelled" && (
+          <Button variant="destructive" className="w-full" onClick={onCancelClick}>
+            <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+interface PendingSubscriptionCardProps {
+  subscriptionStatus: string | null;
+  nextPaymentDate: string | null;
+  manageUrl: string | null;
+  onVerify: () => void;
+  verifying: boolean;
+  onCancelClick: () => void;
+}
+
+const PendingSubscriptionCard = ({
+  subscriptionStatus, nextPaymentDate, manageUrl,
+  onVerify, verifying, onCancelClick,
+}: PendingSubscriptionCardProps) => {
+  const friendlyDate = formatDateFriendly(nextPaymentDate);
+  return (
+    <Card className="max-w-md mx-auto mb-6 border-primary">
+      <CardHeader className="text-center">
+        <CardTitle className="flex items-center justify-center gap-2">
+          <Crown className="h-5 w-5 text-primary" />
+          Assinatura {subscriptionStatus === "pending" ? "Pendente" : "Ativa"}
+        </CardTitle>
+        <CardDescription>
+          {subscriptionStatus === "pending"
+            ? "Seu pagamento está sendo processado. Clique em 'Verificar Assinatura' para atualizar."
+            : "Sua assinatura está ativa."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {friendlyDate && (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted rounded-lg p-3">
+            <CalendarDays className="h-4 w-4" />
+            <span>Próxima cobrança: <strong className="text-foreground">{friendlyDate}</strong></span>
+          </div>
+        )}
+        {manageUrl && (
+          <Button variant="outline" className="w-full" asChild>
+            <a href={manageUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4 mr-2" /> Gerenciar Pagamento
+            </a>
+          </Button>
+        )}
+        <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying}>
+          {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          Verificar Assinatura
+        </Button>
+        <Button variant="destructive" className="w-full" onClick={onCancelClick}>
+          <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
+        </Button>
+        <Button variant="outline" className="w-full" asChild>
+          <Link to="/dashboard">Voltar ao Dashboard</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+// --- Main Component ---
+
 const Planos = () => {
   const { user } = useAuth();
   const { planType } = useSubscription();
@@ -22,22 +147,22 @@ const Planos = () => {
   const [hasReferral, setHasReferral] = useState(false);
   const [loadingReferral, setLoadingReferral] = useState(true);
 
-  // Referral
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [referralCode, setReferralCode] = useState("");
   const [applyingCode, setApplyingCode] = useState(false);
 
-  // Coupon
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
-  // Subscription management
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [nextPaymentDate, setNextPaymentDate] = useState<string | null>(null);
+  const [manageUrl, setManageUrl] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const basePrice = hasReferral ? PRICE_REFERRED : PRICE_FULL;
   const currentPrice = couponApplied ? Math.max(basePrice * (1 - couponDiscount / 100), 1) : basePrice;
@@ -69,15 +194,29 @@ const Planos = () => {
     try {
       const { data } = await supabase
         .from("profiles")
-        .select("subscription_id, subscription_status")
+        .select("subscription_id, subscription_status, next_payment_date, mp_manage_subscription_url")
         .eq("user_id", user!.id)
         .maybeSingle();
       if (data) {
         setSubscriptionId(data.subscription_id);
         setSubscriptionStatus(data.subscription_status);
+        setNextPaymentDate(data.next_payment_date);
+        setManageUrl(data.mp_manage_subscription_url);
       }
     } catch {
       // ignore
+    }
+  };
+
+  const handleVerifySubscription = async () => {
+    setVerifying(true);
+    try {
+      await checkSubscription();
+      toast({ title: "Status atualizado!" });
+    } catch {
+      toast({ title: "Erro ao verificar", variant: "destructive" });
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -89,12 +228,10 @@ const Planos = () => {
     }
     setApplyingCode(true);
     try {
-      // Step 1: Check coupons table FIRST
       const { data: couponData, error: couponError } = await supabase
         .rpc('validate_coupon', { coupon_code: code });
 
       if (!couponError && couponData?.valid && couponData.type === "percentage") {
-        // It's a coupon — apply discount, no affiliate logic
         setCouponCode(code);
         setCouponDiscount(couponData.value);
         setCouponApplied(true);
@@ -103,7 +240,6 @@ const Planos = () => {
         return;
       }
 
-      // Step 2: Not a coupon — check if it's an affiliate referral code
       const validation = validateReferralCode(code);
       if (!validation.valid) {
         toast({ title: (validation as { valid: false; error: string }).error, variant: "destructive" });
@@ -236,45 +372,28 @@ const Planos = () => {
   if (planType === "pro") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center">
-          <CardHeader>
-            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Crown className="h-8 w-8 text-primary" />
-            </div>
-            <CardTitle>Você já é PRO! 🎉</CardTitle>
-            <CardDescription>Aproveite todos os recursos ilimitados.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button asChild className="w-full">
-              <Link to="/dashboard">Voltar ao Dashboard</Link>
-            </Button>
-            {subscriptionId && subscriptionStatus !== "cancelled" && (
-              <>
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={() => setShowCancelDialog(true)}
-                >
-                  <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
-                </Button>
-                <ConfirmationDialog
-                  open={showCancelDialog}
-                  onOpenChange={setShowCancelDialog}
-                  title="Cancelar Assinatura"
-                  description="Tem certeza que deseja cancelar? Você perderá o acesso aos recursos PRO."
-                  confirmText={cancelling ? "Cancelando..." : "Sim, cancelar"}
-                  onConfirm={handleCancelSubscription}
-                  variant="destructive"
-                />
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <ProStatusCard
+          subscriptionId={subscriptionId}
+          subscriptionStatus={subscriptionStatus}
+          nextPaymentDate={nextPaymentDate}
+          manageUrl={manageUrl}
+          onVerify={handleVerifySubscription}
+          verifying={verifying}
+          onCancelClick={() => setShowCancelDialog(true)}
+        />
+        <ConfirmationDialog
+          open={showCancelDialog}
+          onOpenChange={setShowCancelDialog}
+          title="Cancelar Assinatura"
+          description="Tem certeza que deseja cancelar? Você perderá o acesso aos recursos PRO."
+          confirmText={cancelling ? "Cancelando..." : "Sim, cancelar"}
+          onConfirm={handleCancelSubscription}
+          variant="destructive"
+        />
       </div>
     );
   }
 
-  // Has active subscription but not yet PRO (pending)
   const hasActiveSubscription = subscriptionId && subscriptionStatus !== "cancelled";
 
   return (
@@ -290,51 +409,33 @@ const Planos = () => {
               <p className="text-muted-foreground">Desbloqueie todos os recursos do Fatia do Lucro</p>
             </div>
 
-            {/* Test mode warning */}
             <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 dark:text-yellow-400 rounded-lg p-3 mb-6 text-sm max-w-2xl mx-auto">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>Modo de Teste: Cobrança Diária (Cancele após testar)</span>
             </div>
 
-            {/* Active subscription card */}
             {hasActiveSubscription && (
-              <Card className="max-w-md mx-auto mb-6 border-primary">
-                <CardHeader className="text-center">
-                  <CardTitle className="flex items-center justify-center gap-2">
-                    <Crown className="h-5 w-5 text-primary" />
-                    Assinatura {subscriptionStatus === "pending" ? "Pendente" : "Ativa"}
-                  </CardTitle>
-                  <CardDescription>
-                    {subscriptionStatus === "pending"
-                      ? "Seu pagamento está sendo processado. Assim que confirmado, o plano PRO será ativado."
-                      : "Sua assinatura está ativa."}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={() => setShowCancelDialog(true)}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
-                  </Button>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link to="/dashboard">Voltar ao Dashboard</Link>
-                  </Button>
-                  <ConfirmationDialog
-                    open={showCancelDialog}
-                    onOpenChange={setShowCancelDialog}
-                    title="Cancelar Assinatura"
-                    description="Tem certeza que deseja cancelar? Você perderá o acesso aos recursos PRO."
-                    confirmText={cancelling ? "Cancelando..." : "Sim, cancelar"}
-                    onConfirm={handleCancelSubscription}
-                    variant="destructive"
-                  />
-                </CardContent>
-              </Card>
+              <>
+                <PendingSubscriptionCard
+                  subscriptionStatus={subscriptionStatus}
+                  nextPaymentDate={nextPaymentDate}
+                  manageUrl={manageUrl}
+                  onVerify={handleVerifySubscription}
+                  verifying={verifying}
+                  onCancelClick={() => setShowCancelDialog(true)}
+                />
+                <ConfirmationDialog
+                  open={showCancelDialog}
+                  onOpenChange={setShowCancelDialog}
+                  title="Cancelar Assinatura"
+                  description="Tem certeza que deseja cancelar? Você perderá o acesso aos recursos PRO."
+                  confirmText={cancelling ? "Cancelando..." : "Sim, cancelar"}
+                  onConfirm={handleCancelSubscription}
+                  variant="destructive"
+                />
+              </>
             )}
 
-            {/* Plans grid - only show if no active subscription */}
             {!hasActiveSubscription && (
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Free plan */}
@@ -410,7 +511,6 @@ const Planos = () => {
                       ))}
                     </ul>
 
-                    {/* Referral code */}
                     {!hasReferral && !loadingReferral && (
                       <div className="mt-4">
                         {!showReferralInput ? (
@@ -437,7 +537,6 @@ const Planos = () => {
                       </div>
                     )}
 
-                    {/* Coupon code */}
                     {!couponApplied && (
                       <div className="mt-3">
                         <div className="flex gap-2">
@@ -455,7 +554,6 @@ const Planos = () => {
                       </div>
                     )}
 
-                    {/* Subscribe button */}
                     <Button className="w-full mt-6" onClick={handleSubscribe} disabled={loading}>
                       {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Crown className="h-4 w-4 mr-2" />}
                       Assinar Agora • R$ {priceFormatted}/mês
