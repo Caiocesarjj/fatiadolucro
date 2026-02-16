@@ -62,8 +62,30 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) fetchDashboardData();
+    if (user) {
+      syncSubscriptionStatus();
+      fetchDashboardData();
+    }
   }, [user]);
+
+  const syncSubscriptionStatus = async () => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_status, plan_type, subscription_id")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+
+      if (data?.subscription_id && data.subscription_status === "active" && data.plan_type !== "pro") {
+        await supabase
+          .from("profiles")
+          .update({ plan_type: "pro" })
+          .eq("user_id", user!.id);
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) console.error("Error syncing subscription:", error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
