@@ -548,9 +548,10 @@ const Encomendas = () => {
                             </p>
                             <p className="text-sm mt-1">
                               <span className="text-muted-foreground">Entrega:</span>{" "}
-                              {format(new Date(order.delivery_date), "dd/MM/yyyy", {
-                                locale: ptBR,
-                              })}
+                              {(() => {
+                                const [y, m, d] = order.delivery_date.split("-").map(Number);
+                                return format(new Date(y, m - 1, d), "dd/MM/yyyy", { locale: ptBR });
+                              })()}
                               {" • "}
                               <span className="font-medium">
                                 {formatCurrency(order.total_amount)}

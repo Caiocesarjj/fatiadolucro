@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus, UserPlus, Trash2, CreditCard, Eye, EyeOff, Save, TestTube } from "lucide-react";
+import { Shield, Users, Ban, Settings, Loader2, Crown, Ticket, Plus, UserPlus, Trash2, CreditCard, Eye, EyeOff, Save, TestTube, Pencil } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -50,6 +50,7 @@ interface Coupon {
   is_active: boolean;
   usage_count: number;
   created_at: string;
+  valid_until: string | null;
 }
 
 const AVAILABLE_MODULES = [
@@ -81,6 +82,7 @@ const Admin = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
   const [newCoupon, setNewCoupon] = useState({ code: "", type: "percentage" as "percentage" | "vip_access", value: "", is_active: true, valid_until: "" });
 
   // Financeiro state
@@ -138,12 +140,12 @@ const Admin = () => {
   const fetchCoupons = async () => {
     setCouponsLoading(true);
     try {
-      const { data, error } = await supabase
+  const { data, error } = await supabase
         .from("coupons")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      setCoupons((data as any[]) || []);
+      setCoupons((data as Coupon[]) || []);
     } catch (error) {
       if (import.meta.env.DEV) console.error("Error fetching coupons:", error);
     } finally {
@@ -151,28 +153,49 @@ const Admin = () => {
     }
   };
 
-  const handleCreateCoupon = async () => {
+  const handleSaveCoupon = async () => {
     const code = newCoupon.code.trim().toUpperCase();
     if (!code || !newCoupon.value) {
       toast({ variant: "destructive", title: "Preencha código e valor." });
       return;
     }
     try {
-      const { error } = await supabase.from("coupons").insert({
+      const couponData = {
         code,
         type: newCoupon.type,
         value: parseFloat(newCoupon.value),
         is_active: newCoupon.is_active,
         valid_until: newCoupon.valid_until || null,
-      } as any);
-      if (error) throw error;
-      toast({ title: "Cupom criado!" });
+      } as any;
+
+      if (editingCouponId) {
+        const { error } = await supabase.from("coupons").update(couponData).eq("id", editingCouponId);
+        if (error) throw error;
+        toast({ title: "Cupom atualizado!" });
+      } else {
+        const { error } = await supabase.from("coupons").insert(couponData);
+        if (error) throw error;
+        toast({ title: "Cupom criado!" });
+      }
       setCouponDialogOpen(false);
+      setEditingCouponId(null);
       setNewCoupon({ code: "", type: "percentage", value: "", is_active: true, valid_until: "" });
       fetchCoupons();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     }
+  };
+
+  const handleEditCoupon = (coupon: Coupon) => {
+    setEditingCouponId(coupon.id);
+    setNewCoupon({
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value.toString(),
+      is_active: coupon.is_active,
+      valid_until: coupon.valid_until ? coupon.valid_until.split("T")[0] : "",
+    });
+    setCouponDialogOpen(true);
   };
 
   const handleToggleCoupon = async (coupon: Coupon) => {
@@ -483,7 +506,7 @@ const Admin = () => {
                       </CardTitle>
                       <CardDescription>Crie e gerencie cupons de desconto</CardDescription>
                     </div>
-                    <Button onClick={() => setCouponDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Button onClick={() => { setEditingCouponId(null); setNewCoupon({ code: "", type: "percentage", value: "", is_active: true, valid_until: "" }); setCouponDialogOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                       <Plus className="h-4 w-4 mr-2" />
                       Criar Cupom
                     </Button>
@@ -541,6 +564,14 @@ const Admin = () => {
                                   checked={coupon.is_active}
                                   onCheckedChange={() => handleToggleCoupon(coupon)}
                                 />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditCoupon(coupon)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -621,7 +652,7 @@ const Admin = () => {
       <Dialog open={couponDialogOpen} onOpenChange={setCouponDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Criar Cupom</DialogTitle>
+            <DialogTitle>{editingCouponId ? "Editar Cupom" : "Criar Cupom"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -677,8 +708,8 @@ const Admin = () => {
               />
             </div>
             <div className="flex gap-2 pt-4">
-              <Button variant="outline" onClick={() => setCouponDialogOpen(false)} className="flex-1">Cancelar</Button>
-              <Button onClick={handleCreateCoupon} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">Criar</Button>
+              <Button variant="outline" onClick={() => { setCouponDialogOpen(false); setEditingCouponId(null); }} className="flex-1">Cancelar</Button>
+              <Button onClick={handleSaveCoupon} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">{editingCouponId ? "Salvar" : "Criar"}</Button>
             </div>
           </div>
         </DialogContent>
