@@ -484,12 +484,11 @@ const Configuracoes = () => {
                           <span className="relative group">
                             <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                              São contas que você paga todo mês, independente de vender ou não.
+                              NÃO inclua Gás/Luz aqui — eles são cobertos pela taxa variável abaixo. São contas que você paga todo mês, independente de vender ou não.
                             </span>
                           </span>
                         </Label>
                         <Input id="fixedCosts" value={fixedCosts} onChange={(e) => setFixedCosts(e.target.value)} placeholder="Ex: Aluguel, Internet, MEI, IPTU" className="input-currency" />
-                        <p className="text-xs text-muted-foreground">NÃO inclua Gás/Luz aqui — eles são cobertos pela taxa variável abaixo.</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="salaryGoal">Meta de Salário (R$)</Label>
