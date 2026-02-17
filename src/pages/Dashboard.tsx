@@ -66,19 +66,24 @@ const Dashboard = () => {
     if (user) fetchDashboardData();
   }, [user]);
 
-  // 2. Sync com Mercado Pago em background, bem depois de montado
+  // 2. Sync com Mercado Pago imediatamente ao carregar
   useEffect(() => {
     if (!user) return;
-    const timer = setTimeout(() => {
-      // Fire and forget — sem await, sem impacto na UI
-      supabase.rpc("sync_subscription_status").then(({ data, error }) => {
-        if (import.meta.env.DEV && error) console.error("Background sync error:", error);
-        if (data?.synced && data?.plan_type === "pro") {
-          if (import.meta.env.DEV) console.log("Subscription synced: user upgraded to PRO");
-        }
-      });
-    }, 3000);
-    return () => clearTimeout(timer);
+    const syncSubscription = async () => {
+      console.log("[Sync] Iniciando sync_subscription_status para:", user.email);
+      const { data, error } = await supabase.rpc("sync_subscription_status");
+      console.log("[Sync] Resultado:", JSON.stringify({ data, error }));
+      if (error) {
+        console.error("[Sync] Erro:", error.message);
+        return;
+      }
+      if (data?.plan_type === "pro" || data?.synced) {
+        console.log("[Sync] Usuário é PRO — atualizando estado local");
+        // Re-fetch dashboard data to reflect pro status
+        fetchDashboardData();
+      }
+    };
+    syncSubscription();
   }, [user]);
 
   const fetchDashboardData = async () => {
