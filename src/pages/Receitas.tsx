@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { mapErrorToUserMessage } from "@/lib/errorHandler";
-import { Plus, Pencil, Trash2, CakeSlice, FileText, Lock } from "lucide-react";
+import { Plus, Pencil, Trash2, CakeSlice, FileText, Lock, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { escapeHtml } from "@/lib/htmlEscape";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -32,6 +32,8 @@ const Receitas = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { canCreate, getLimit, getCount, refreshCounts, planType } = useFreemiumLimits();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [selectingForPdf, setSelectingForPdf] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const handleNewRecipe = () => {
     if (!canCreate("recipes")) {
@@ -108,17 +110,41 @@ const Receitas = () => {
 
   const isPro = planType === "pro";
 
-  const generateRecipesPDF = async () => {
+  const startPdfSelection = () => {
     if (!isPro) {
       setShowUpgrade(true);
       return;
     }
+    setSelectedIds(new Set(recipes.map(r => r.id)));
+    setSelectingForPdf(true);
+  };
+
+  const toggleRecipeSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const cancelSelection = () => {
+    setSelectingForPdf(false);
+    setSelectedIds(new Set());
+  };
+
+  const generateRecipesPDF = async () => {
+    if (selectedIds.size === 0) {
+      toast({ variant: "destructive", title: "Selecione ao menos uma receita" });
+      return;
+    }
+    setSelectingForPdf(false);
 
     toast({ title: "Gerando PDF..." });
 
-    // Fetch full details for all recipes
+    const selectedRecipes = recipes.filter(r => selectedIds.has(r.id));
+
     const detailedRecipes = await Promise.all(
-      recipes.map(async (recipe) => {
+      selectedRecipes.map(async (recipe) => {
         const { data: items } = await supabase
           .from("recipe_items")
           .select("quantity, ingredients(name, unit_type, cost_per_unit)")
@@ -220,28 +246,58 @@ const Receitas = () => {
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            {recipes.length} receita{recipes.length !== 1 ? "s" : ""}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={generateRecipesPDF}
-              variant="outline"
-              className="hidden md:flex h-10 rounded-xl"
-              disabled={recipes.length === 0}
-            >
-              {isPro ? (
-                <FileText className="h-4 w-4 mr-2" />
-              ) : (
-                <Lock className="h-4 w-4 mr-2" />
-              )}
-              Gerar PDF
-            </Button>
-            <Button onClick={handleNewRecipe} className="hidden md:flex h-10 rounded-xl">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Receita
-            </Button>
-          </div>
+          {selectingForPdf ? (
+            <>
+              <p className="text-sm text-primary font-medium">
+                {selectedIds.size} de {recipes.length} selecionada{selectedIds.size !== 1 ? "s" : ""}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={cancelSelection}
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 rounded-xl"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={generateRecipesPDF}
+                  size="sm"
+                  className="h-10 rounded-xl"
+                  disabled={selectedIds.size === 0}
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  Gerar PDF ({selectedIds.size})
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {recipes.length} receita{recipes.length !== 1 ? "s" : ""}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={startPdfSelection}
+                  variant="outline"
+                  className="hidden md:flex h-10 rounded-xl"
+                  disabled={recipes.length === 0}
+                >
+                  {isPro ? (
+                    <FileText className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Lock className="h-4 w-4 mr-2" />
+                  )}
+                  Gerar PDF
+                </Button>
+                <Button onClick={handleNewRecipe} className="hidden md:flex h-10 rounded-xl">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Receita
+                </Button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Recipe List — card-based for mobile */}
@@ -278,9 +334,25 @@ const Receitas = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
                 >
-                  <Card className="rounded-2xl shadow-sm active:scale-[0.98] transition-transform">
+                  <Card
+                    className={`rounded-2xl shadow-sm transition-transform ${
+                      selectingForPdf
+                        ? selectedIds.has(recipe.id) ? "ring-2 ring-primary" : "opacity-50"
+                        : "active:scale-[0.98]"
+                    }`}
+                    onClick={selectingForPdf ? () => toggleRecipeSelection(recipe.id) : undefined}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
+                        {selectingForPdf && (
+                          <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            selectedIds.has(recipe.id)
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-muted-foreground"
+                          }`}>
+                            {selectedIds.has(recipe.id) && <Check className="h-3.5 w-3.5" />}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2">
                             <h3 className="font-semibold text-[15px] text-foreground truncate">{recipe.name}</h3>
@@ -306,25 +378,26 @@ const Receitas = () => {
                             )}
                           </div>
                         </div>
-                        {/* Actions */}
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => navigate(`/calculadora?edit=${recipe.id}`)}
-                            className="h-10 w-10 rounded-xl"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeleteId(recipe.id)}
-                            className="h-10 w-10 rounded-xl text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {!selectingForPdf && (
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate(`/calculadora?edit=${recipe.id}`)}
+                              className="h-10 w-10 rounded-xl"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteId(recipe.id)}
+                              className="h-10 w-10 rounded-xl text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
