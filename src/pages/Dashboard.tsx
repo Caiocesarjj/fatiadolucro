@@ -156,7 +156,7 @@ const Dashboard = () => {
       <div className="space-y-5">
         {/* Quick Actions — horizontal scrollable chips */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+          <div className="flex flex-wrap gap-2.5">
             <Button
               onClick={() => navigate("/receitas")}
               className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-11 rounded-xl shrink-0 shadow-sm px-4"
