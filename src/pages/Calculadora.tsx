@@ -83,6 +83,7 @@ interface PlatformResult {
   icon: React.ReactNode;
   fee: number;
   feeAmount: number;
+  sellingPrice: number;
   netProfit: number;
   margin: number;
 }
@@ -332,10 +333,13 @@ const Calculadora = () => {
     return platforms
       .filter((p) => selectedPlatforms.includes(p.id))
       .map((platform) => {
-        const feeAmount = (calculations.targetPrice * platform.fee_percentage) / 100;
-        const netProfit = calculations.targetPrice - calculations.unitCost - feeAmount;
-        const margin = calculations.targetPrice > 0 
-          ? (netProfit / calculations.targetPrice) * 100 
+        // Markup Divisor: preço final = valor_líquido / (1 - taxa/100)
+        const divisor = 1 - platform.fee_percentage / 100;
+        const sellingPrice = divisor > 0 ? calculations.targetPrice / divisor : 0;
+        const feeAmount = sellingPrice - calculations.targetPrice;
+        const netProfit = calculations.targetPrice - calculations.unitCost;
+        const margin = sellingPrice > 0 
+          ? (netProfit / sellingPrice) * 100 
           : 0;
 
         return {
@@ -347,6 +351,7 @@ const Calculadora = () => {
           ),
           fee: platform.fee_percentage,
           feeAmount,
+          sellingPrice,
           netProfit,
           margin,
         };
@@ -358,7 +363,9 @@ const Calculadora = () => {
     const markup = parseFloat(suggestedMarkup) || 100;
     const maxFee = Math.max(...platforms.map((p) => p.fee_percentage), 0);
     const basePrice = calculations.unitCost * (1 + markup / 100);
-    return basePrice / (1 - maxFee / 100);
+    // Use markup divisor for the suggested price too
+    const divisor = 1 - maxFee / 100;
+    return divisor > 0 ? basePrice / divisor : basePrice;
   }, [calculations.unitCost, suggestedMarkup, platforms]);
 
   const formatCurrency = (value: number) => {
@@ -857,7 +864,7 @@ const Calculadora = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="targetPrice">Preço de Venda Unitário (R$)</Label>
+                  <Label htmlFor="targetPrice">Valor Líquido Desejado por Unidade (R$)</Label>
                   <Input
                     id="targetPrice"
                     value={targetPrice}
@@ -865,6 +872,9 @@ const Calculadora = () => {
                     placeholder="Ex: 8,00"
                     className="input-currency text-lg font-semibold"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Quanto você quer receber limpo por unidade
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -978,7 +988,7 @@ const Calculadora = () => {
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <TrendingUp className="h-5 w-5 text-success" />
-                    Lucro por Plataforma
+                    Preço por Plataforma
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1007,16 +1017,33 @@ const Calculadora = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">
-                            Taxa da Plataforma
+                            Valor Líquido Desejado
+                          </span>
+                          <span>{formatCurrency(calculations.targetPrice)}</span>
+                        </div>
+                        <div className="p-2 rounded-md bg-muted/50 space-y-1">
+                          <p className="text-xs text-muted-foreground">
+                            Cálculo: {formatCurrency(calculations.targetPrice)} ÷ {((100 - result.fee) / 100).toFixed(2)} = {formatCurrency(result.sellingPrice)}
+                          </p>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Taxa da Plataforma ({result.fee}%)
                           </span>
                           <span className="text-destructive">
                             -{formatCurrency(result.feeAmount)}
                           </span>
                         </div>
                         <div className="border-t pt-2 flex justify-between items-center">
-                          <span className="font-medium">Lucro Líquido</span>
+                          <span className="font-medium">Venda por</span>
+                          <span className="text-lg font-bold text-primary">
+                            {formatCurrency(result.sellingPrice)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Lucro Líquido</span>
                           <span
-                            className={`text-lg font-bold ${
+                            className={`font-semibold ${
                               result.netProfit > 0
                                 ? "text-success"
                                 : "text-destructive"
