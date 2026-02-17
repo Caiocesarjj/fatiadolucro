@@ -108,11 +108,34 @@ const Receitas = () => {
 
   const isPro = planType === "pro";
 
-  const generateRecipesPDF = () => {
+  const generateRecipesPDF = async () => {
     if (!isPro) {
       setShowUpgrade(true);
       return;
     }
+
+    toast({ title: "Gerando PDF..." });
+
+    // Fetch full details for all recipes
+    const detailedRecipes = await Promise.all(
+      recipes.map(async (recipe) => {
+        const { data: items } = await supabase
+          .from("recipe_items")
+          .select("quantity, ingredients(name, unit_type, cost_per_unit)")
+          .eq("recipe_id", recipe.id);
+
+        return {
+          ...recipe,
+          items: (items || []).map((item) => ({
+            name: (item.ingredients as any)?.name || "—",
+            unit_type: (item.ingredients as any)?.unit_type || "weight",
+            quantity: item.quantity,
+            cost_per_unit: (item.ingredients as any)?.cost_per_unit || 0,
+            total: item.quantity * ((item.ingredients as any)?.cost_per_unit || 0),
+          })),
+        };
+      })
+    );
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -120,43 +143,70 @@ const Receitas = () => {
       return;
     }
 
-    const html = `<!DOCTYPE html><html><head><title>Relatório de Receitas</title>
+    const unitLabel = (type: string) => {
+      if (type === "weight") return "g";
+      if (type === "volume") return "ml";
+      return "un";
+    };
+
+    const recipesHTML = detailedRecipes.map((r) => {
+      const totalCost = getTotalCost(r);
+      const unitCost = getUnitCost(r);
+      const profit = getProfit(r);
+      const margin = getMargin(r);
+
+      return `
+        <div class="recipe-card">
+          <h2>${escapeHtml(r.name)}</h2>
+          <div class="meta">
+            Rendimento: <strong>${r.yield_amount} un</strong> · 
+            Mão de obra: <strong>${formatCurrency(r.labor_cost)}</strong>
+            ${r.target_sale_price ? ` · Preço de venda: <strong>${formatCurrency(r.target_sale_price)}</strong>` : ""}
+          </div>
+          <table>
+            <thead><tr><th>Ingrediente</th><th class="num">Qtd</th><th class="num">Custo Unit.</th><th class="num">Subtotal</th></tr></thead>
+            <tbody>
+              ${r.items.map(i => `<tr>
+                <td>${escapeHtml(i.name)}</td>
+                <td class="num">${i.quantity} ${unitLabel(i.unit_type)}</td>
+                <td class="num">${formatCurrency(i.cost_per_unit)}</td>
+                <td class="num">${formatCurrency(i.total)}</td>
+              </tr>`).join("")}
+            </tbody>
+            <tfoot>
+              <tr><td colspan="3">Custo dos ingredientes</td><td class="num">${formatCurrency(r.ingredientsCost)}</td></tr>
+              <tr><td colspan="3">Mão de obra</td><td class="num">${formatCurrency(r.labor_cost)}</td></tr>
+              <tr class="total"><td colspan="3">Custo Total</td><td class="num">${formatCurrency(totalCost)}</td></tr>
+              <tr class="total"><td colspan="3">Custo Unitário (÷${r.yield_amount})</td><td class="num">${formatCurrency(unitCost)}</td></tr>
+              ${profit !== null ? `<tr class="${profit >= 0 ? "positive" : "negative"}"><td colspan="3">Lucro Unitário</td><td class="num">${formatCurrency(profit)}</td></tr>` : ""}
+              ${margin !== null ? `<tr class="${margin >= 0 ? "positive" : "negative"}"><td colspan="3">Margem</td><td class="num">${margin.toFixed(1)}%</td></tr>` : ""}
+            </tfoot>
+          </table>
+        </div>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html><html><head><title>Receitas Detalhadas</title>
 <style>
-  body{font-family:Arial,sans-serif;padding:20px;color:#333}
-  h1{text-align:center;color:#10B981;margin-bottom:8px}
+  body{font-family:Arial,sans-serif;padding:20px;color:#333;max-width:800px;margin:0 auto}
+  h1{text-align:center;color:#10B981;margin-bottom:4px}
   .subtitle{text-align:center;color:#888;font-size:13px;margin-bottom:30px}
+  .recipe-card{border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;page-break-inside:avoid}
+  .recipe-card h2{margin:0 0 8px;font-size:18px;color:#111}
+  .meta{font-size:13px;color:#666;margin-bottom:14px}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th{background:#f0fdf4;padding:10px 8px;text-align:left;border-bottom:2px solid #10B981;font-weight:600}
-  td{padding:8px;border-bottom:1px solid #eee}
+  th{background:#f0fdf4;padding:8px;text-align:left;border-bottom:2px solid #10B981;font-weight:600}
+  td{padding:6px 8px;border-bottom:1px solid #f0f0f0}
   .num{text-align:right}
-  .positive{color:#16a34a;font-weight:600}
-  .negative{color:#dc2626;font-weight:600}
+  tfoot td{font-weight:600;border-top:1px solid #ddd}
+  tr.total td{font-size:14px;background:#f9fafb}
+  tr.positive td{color:#16a34a}
+  tr.negative td{color:#dc2626}
   .footer{text-align:center;margin-top:30px;font-size:11px;color:#aaa}
-  @media print{body{padding:0}}
+  @media print{body{padding:0}.recipe-card{box-shadow:none;border:1px solid #ddd}}
 </style></head><body>
-  <h1>Relatório de Receitas</h1>
-  <p class="subtitle">Gerado em ${new Date().toLocaleDateString("pt-BR")} — ${recipes.length} receita${recipes.length !== 1 ? "s" : ""}</p>
-  <table>
-    <thead><tr>
-      <th>Receita</th><th class="num">Rend.</th><th class="num">Custo Unit.</th>
-      <th class="num">Preço Venda</th><th class="num">Lucro Unit.</th><th class="num">Margem</th>
-    </tr></thead>
-    <tbody>
-      ${recipes.map(r => {
-        const unitCost = getUnitCost(r);
-        const profit = getProfit(r);
-        const margin = getMargin(r);
-        return `<tr>
-          <td>${escapeHtml(r.name)}</td>
-          <td class="num">${r.yield_amount} un</td>
-          <td class="num">${formatCurrency(unitCost)}</td>
-          <td class="num">${r.target_sale_price ? formatCurrency(r.target_sale_price) : "—"}</td>
-          <td class="num ${profit !== null ? (profit >= 0 ? "positive" : "negative") : ""}">${profit !== null ? formatCurrency(profit) : "—"}</td>
-          <td class="num ${margin !== null ? (margin >= 0 ? "positive" : "negative") : ""}">${margin !== null ? margin.toFixed(1) + "%" : "—"}</td>
-        </tr>`;
-      }).join("")}
-    </tbody>
-  </table>
+  <h1>Receitas Detalhadas</h1>
+  <p class="subtitle">Gerado em ${new Date().toLocaleDateString("pt-BR")} — ${detailedRecipes.length} receita${detailedRecipes.length !== 1 ? "s" : ""}</p>
+  ${recipesHTML}
   <div class="footer">Fatia do Lucro — Plano PRO</div>
   <script>window.print();</script>
 </body></html>`;
