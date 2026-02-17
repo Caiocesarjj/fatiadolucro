@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -12,116 +10,68 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Auth
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const mpAccessToken = Deno.env.get("MP_ACCESS_TOKEN");
+    if (!mpAccessToken) {
+      return new Response(
+        JSON.stringify({ error: "MP_ACCESS_TOKEN não configurado" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: authError } = await serviceClient.auth.getUser(token);
-    if (authError || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Parse body
+    const body = await req.json().catch(() => ({}));
+    const subscriptionId = body.subscription_id;
+
+    if (!subscriptionId) {
+      return new Response(
+        JSON.stringify({ error: "subscription_id é obrigatório" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const userId = userData.user.id;
-
-    // Get user's subscription_id
-    const { data: profile } = await serviceClient
-      .from("profiles")
-      .select("subscription_id, subscription_status, plan_type")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (!profile?.subscription_id) {
-      return new Response(JSON.stringify({ error: "Nenhuma assinatura encontrada", plan_type: profile?.plan_type || "free" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get MP access token
-    const { data: config } = await serviceClient
-      .from("app_config")
-      .select("mp_access_token")
-      .limit(1)
-      .maybeSingle();
-
-    if (!config?.mp_access_token) {
-      return new Response(JSON.stringify({ error: "Mercado Pago não configurado" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Query Mercado Pago for current subscription status
+    // Query Mercado Pago API
+    console.log("Querying MP for subscription:", subscriptionId);
     const mpResponse = await fetch(
-      `https://api.mercadopago.com/preapproval/${profile.subscription_id}`,
-      {
-        headers: { Authorization: `Bearer ${config.mp_access_token}` },
-      }
+      `https://api.mercadopago.com/preapproval/${subscriptionId}`,
+      { headers: { Authorization: `Bearer ${mpAccessToken}` } }
     );
 
     if (!mpResponse.ok) {
       const errText = await mpResponse.text();
       console.error("MP API error:", mpResponse.status, errText);
-      return new Response(JSON.stringify({ error: "Erro ao consultar Mercado Pago" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Erro ao consultar Mercado Pago",
+          mp_status_code: mpResponse.status,
+          mp_error: errText,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const mpData = await mpResponse.json();
-    const mpStatus = mpData.status;
-    console.log("MP subscription status:", mpStatus, "for user:", userId);
+    console.log("MP response status:", mpData.status, "payer:", mpData.payer_email);
 
-    // Map MP status to our status
-    const updatePayload: Record<string, unknown> = {};
+    // Map MP status
+    let plan_type = "free";
+    let subscription_status = "inactive";
 
-    if (mpStatus === "authorized") {
-      updatePayload.subscription_status = "active";
-      updatePayload.plan_type = "pro";
-    } else if (mpStatus === "cancelled" || mpStatus === "paused") {
-      updatePayload.subscription_status = "inactive";
-      updatePayload.plan_type = "free";
-    } else if (mpStatus === "pending") {
-      updatePayload.subscription_status = "pending";
-    }
-
-    if (mpData.next_payment_date) {
-      updatePayload.next_payment_date = mpData.next_payment_date;
-    }
-    if (mpData.init_point) {
-      updatePayload.mp_manage_subscription_url = mpData.init_point;
-    }
-
-    if (Object.keys(updatePayload).length > 0) {
-      const { error: updateError } = await serviceClient
-        .from("profiles")
-        .update(updatePayload)
-        .eq("user_id", userId);
-
-      if (updateError) {
-        console.error("Error updating profile:", updateError);
-      }
+    if (mpData.status === "authorized") {
+      plan_type = "pro";
+      subscription_status = "active";
+    } else if (mpData.status === "pending") {
+      subscription_status = "pending";
+    } else if (mpData.status === "cancelled" || mpData.status === "paused") {
+      plan_type = "free";
+      subscription_status = "inactive";
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        mp_status: mpStatus,
-        plan_type: (updatePayload.plan_type as string) || profile.plan_type,
-        subscription_status: (updatePayload.subscription_status as string) || profile.subscription_status,
+        mp_status: mpData.status,
+        plan_type,
+        subscription_status,
         next_payment_date: mpData.next_payment_date || null,
         manage_url: mpData.init_point || null,
       }),
@@ -129,9 +79,9 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Sync subscription error:", error);
-    return new Response(JSON.stringify({ error: "Erro interno" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Erro interno", details: String(error) }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });

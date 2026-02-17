@@ -211,41 +211,93 @@ const Planos = () => {
   const handleVerifySubscription = async () => {
     setVerifying(true);
     try {
+      // Refresh session to avoid Invalid Refresh Token issues
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("[Verify] Refresh token error, trying getSession:", refreshError.message);
+      }
+
       const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      const session = refreshData?.session || sessionData?.session;
       
-      if (!token) {
-        toast({ title: "Faça login novamente", variant: "destructive" });
+      if (!session?.access_token) {
+        toast({ title: "Sessão expirada. Faça login novamente.", variant: "destructive" });
         return;
       }
 
-      const response = await supabase.functions.invoke("sync-subscription", {
-        headers: { Authorization: `Bearer ${token}` },
+      if (!subscriptionId) {
+        toast({ title: "Nenhuma assinatura encontrada para verificar.", variant: "destructive" });
+        return;
+      }
+
+      // Call Lovable Cloud edge function directly (not external Supabase)
+      const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/sync-subscription`;
+      console.log("[Verify] Calling edge function:", cloudUrl);
+      console.log("[Verify] subscription_id:", subscriptionId);
+
+      const response = await fetch(cloudUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ subscription_id: subscriptionId }),
       });
 
-      if (response.error) throw response.error;
+      const result = await response.json();
+      console.log("[Verify] Edge function response:", JSON.stringify(result, null, 2));
 
-      const result = response.data;
-      
-      if (result?.plan_type) {
+      if (result.error && !result.mp_status) {
+        toast({ title: result.error, variant: "destructive" });
+        return;
+      }
+
+      if (result.mp_status_code) {
+        console.warn("[Verify] MP API returned error code:", result.mp_status_code, result.mp_error);
+        toast({ title: "Erro na conexão com Mercado Pago. Verifique o token.", variant: "destructive" });
+        return;
+      }
+
+      // Update profile on external Supabase based on MP response
+      if (result.success) {
+        const updatePayload: Record<string, unknown> = {
+          plan_type: result.plan_type,
+          subscription_status: result.subscription_status,
+        };
+        if (result.next_payment_date) updatePayload.next_payment_date = result.next_payment_date;
+        if (result.manage_url) updatePayload.mp_manage_subscription_url = result.manage_url;
+
+        console.log("[Verify] Updating profile with:", updatePayload);
+
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update(updatePayload as any)
+          .eq("user_id", user!.id);
+
+        if (updateError) {
+          console.error("[Verify] Profile update error:", updateError);
+        }
+
         setSubscriptionStatus(result.subscription_status);
         setNextPaymentDate(result.next_payment_date);
         if (result.manage_url) setManageUrl(result.manage_url);
-        
+
         if (result.plan_type === "pro") {
           toast({ title: "🎉 Assinatura ativada! Você agora é PRO!" });
-          // Reload to refresh subscription state everywhere
           setTimeout(() => window.location.reload(), 1500);
         } else if (result.subscription_status === "pending") {
-          toast({ title: "Pagamento ainda pendente. Tente novamente em alguns minutos." });
+          toast({
+            title: "⏳ Pagamento em análise",
+            description: "Seu pagamento está em análise pelo Mercado Pago. Tente clicar aqui novamente em 5 minutos.",
+          });
         } else {
-          toast({ title: "Status atualizado: " + (result.subscription_status || "sem assinatura") });
+          toast({ title: `Status: ${result.mp_status || result.subscription_status}` });
         }
-      } else {
-        toast({ title: "Status atualizado!" });
       }
-    } catch {
-      toast({ title: "Erro ao verificar", variant: "destructive" });
+    } catch (err: any) {
+      console.error("[Verify] Exception:", err);
+      toast({ title: "Erro ao verificar assinatura", description: err?.message, variant: "destructive" });
     } finally {
       setVerifying(false);
     }
