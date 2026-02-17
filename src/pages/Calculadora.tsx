@@ -42,7 +42,7 @@ interface Recipe {
 interface Ingredient {
   id: string;
   name: string;
-  unit_type: "weight" | "unit";
+  unit_type: "weight" | "unit" | "volume";
   cost_per_unit: number;
 }
 
@@ -560,9 +560,14 @@ const Calculadora = () => {
                               className="w-24 input-currency"
                             />
                             <span className="text-sm text-muted-foreground w-8">
-                              {ingredient?.unit_type === "weight" ? "g" : "un"}
+                              {ingredient?.unit_type === "weight" ? "g" : ingredient?.unit_type === "volume" ? "ml" : "un"}
                             </span>
                           </div>
+                          {ingredient && item.quantity > 0 && (
+                            <span className="text-xs text-primary font-medium whitespace-nowrap min-w-[70px] text-right">
+                              {formatCurrency(ingredient.cost_per_unit * item.quantity)}
+                            </span>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
