@@ -57,7 +57,6 @@ const Receitas = () => {
       return;
     }
 
-    // Fetch ingredient costs for each recipe
     const recipesWithCost = await Promise.all(
       (data || []).map(async (recipe) => {
         const { data: items } = await supabase
@@ -80,7 +79,6 @@ const Receitas = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    // Delete recipe items first, then recipe
     await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
     const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
     if (error) {
@@ -109,90 +107,87 @@ const Receitas = () => {
 
   return (
     <AppLayout title="Receitas">
-      <div className="space-y-4">
-        {/* Header with New Recipe button (desktop) */}
+      <div className="space-y-3">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {recipes.length} receita{recipes.length !== 1 ? "s" : ""} salva{recipes.length !== 1 ? "s" : ""}
+            {recipes.length} receita{recipes.length !== 1 ? "s" : ""}
           </p>
-          <Button onClick={handleNewRecipe} className="hidden md:flex">
+          <Button onClick={handleNewRecipe} className="hidden md:flex h-10 rounded-xl">
             <Plus className="h-4 w-4 mr-2" />
             Nova Receita
           </Button>
         </div>
 
-        {/* Recipe List */}
+        {/* Recipe List — card-based for mobile */}
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4 h-20" />
-              </Card>
+              <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : recipes.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-16 text-center"
+            className="flex flex-col items-center justify-center py-20 text-center"
           >
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
               <CakeSlice className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold text-lg mb-1">Nenhuma receita salva</h3>
-            <p className="text-muted-foreground text-sm mb-6">Comece agora criando sua primeira receita!</p>
-            <Button onClick={handleNewRecipe}>
+            <h3 className="font-semibold text-lg mb-1">Nenhuma receita</h3>
+            <p className="text-muted-foreground text-sm mb-6">Crie sua primeira receita agora!</p>
+            <Button onClick={handleNewRecipe} className="h-12 rounded-xl px-6">
               <Plus className="h-4 w-4 mr-2" />
               Nova Receita
             </Button>
           </motion.div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {recipes.map((recipe, index) => {
-              const profit = getProfit(recipe);
               const margin = getMargin(recipe);
               return (
                 <motion.div
                   key={recipe.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
                 >
-                  <Card>
+                  <Card className="rounded-2xl shadow-sm active:scale-[0.98] transition-transform">
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          {/* Top line */}
-                          <div className="flex items-baseline gap-2 flex-wrap">
-                            <h3 className="font-semibold text-foreground truncate">{recipe.name}</h3>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              Rende {recipe.yield_amount} un
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <h3 className="font-semibold text-[15px] text-foreground truncate">{recipe.name}</h3>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {recipe.yield_amount} un
                             </span>
                           </div>
-                          {/* Middle line */}
-                          <div className="flex items-center gap-3 mt-1 text-sm flex-wrap">
+                          <div className="flex items-center gap-3 mt-1.5 text-sm">
                             <span className="text-muted-foreground">
-                              Custo: {formatCurrency(getUnitCost(recipe))}
+                              {formatCurrency(getUnitCost(recipe))}
                             </span>
                             {recipe.target_sale_price && (
                               <span className="text-muted-foreground">
-                                Venda: {formatCurrency(recipe.target_sale_price)}
+                                → {formatCurrency(recipe.target_sale_price)}
                               </span>
                             )}
                             {margin !== null && (
-                              <span className={`font-bold ${margin >= 0 ? "text-success" : "text-destructive"}`}>
-                                Lucro: {margin.toFixed(0)}%
+                              <span className={`font-bold text-xs px-2 py-0.5 rounded-full ${
+                                margin >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                              }`}>
+                                {margin.toFixed(0)}%
                               </span>
                             )}
                           </div>
                         </div>
                         {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-0.5 shrink-0">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => navigate(`/calculadora?edit=${recipe.id}`)}
-                            className="h-8 w-8"
+                            className="h-10 w-10 rounded-xl"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -200,7 +195,7 @@ const Receitas = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => setDeleteId(recipe.id)}
-                            className="h-8 w-8 text-destructive"
+                            className="h-10 w-10 rounded-xl text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -215,10 +210,10 @@ const Receitas = () => {
         )}
       </div>
 
-      {/* FAB for mobile */}
+      {/* FAB */}
       <Button
         onClick={handleNewRecipe}
-        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg md:hidden z-40"
+        className="fab bg-primary hover:bg-primary/90 text-primary-foreground md:hidden"
         size="icon"
       >
         <Plus className="h-6 w-6" />
@@ -235,7 +230,7 @@ const Receitas = () => {
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
         title="Excluir receita?"
-        description="Essa ação não pode ser desfeita. A receita e todos os seus ingredientes serão removidos."
+        description="Essa ação não pode ser desfeita."
         confirmText="Excluir"
         onConfirm={handleDelete}
         variant="destructive"

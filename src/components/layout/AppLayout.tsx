@@ -10,9 +10,11 @@ import { Loader2 } from "lucide-react";
 interface AppLayoutProps {
   children: ReactNode;
   title?: string;
+  /** Optional action element shown in the app bar (right side) */
+  headerAction?: ReactNode;
 }
 
-export function AppLayout({ children, title }: AppLayoutProps) {
+export function AppLayout({ children, title, headerAction }: AppLayoutProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -41,17 +43,22 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         {/* Desktop sidebar - hidden on mobile */}
         {!isMobile && <AppSidebar />}
         <main className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-10 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-full items-center gap-4 px-6">
+          {/* Native App Bar */}
+          <header className="app-bar border-b border-border/50">
+            <div className="app-bar-inner">
               {!isMobile && <SidebarTrigger />}
               {title && (
-                <h1 className="text-xl font-semibold text-foreground">
-                  {title}
-                </h1>
+                <h1 className="app-bar-title flex-1">{title}</h1>
+              )}
+              {headerAction && (
+                <div className="ml-auto flex items-center gap-2">
+                  {headerAction}
+                </div>
               )}
             </div>
           </header>
-          <div className={`flex-1 p-4 md:p-6 animate-fade-in overflow-x-hidden ${isMobile ? 'pb-28' : ''}`}>
+          {/* Content area with safe padding for bottom nav */}
+          <div className={`flex-1 px-4 py-4 md:px-6 md:py-6 animate-fade-in overflow-x-hidden ${isMobile ? 'pb-24' : ''}`}>
             {children}
           </div>
         </main>

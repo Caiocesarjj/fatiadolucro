@@ -2,14 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fatia do Lucro Design System - Confectionery SaaS
-   Primary: Mint Green (#10B981) | Success: Emerald Green | Modern & Clean
+/* Fatia do Lucro Design System - Native App Feel
+   Primary: Mint Green (#10B981) | Mobile-First | iOS/Android Native Patterns
 */
 
 @layer base {
   :root {
     /* Core brand colors - Mint Green primary */
-    --background: 0 0% 99%;
+    --background: 0 0% 97%;
     --foreground: 240 10% 10%;
 
     --card: 0 0% 100%;
@@ -58,7 +58,7 @@
     --input: 240 6% 90%;
     --ring: 160 84% 39%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
     /* Chart colors */
     --chart-1: 160 84% 39%;
@@ -77,16 +77,16 @@
     --sidebar-border: 160 15% 92%;
     --sidebar-ring: 160 84% 39%;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(240 6% 10% / 0.03);
-    --shadow-md: 0 4px 6px -1px hsl(240 6% 10% / 0.05), 0 2px 4px -1px hsl(240 6% 10% / 0.03);
-    --shadow-lg: 0 10px 15px -3px hsl(240 6% 10% / 0.05), 0 4px 6px -2px hsl(240 6% 10% / 0.02);
-    --shadow-card: 0 1px 3px 0 hsl(240 6% 10% / 0.04), 0 1px 2px 0 hsl(240 6% 10% / 0.02);
-    --shadow-hover: 0 10px 20px -5px hsl(160 84% 39% / 0.15);
+    /* Shadows - iOS-like elevation */
+    --shadow-sm: 0 1px 2px 0 hsl(240 6% 10% / 0.04);
+    --shadow-md: 0 2px 8px -2px hsl(240 6% 10% / 0.08);
+    --shadow-lg: 0 8px 24px -4px hsl(240 6% 10% / 0.08);
+    --shadow-card: 0 1px 4px 0 hsl(240 6% 10% / 0.05);
+    --shadow-hover: 0 8px 20px -4px hsl(160 84% 39% / 0.12);
   }
 
   .dark {
-    --background: 240 10% 8%;
+    --background: 240 10% 6%;
     --foreground: 0 0% 95%;
 
     --card: 240 10% 10%;
@@ -144,34 +144,85 @@
     @apply border-border;
   }
 
+  html {
+    /* Prevent rubber-banding / overscroll on iOS */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior-y: contain;
   }
 
-  /* Custom scrollbar */
+  /* Hide scrollbars for native feel but keep scroll functionality */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 0;
+    height: 0;
   }
 
-  ::-webkit-scrollbar-track {
-    @apply bg-muted/50;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/20 rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/30;
+  /* On desktop show thin scrollbars */
+  @media (min-width: 768px) {
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      @apply bg-transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      @apply bg-muted-foreground/15 rounded-full;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      @apply bg-muted-foreground/25;
+    }
   }
 }
 
 @layer components {
-  /* Card variants */
+  /* ===== NATIVE APP PATTERNS ===== */
+
+  /* App Bar (sticky header) — iOS/Android style */
+  .app-bar {
+    @apply sticky top-0 z-30 bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .app-bar-inner {
+    @apply flex items-center h-14 px-4 gap-3;
+  }
+
+  .app-bar-title {
+    @apply text-lg font-semibold text-foreground leading-tight;
+  }
+
+  /* Bottom Navigation — native tab bar */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t z-50;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -1px 12px 0 hsl(240 6% 10% / 0.04);
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center py-1.5 px-2 text-muted-foreground transition-colors min-h-[48px];
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  /* Touch targets — minimum 44x44px */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Card variants — elevated, rounded, iOS-like */
   .card-metric {
-    @apply bg-card rounded-xl border shadow-sm p-6 transition-all duration-200;
+    @apply bg-card rounded-2xl border shadow-sm p-5 transition-all duration-200;
+    box-shadow: var(--shadow-card);
   }
 
   .card-metric:hover {
@@ -191,6 +242,23 @@
   .card-metric-warning {
     @apply card-metric border-l-4;
     border-left-color: hsl(var(--warning));
+  }
+
+  /* Native list item — like iOS Settings rows */
+  .native-list-item {
+    @apply flex items-center gap-4 px-4 py-3.5 min-h-[52px] active:bg-muted/60 transition-colors;
+  }
+
+  .native-list-item-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl;
+  }
+
+  /* FAB (Floating Action Button) — Material Design */
+  .fab {
+    @apply fixed z-40 h-14 w-14 rounded-full shadow-lg flex items-center justify-center;
+    right: 1rem;
+    bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    box-shadow: 0 4px 16px -2px hsl(var(--primary) / 0.35);
   }
 
   /* Gradient backgrounds */
@@ -258,36 +326,18 @@
 
   /* Animate */
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.25s ease-out;
   }
 
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
       transform: translateY(0);
     }
-  }
-
-  /* Bottom Navigation */
-  .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-background border-t z-50;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .bottom-nav-item {
-    @apply flex flex-col items-center justify-center py-2 px-3 text-muted-foreground transition-colors;
-  }
-
-  .bottom-nav-item.active {
-    @apply text-primary;
-  }
-
-  .bottom-nav-item:hover {
-    @apply text-primary/80;
   }
 
   /* Mobile safe-area & overflow fixes */
@@ -296,12 +346,6 @@
     .rounded-lg {
       max-width: 100%;
       overflow: hidden;
-    }
-
-    /* FAB positioning above bottom nav */
-    .fixed.bottom-4,
-    .fixed.bottom-6 {
-      bottom: calc(4rem + env(safe-area-inset-bottom) + 1rem);
     }
   }
 
