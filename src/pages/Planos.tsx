@@ -211,8 +211,39 @@ const Planos = () => {
   const handleVerifySubscription = async () => {
     setVerifying(true);
     try {
-      await checkSubscription();
-      toast({ title: "Status atualizado!" });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      if (!token) {
+        toast({ title: "Faça login novamente", variant: "destructive" });
+        return;
+      }
+
+      const response = await supabase.functions.invoke("sync-subscription", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.error) throw response.error;
+
+      const result = response.data;
+      
+      if (result?.plan_type) {
+        setSubscriptionStatus(result.subscription_status);
+        setNextPaymentDate(result.next_payment_date);
+        if (result.manage_url) setManageUrl(result.manage_url);
+        
+        if (result.plan_type === "pro") {
+          toast({ title: "🎉 Assinatura ativada! Você agora é PRO!" });
+          // Reload to refresh subscription state everywhere
+          setTimeout(() => window.location.reload(), 1500);
+        } else if (result.subscription_status === "pending") {
+          toast({ title: "Pagamento ainda pendente. Tente novamente em alguns minutos." });
+        } else {
+          toast({ title: "Status atualizado: " + (result.subscription_status || "sem assinatura") });
+        }
+      } else {
+        toast({ title: "Status atualizado!" });
+      }
     } catch {
       toast({ title: "Erro ao verificar", variant: "destructive" });
     } finally {
