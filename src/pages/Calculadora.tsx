@@ -24,7 +24,22 @@ import {
   ArrowLeft,
   Flame,
   Info,
+  X,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscription, FREE_RECIPE_LIMIT_VALUE } from "@/hooks/useSubscription";
@@ -96,6 +111,12 @@ const Calculadora = () => {
   const [minuteRate, setMinuteRate] = useState(0);
   const [variableCostRate, setVariableCostRate] = useState(10);
   const [laborAutoCalculated, setLaborAutoCalculated] = useState(false);
+  // Quick-add ingredient state
+  const [showNewIngredient, setShowNewIngredient] = useState(false);
+  const [newIngName, setNewIngName] = useState("");
+  const [newIngUnitType, setNewIngUnitType] = useState<"weight" | "unit" | "volume">("weight");
+  const [newIngPackageSize, setNewIngPackageSize] = useState("");
+  const [newIngPricePaid, setNewIngPricePaid] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -434,6 +455,42 @@ const Calculadora = () => {
     }
   };
 
+  const handleQuickAddIngredient = async () => {
+    if (!newIngName.trim()) {
+      toast({ variant: "destructive", title: "Nome obrigatório" });
+      return;
+    }
+    const packageSize = parseFloat(newIngPackageSize.replace(",", ".")) || 1;
+    const pricePaid = parseFloat(newIngPricePaid.replace(",", ".")) || 0;
+    const costPerUnit = packageSize > 0 ? pricePaid / packageSize : 0;
+
+    const { data, error } = await supabase
+      .from("ingredients")
+      .insert({
+        name: newIngName.trim(),
+        unit_type: newIngUnitType,
+        package_size: packageSize,
+        price_paid: pricePaid,
+        cost_per_unit: costPerUnit,
+        user_id: user!.id,
+      } as any)
+      .select("id, name, unit_type, cost_per_unit")
+      .single();
+
+    if (error) {
+      toast({ variant: "destructive", title: "Erro ao criar ingrediente", description: mapErrorToUserMessage(error) });
+      return;
+    }
+
+    setIngredients((prev) => [...prev, data as Ingredient]);
+    setSelectedIngredients([{ ingredientId: data.id, quantity: 0 }, ...selectedIngredients]);
+    setShowNewIngredient(false);
+    setNewIngName("");
+    setNewIngPackageSize("");
+    setNewIngPricePaid("");
+    toast({ title: "Ingrediente criado e adicionado!" });
+  };
+
   return (
     <>
     <AppLayout title={editId ? "Editar Receita" : "Calculadora de Receitas"}>
@@ -509,43 +566,115 @@ const Calculadora = () => {
                   </TabsList>
                   
                   <TabsContent value="ingredient">
-                    {/* Add button on top */}
-                    <div className="pb-3 border-b mb-3">
-                      <Button onClick={addIngredient} size="sm" variant="outline" className="w-full">
+                    {/* Add buttons */}
+                    <div className="pb-3 border-b mb-3 flex gap-2">
+                      <Button onClick={addIngredient} size="sm" variant="outline" className="flex-1">
                         <Plus className="h-4 w-4 mr-1" />
-                        Adicionar Ingrediente
+                        Adicionar
                       </Button>
+                      <Dialog open={showNewIngredient} onOpenChange={setShowNewIngredient}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="secondary" className="shrink-0">
+                            <Plus className="h-4 w-4 mr-1" />
+                            Criar Novo
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-sm">
+                          <DialogHeader>
+                            <DialogTitle>Novo Ingrediente</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Nome</Label>
+                              <Input
+                                value={newIngName}
+                                onChange={(e) => setNewIngName(e.target.value)}
+                                placeholder="Ex: Farinha de Trigo"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Tipo de Medida</Label>
+                              <Select value={newIngUnitType} onValueChange={(v) => setNewIngUnitType(v as any)}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="weight">Peso (g/kg)</SelectItem>
+                                  <SelectItem value="unit">Unidade (un)</SelectItem>
+                                  <SelectItem value="volume">Volume (ml/L)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label>Tamanho Emb. ({newIngUnitType === "weight" ? "g" : newIngUnitType === "volume" ? "ml" : "un"})</Label>
+                                <Input
+                                  value={newIngPackageSize}
+                                  onChange={(e) => setNewIngPackageSize(e.target.value)}
+                                  placeholder="Ex: 1000"
+                                  inputMode="decimal"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Preço Pago (R$)</Label>
+                                <Input
+                                  value={newIngPricePaid}
+                                  onChange={(e) => setNewIngPricePaid(e.target.value)}
+                                  placeholder="Ex: 5,90"
+                                  inputMode="decimal"
+                                />
+                              </div>
+                            </div>
+                            <Button onClick={handleQuickAddIngredient} className="w-full">
+                              Salvar e Adicionar à Receita
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    <div className="space-y-3 max-h-[350px] overflow-y-auto" data-ingredient-list>
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto" data-ingredient-list>
                     {selectedIngredients.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">
-                        Clique em "Adicionar Ingrediente" para começar
+                        Clique em "Adicionar" para começar
                       </p>
                     ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                     {selectedIngredients.map((item, index) => {
                       const ingredient = ingredients.find(
                         (i) => i.id === item.ingredientId
                       );
+                      const itemCost = ingredient && item.quantity > 0 ? ingredient.cost_per_unit * item.quantity : 0;
                       return (
                         <div
                           key={index}
-                          className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                          className="p-3 bg-muted/50 rounded-xl space-y-2"
                         >
-                          <select
-                            value={item.ingredientId}
-                            onChange={(e) =>
-                              updateIngredient(index, "ingredientId", e.target.value)
-                            }
-                            className="flex-1 bg-background border rounded-md px-3 py-2 text-sm"
-                          >
-                            {ingredients.map((ing) => (
-                              <option key={ing.id} value={ing.id}>
-                                {ing.name}
-                              </option>
-                            ))}
-                          </select>
+                          {/* Row 1: Name + Remove */}
                           <div className="flex items-center gap-2">
+                            <select
+                              value={item.ingredientId}
+                              onChange={(e) =>
+                                updateIngredient(index, "ingredientId", e.target.value)
+                              }
+                              className="flex-1 bg-background border rounded-lg px-3 py-2.5 text-sm min-h-[44px]"
+                            >
+                              {ingredients.map((ing) => (
+                                <option key={ing.id} value={ing.id}>
+                                  {ing.name}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeIngredient(index)}
+                              className="h-10 w-10 shrink-0"
+                            >
+                              <Minus className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                          {/* Row 2: Quantity + Unit + Cost */}
+                          <div className="flex items-center gap-3 pl-1">
                             <Input
                               type="number"
                               value={item.quantity || ""}
@@ -557,24 +686,18 @@ const Calculadora = () => {
                                 )
                               }
                               placeholder="Qtd"
-                              className="w-24 input-currency"
+                              className="w-24 input-currency h-10"
+                              inputMode="decimal"
                             />
-                            <span className="text-sm text-muted-foreground w-8">
+                            <span className="text-sm text-muted-foreground">
                               {ingredient?.unit_type === "weight" ? "g" : ingredient?.unit_type === "volume" ? "ml" : "un"}
                             </span>
+                            {itemCost > 0 && (
+                              <span className="ml-auto text-sm text-primary font-semibold">
+                                {formatCurrency(itemCost)}
+                              </span>
+                            )}
                           </div>
-                          {ingredient && item.quantity > 0 && (
-                            <span className="text-xs text-primary font-medium whitespace-nowrap min-w-[70px] text-right">
-                              {formatCurrency(ingredient.cost_per_unit * item.quantity)}
-                            </span>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeIngredient(index)}
-                          >
-                            <Minus className="h-4 w-4 text-destructive" />
-                          </Button>
                         </div>
                       );
                     })}
