@@ -88,13 +88,15 @@ interface Client {
   name: string;
 }
 
-// Brand colors for platforms
+// Use platform color from database settings
 const getPlatformColor = (name: string, customColor?: string): string => {
+  if (customColor) return customColor;
+  // Fallback colors if no custom color is set
   const lowerName = name.toLowerCase();
   if (lowerName.includes("ifood")) return "#EA1D2C";
   if (lowerName.includes("99food") || lowerName.includes("99 food")) return "#F7D200";
   if (lowerName.includes("balcão") || lowerName.includes("venda direta")) return "#10B981";
-  return customColor || "#10B981";
+  return "#ea90c9";
 };
 
 const Financeiro = () => {
