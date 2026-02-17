@@ -220,17 +220,17 @@ const Ingredientes = () => {
 
   return (
     <AppLayout title="Ingredientes">
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar ingredientes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-11 h-11 rounded-xl"
               />
             </div>
 
@@ -244,7 +244,7 @@ const Ingredientes = () => {
                     }
                     resetForm();
                   }}
-                  className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                  className="bg-primary hover:bg-primary-hover text-primary-foreground h-11 rounded-xl hidden md:flex"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Ingrediente
@@ -414,12 +414,68 @@ const Ingredientes = () => {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Mobile Card List */}
+        <div className="md:hidden space-y-2">
+          {filteredIngredients.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="font-medium">Nenhum ingrediente cadastrado</p>
+              <p className="text-sm mt-1">Toque em + para começar</p>
+            </div>
+          ) : (
+            filteredIngredients.map((ingredient, index) => (
+              <motion.div
+                key={ingredient.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.02 }}
+              >
+                <Card className="rounded-2xl shadow-sm active:scale-[0.98] transition-transform">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <h3 className="font-semibold text-[15px] truncate">{ingredient.name}</h3>
+                          {ingredient.brand && (
+                            <span className="text-xs text-muted-foreground shrink-0">{ingredient.brand}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-sm">
+                          <span className="text-muted-foreground">
+                            {formatCurrency(ingredient.price_paid)} · {ingredient.package_size}
+                            {ingredient.unit_type === "weight" ? "g" : ingredient.unit_type === "volume" ? "ml" : " un"}
+                          </span>
+                          <span className="badge-success text-xs">
+                            {formatCostPerUnit(ingredient.cost_per_unit, ingredient.unit_type)}
+                          </span>
+                        </div>
+                        {ingredient.store && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{ingredient.store}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(ingredient)} className="h-10 w-10 rounded-xl">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(ingredient.id)} className="h-10 w-10 rounded-xl">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="hidden md:block"
         >
-          <Card>
+          <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
@@ -434,87 +490,6 @@ const Ingredientes = () => {
                 <div className="text-center py-12 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhum ingrediente cadastrado</p>
-                  <p className="text-sm">
-                    Clique em "Novo Ingrediente" para começar
-                  </p>
-                </div>
-              ) : groupByStore ? (
-                <div className="space-y-6">
-                  {Object.entries(
-                    filteredIngredients.reduce((acc, ing) => {
-                      const store = ing.store || "Sem loja";
-                      if (!acc[store]) acc[store] = [];
-                      acc[store].push(ing);
-                      return acc;
-                    }, {} as Record<string, Ingredient[]>)
-                  ).map(([storeName, storeIngredients]) => (
-                    <div key={storeName}>
-                      <h3 className="font-semibold text-lg mb-3 pb-2 border-b flex items-center gap-2">
-                        <Package className="h-4 w-4 text-primary" />
-                        {storeName}
-                        <span className="text-sm font-normal text-muted-foreground">
-                          ({storeIngredients.length} itens)
-                        </span>
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Nome</TableHead>
-                              <TableHead>Marca</TableHead>
-                              <TableHead className="text-right">Preço</TableHead>
-                              <TableHead className="text-right">Tamanho</TableHead>
-                              <TableHead className="text-right">Custo/Unidade</TableHead>
-                              <TableHead className="w-[100px]"></TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {storeIngredients.map((ingredient) => (
-                              <TableRow key={ingredient.id} className="table-row-hover">
-                                <TableCell className="font-medium">
-                                  {ingredient.name}
-                                </TableCell>
-                                <TableCell>{ingredient.brand || "-"}</TableCell>
-                                <TableCell className="text-right font-mono">
-                                  {formatCurrency(ingredient.price_paid)}
-                                </TableCell>
-                                <TableCell className="text-right font-mono">
-                                  {ingredient.package_size}
-                                  {ingredient.unit_type === "weight" ? "g" : ingredient.unit_type === "volume" ? "ml" : " un"}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <span className="badge-success">
-                                    {formatCostPerUnit(
-                                      ingredient.cost_per_unit,
-                                      ingredient.unit_type
-                                    )}
-                                  </span>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex gap-1 justify-end">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleEdit(ingredient)}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDelete(ingredient.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -526,49 +501,30 @@ const Ingredientes = () => {
                         <TableHead>Loja</TableHead>
                         <TableHead className="text-right">Preço</TableHead>
                         <TableHead className="text-right">Tamanho</TableHead>
-                        <TableHead className="text-right">
-                          Custo/Unidade
-                        </TableHead>
+                        <TableHead className="text-right">Custo/Unidade</TableHead>
                         <TableHead className="w-[100px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredIngredients.map((ingredient) => (
                         <TableRow key={ingredient.id} className="table-row-hover">
-                          <TableCell className="font-medium">
-                            {ingredient.name}
-                          </TableCell>
+                          <TableCell className="font-medium">{ingredient.name}</TableCell>
                           <TableCell>{ingredient.brand || "-"}</TableCell>
                           <TableCell>{ingredient.store || "-"}</TableCell>
-                          <TableCell className="text-right font-mono">
-                            {formatCurrency(ingredient.price_paid)}
-                          </TableCell>
+                          <TableCell className="text-right font-mono">{formatCurrency(ingredient.price_paid)}</TableCell>
                           <TableCell className="text-right font-mono">
                             {ingredient.package_size}
                             {ingredient.unit_type === "weight" ? "g" : ingredient.unit_type === "volume" ? "ml" : " un"}
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className="badge-success">
-                              {formatCostPerUnit(
-                                ingredient.cost_per_unit,
-                                ingredient.unit_type
-                              )}
-                            </span>
+                            <span className="badge-success">{formatCostPerUnit(ingredient.cost_per_unit, ingredient.unit_type)}</span>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1 justify-end">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(ingredient)}
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(ingredient)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(ingredient.id)}
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(ingredient.id)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </div>
@@ -582,6 +538,22 @@ const Ingredientes = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* FAB for mobile */}
+        <Button
+          onClick={() => {
+            if (!canCreate("ingredients")) {
+              setShowUpgrade(true);
+              return;
+            }
+            resetForm();
+            setDialogOpen(true);
+          }}
+          className="fab bg-primary hover:bg-primary/90 text-primary-foreground md:hidden"
+          size="icon"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
       </div>
       <UpgradeModal
         open={showUpgrade}

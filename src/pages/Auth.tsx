@@ -4,12 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Cookie, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone, Gift } from "lucide-react";
 import { z } from "zod";
 import { validateReferralCode } from "@/lib/referralValidation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const loginSchema = z.object({
   email: z.string().email("Digite um e-mail válido"),
@@ -56,7 +55,6 @@ const Auth = () => {
   const mfaFlagRef = useRef<(v: boolean) => void>(() => {});
 
   useEffect(() => {
-    // Track if MFA flow is active to prevent onAuthStateChange from navigating
     let mfaInProgress = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -66,7 +64,6 @@ const Auth = () => {
           return;
         }
         if (session && !mfaInProgress) {
-          // Use setTimeout to avoid blocking the auth state update
           setTimeout(() => {
             checkMfaAndNavigate();
           }, 0);
@@ -82,7 +79,7 @@ const Auth = () => {
         ]);
         const hasMfa = factorsRes.data?.totp?.some((f: any) => f.status === "verified");
         if (hasMfa && aalRes.data?.currentLevel !== "aal2") {
-          return; // MFA pending, don't navigate
+          return;
         }
         navigate("/dashboard");
       } catch {
@@ -96,7 +93,6 @@ const Auth = () => {
       }
     });
 
-    // Expose mfaInProgress setter for handleAuth
     mfaFlagRef.current = (v: boolean) => { mfaInProgress = v; };
 
     return () => subscription.unsubscribe();
@@ -132,7 +128,6 @@ const Auth = () => {
       return Object.keys(fieldErrors).length === 0;
     }
 
-    // login
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
       result.error.errors.forEach((err) => {
@@ -161,11 +156,9 @@ const Auth = () => {
             toast({ variant: "destructive", title: "Erro ao entrar", description: "Ocorreu um erro. Tente novamente." });
           }
         } else if (data?.session) {
-          // Check if MFA is required — listFactors + challenge in parallel-ready way
           const { data: factorsData } = await supabase.auth.mfa.listFactors();
           const verifiedFactor = factorsData?.totp?.find((f: any) => f.status === "verified");
           if (verifiedFactor) {
-            // Flag to prevent onAuthStateChange from navigating during MFA
             mfaFlagRef.current(true);
             const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: verifiedFactor.id });
             if (challengeError) {
@@ -208,14 +201,11 @@ const Auth = () => {
             toast({ variant: "destructive", title: "Erro ao criar conta", description: "Ocorreu um erro. Tente novamente." });
           }
         } else if (data.user) {
-          // Apply referral code if provided
           if (referralCode.trim()) {
             const code = referralCode.trim().toUpperCase();
             try {
-              // First check if it's a coupon
               const { data: couponData } = await supabase.rpc('validate_coupon', { coupon_code: code });
               if (!couponData?.valid) {
-                // Try as referral code
                 const validation = validateReferralCode(code);
                 if (validation.valid) {
                   const { data: affiliate } = await supabase
@@ -232,7 +222,7 @@ const Auth = () => {
                 }
               }
             } catch {
-              // Non-blocking: don't fail signup because of referral
+              // Non-blocking
             }
           }
           toast({ title: "Conta criada com sucesso!", description: "Verifique seu e-mail para confirmar a conta." });
@@ -264,10 +254,10 @@ const Auth = () => {
 
   const getTitle = () => {
     switch (mode) {
-      case "login": return "Entrar";
+      case "login": return "Bem-vindo de volta";
       case "signup": return "Criar conta";
-      case "forgot": return "Esqueci minha senha";
-      case "reset": return "Redefinir senha";
+      case "forgot": return "Recuperar senha";
+      case "reset": return "Nova senha";
       case "mfa": return "Verificação 2FA";
     }
   };
@@ -275,10 +265,10 @@ const Auth = () => {
   const getDescription = () => {
     switch (mode) {
       case "login": return "Entre com seu e-mail e senha";
-      case "signup": return "Crie sua conta para começar";
-      case "forgot": return "Informe seu e-mail para receber o link de redefinição";
+      case "signup": return "Comece a gerenciar sua confeitaria";
+      case "forgot": return "Enviaremos um link para seu e-mail";
       case "reset": return "Digite sua nova senha";
-      case "mfa": return "Digite o código do seu aplicativo autenticador";
+      case "mfa": return "Digite o código do autenticador";
     }
   };
 
@@ -297,270 +287,296 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary-light/30 to-background p-4">
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Top brand section */}
+      <div className="flex-shrink-0 pt-safe-top px-6 pt-12 pb-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 200 }}
+          className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-4 shadow-lg"
+          style={{ boxShadow: '0 8px 24px -4px hsl(160 84% 39% / 0.3)' }}
+        >
+          <Cookie className="w-8 h-8 text-primary-foreground" />
+        </motion.div>
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="text-2xl font-bold text-foreground"
+        >
+          Fatia do Lucro
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25 }}
+          className="text-sm text-muted-foreground mt-1"
+        >
+          Gestão inteligente para confeitarias
+        </motion.p>
+      </div>
+
+      {/* Form section — fills remaining space */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        transition={{ delay: 0.2 }}
+        className="flex-1 bg-card rounded-t-3xl shadow-lg border-t px-6 pt-8 pb-8 overflow-y-auto"
       >
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-4"
-          >
-            <Cookie className="w-8 h-8 text-primary-foreground" />
-          </motion.div>
-          <h1 className="text-3xl font-bold text-foreground">Fatia do Lucro</h1>
-          <p className="text-muted-foreground mt-2">Gestão inteligente para confeitarias</p>
-        </div>
-
-        <Card className="shadow-lg border-0 bg-card/80 backdrop-blur">
-          <CardHeader className="space-y-1 pb-4">
+        <div className="max-w-md mx-auto">
+          {/* Back button */}
+          <AnimatePresence mode="wait">
             {(mode === "forgot" || mode === "reset" || mode === "mfa") && (
+              <motion.button
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                type="button"
+                onClick={() => switchMode("login")}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors mb-4 touch-target -ml-2 px-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          <h2 className="text-xl font-bold text-foreground mb-1">{getTitle()}</h2>
+          <p className="text-sm text-muted-foreground mb-6">{getDescription()}</p>
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            {/* Full Name - signup only */}
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName" className="text-sm font-medium">Nome Completo</Label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Seu nome completo"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={`pl-11 h-12 rounded-xl text-base ${errors.fullName ? "border-destructive" : ""}`}
+                    disabled={loading}
+                  />
+                </div>
+                {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
+              </div>
+            )}
+
+            {/* Phone - signup only */}
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-sm font-medium">Telefone</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="(00) 00000-0000"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={`pl-11 h-12 rounded-xl text-base ${errors.phone ? "border-destructive" : ""}`}
+                    disabled={loading}
+                  />
+                </div>
+                {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+              </div>
+            )}
+
+            {/* Email */}
+            {mode !== "reset" && mode !== "mfa" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={`pl-11 h-12 rounded-xl text-base ${errors.email ? "border-destructive" : ""}`}
+                    disabled={loading}
+                  />
+                </div>
+                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              </div>
+            )}
+
+            {/* Password */}
+            {mode !== "forgot" && mode !== "mfa" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-medium">{mode === "reset" ? "Nova senha" : "Senha"}</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`pl-11 pr-11 h-12 rounded-xl text-base ${errors.password ? "border-destructive" : ""}`}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors touch-target"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+              </div>
+            )}
+
+            {/* Confirm Password */}
+            {(mode === "signup" || mode === "reset") && (
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`pl-11 h-12 rounded-xl text-base ${errors.confirmPassword ? "border-destructive" : ""}`}
+                    disabled={loading}
+                  />
+                </div>
+                {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
+              </div>
+            )}
+
+            {/* MFA Code Input */}
+            {mode === "mfa" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="mfaCode" className="text-sm font-medium">Código 2FA</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="mfaCode"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="000000"
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="pl-11 h-12 rounded-xl text-center text-lg tracking-widest"
+                    maxLength={6}
+                    disabled={loading}
+                    autoFocus
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Abra seu app autenticador e digite o código de 6 dígitos</p>
+              </div>
+            )}
+
+            {/* Referral / Coupon code - signup only */}
+            {mode === "signup" && (
+              <div className="space-y-2">
+                {!showReferralInput ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowReferralInput(true)}
+                    className="flex items-center gap-1.5 text-xs text-primary font-medium touch-target"
+                  >
+                    <Gift className="h-3.5 w-3.5" />
+                    Tem um código de indicação ou cupom?
+                  </button>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="referralCode" className="text-sm font-medium">Código de Indicação / Cupom</Label>
+                    <Input
+                      id="referralCode"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="Ex: MARIA10"
+                      className="font-mono uppercase text-sm h-12 rounded-xl"
+                      maxLength={20}
+                      disabled={loading}
+                    />
+                    <p className="text-xs text-muted-foreground">Desconto vitalício de R$ 14,99/mês</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Terms checkbox - signup only */}
+            {mode === "signup" && (
+              <label className="flex items-start gap-3 cursor-pointer touch-target py-1">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 rounded border-border accent-primary"
+                />
+                <span className="text-sm text-muted-foreground leading-tight">
+                  Li e concordo com os{" "}
+                  <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-primary font-medium">
+                    Termos de Uso
+                  </a>{" "}
+                  e{" "}
+                  <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-primary font-medium">
+                    Política de Privacidade
+                  </a>.
+                </span>
+              </label>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary-hover text-primary-foreground shadow-md"
+              style={{ boxShadow: '0 4px 14px -2px hsl(160 84% 39% / 0.3)' }}
+              disabled={loading || (mode === "mfa" && mfaCode.length !== 6) || (mode === "signup" && !acceptedTerms)}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {mode === "login" ? "Entrando..." : mode === "signup" ? "Criando conta..." : mode === "forgot" ? "Enviando..." : mode === "mfa" ? "Verificando..." : "Redefinindo..."}
+                </>
+              ) : mode === "login" ? "Entrar" : mode === "signup" ? "Criar conta" : mode === "forgot" ? "Enviar link" : mode === "mfa" ? "Verificar" : "Redefinir senha"}
+            </Button>
+          </form>
+
+          {/* Footer links */}
+          <div className="mt-8 text-center space-y-3">
+            {mode === "login" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => switchMode("forgot")}
+                  className="block w-full text-sm text-muted-foreground hover:text-primary transition-colors touch-target"
+                >
+                  Esqueci minha senha
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchMode("signup")}
+                  className="block w-full text-sm font-medium text-primary touch-target"
+                >
+                  Não tem conta? <span className="underline">Criar agora</span>
+                </button>
+              </>
+            )}
+            {mode === "signup" && (
               <button
                 type="button"
                 onClick={() => switchMode("login")}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-2 w-fit"
+                className="text-sm font-medium text-primary touch-target"
               >
-                <ArrowLeft className="h-4 w-4" />
-                Voltar ao login
+                Já tem conta? <span className="underline">Entrar</span>
               </button>
             )}
-            <CardTitle className="text-2xl text-center">{getTitle()}</CardTitle>
-            <CardDescription className="text-center">{getDescription()}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAuth} className="space-y-4">
-              {/* Full Name - signup only */}
-              {mode === "signup" && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Nome Completo</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className={`pl-10 ${errors.fullName ? "border-destructive" : ""}`}
-                      disabled={loading}
-                    />
-                  </div>
-                  {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
-                </div>
-              )}
-
-              {/* Phone - signup only */}
-              {mode === "signup" && (
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="(00) 00000-0000"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className={`pl-10 ${errors.phone ? "border-destructive" : ""}`}
-                      disabled={loading}
-                    />
-                  </div>
-                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-                </div>
-              )}
-
-              {/* Email - shown on login, signup, forgot */}
-              {mode !== "reset" && mode !== "mfa" && (
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={`pl-10 ${errors.email ? "border-destructive" : ""}`}
-                      disabled={loading}
-                    />
-                  </div>
-                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                </div>
-              )}
-
-              {/* Password - shown on login, signup, reset */}
-              {mode !== "forgot" && mode !== "mfa" && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">{mode === "reset" ? "Nova senha" : "Senha"}</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={`pl-10 pr-10 ${errors.password ? "border-destructive" : ""}`}
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                </div>
-              )}
-
-              {/* Confirm Password - shown on signup and reset */}
-              {(mode === "signup" || mode === "reset") && (
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="confirmPassword"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={`pl-10 ${errors.confirmPassword ? "border-destructive" : ""}`}
-                      disabled={loading}
-                    />
-                  </div>
-                  {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
-                </div>
-              )}
-
-              {/* MFA Code Input */}
-              {mode === "mfa" && (
-                <div className="space-y-2">
-                  <Label htmlFor="mfaCode">Código 2FA</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="mfaCode"
-                      type="text"
-                      placeholder="000000"
-                      value={mfaCode}
-                      onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      className="pl-10 text-center text-lg tracking-widest"
-                      maxLength={6}
-                      disabled={loading}
-                      autoFocus
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Abra seu app autenticador e digite o código de 6 dígitos</p>
-                </div>
-              )}
-
-              {/* Referral / Coupon code - signup only */}
-              {mode === "signup" && (
-                <div className="space-y-2">
-                  {!showReferralInput ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowReferralInput(true)}
-                      className="flex items-center gap-1 text-xs text-primary underline hover:text-primary/80"
-                    >
-                      <Gift className="h-3 w-3" />
-                      Tem um código de indicação ou cupom?
-                    </button>
-                  ) : (
-                    <div className="space-y-1">
-                      <Label htmlFor="referralCode" className="text-sm">Código de Indicação / Cupom</Label>
-                      <Input
-                        id="referralCode"
-                        value={referralCode}
-                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                        placeholder="Ex: MARIA10"
-                        className="font-mono uppercase text-sm"
-                        maxLength={20}
-                        disabled={loading}
-                      />
-                      <p className="text-xs text-muted-foreground">Desconto vitalício de R$ 14,99/mês</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Terms checkbox - signup only */}
-              {mode === "signup" && (
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-border accent-primary"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Li e concordo com os{" "}
-                    <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary-hover">
-                      Termos de Uso
-                    </a>{" "}
-                    e{" "}
-                    <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary-hover">
-                      Política de Privacidade
-                    </a>.
-                  </span>
-                </label>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary-hover text-primary-foreground"
-                disabled={loading || (mode === "mfa" && mfaCode.length !== 6) || (mode === "signup" && !acceptedTerms)}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {mode === "login" ? "Entrando..." : mode === "signup" ? "Criando conta..." : mode === "forgot" ? "Enviando..." : mode === "mfa" ? "Verificando..." : "Redefinindo..."}
-                  </>
-                ) : mode === "login" ? "Entrar" : mode === "signup" ? "Criar conta" : mode === "forgot" ? "Enviar link" : mode === "mfa" ? "Verificar" : "Redefinir senha"}
-              </Button>
-            </form>
-
-            {/* Footer links */}
-            <div className="mt-6 text-center space-y-2">
-              {mode === "login" && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => switchMode("forgot")}
-                    className="block w-full text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    Esqueci minha senha
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => switchMode("signup")}
-                    className="block w-full text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    Não tem conta? Criar agora
-                  </button>
-                </>
-              )}
-              {mode === "signup" && (
-                <button
-                  type="button"
-                  onClick={() => switchMode("login")}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Já tem conta? Entrar
-                </button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
