@@ -553,7 +553,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       transaction_type: "revenue" | "expense"
-      unit_type: "weight" | "unit"
+      unit_type: "weight" | "unit" | "volume"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -692,7 +692,7 @@ export const Constants = {
         "cancelled",
       ],
       transaction_type: ["revenue", "expense"],
-      unit_type: ["weight", "unit"],
+      unit_type: ["weight", "unit", "volume"],
     },
   },
 } as const

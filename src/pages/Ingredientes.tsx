@@ -43,7 +43,7 @@ interface Ingredient {
   store: string | null;
   price_paid: number;
   package_size: number;
-  unit_type: "weight" | "unit";
+  unit_type: "weight" | "unit" | "volume";
   cost_per_unit: number;
 }
 
@@ -55,7 +55,7 @@ const Ingredientes = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "weight" | "unit">("all");
+  const [filterType, setFilterType] = useState<"all" | "weight" | "unit" | "volume">("all");
   const [filterStore, setFilterStore] = useState<string>("all");
   const [groupByStore, setGroupByStore] = useState(false);
   const { canCreate, getLimit, getCount } = useFreemiumLimits();
@@ -67,7 +67,7 @@ const Ingredientes = () => {
     store: "",
     price_paid: "",
     package_size: "",
-    unit_type: "weight" as "weight" | "unit",
+    unit_type: "weight" as "weight" | "unit" | "volume",
   });
 
   useEffect(() => {
@@ -190,9 +190,10 @@ const Ingredientes = () => {
     }).format(value);
   };
 
-  const formatCostPerUnit = (value: number, unitType: "weight" | "unit") => {
+  const formatCostPerUnit = (value: number, unitType: "weight" | "unit" | "volume") => {
     const formatted = value.toFixed(2).replace(".", ",");
-    return `R$ ${formatted}/${unitType === "weight" ? "g" : "un"}`;
+    const unitLabel = unitType === "weight" ? "g" : unitType === "volume" ? "ml" : "un";
+    return `R$ ${formatted}/${unitLabel}`;
   };
 
   // Get unique stores for filter
@@ -318,7 +319,7 @@ const Ingredientes = () => {
                     <Label htmlFor="unit_type">Tipo de Medida</Label>
                     <Select
                       value={form.unit_type}
-                      onValueChange={(value: "weight" | "unit") =>
+                      onValueChange={(value: "weight" | "unit" | "volume") =>
                         setForm({ ...form, unit_type: value })
                       }
                     >
@@ -328,11 +329,14 @@ const Ingredientes = () => {
                       <SelectContent>
                         <SelectItem value="weight">Peso (kg/g)</SelectItem>
                         <SelectItem value="unit">Unidade (un)</SelectItem>
+                        <SelectItem value="volume">Volume (ml/L)</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
                       {form.unit_type === "weight"
                         ? "Informe o tamanho em gramas (ex: 1000 para 1kg)"
+                        : form.unit_type === "volume"
+                        ? "Informe o tamanho em ml (ex: 1000 para 1L)"
                         : "Informe a quantidade de unidades (ex: 12 para 1 dúzia)"}
                     </p>
                   </div>
@@ -371,11 +375,12 @@ const Ingredientes = () => {
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os tipos</SelectItem>
-                  <SelectItem value="weight">Peso (kg/g)</SelectItem>
-                  <SelectItem value="unit">Unidade (un)</SelectItem>
-                </SelectContent>
+                 <SelectContent>
+                   <SelectItem value="all">Todos os tipos</SelectItem>
+                   <SelectItem value="weight">Peso (kg/g)</SelectItem>
+                   <SelectItem value="unit">Unidade (un)</SelectItem>
+                   <SelectItem value="volume">Volume (ml/L)</SelectItem>
+                 </SelectContent>
               </Select>
             </div>
 
@@ -475,7 +480,7 @@ const Ingredientes = () => {
                                 </TableCell>
                                 <TableCell className="text-right font-mono">
                                   {ingredient.package_size}
-                                  {ingredient.unit_type === "weight" ? "g" : " un"}
+                                  {ingredient.unit_type === "weight" ? "g" : ingredient.unit_type === "volume" ? "ml" : " un"}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <span className="badge-success">
@@ -540,7 +545,7 @@ const Ingredientes = () => {
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {ingredient.package_size}
-                            {ingredient.unit_type === "weight" ? "g" : " un"}
+                            {ingredient.unit_type === "weight" ? "g" : ingredient.unit_type === "volume" ? "ml" : " un"}
                           </TableCell>
                           <TableCell className="text-right">
                             <span className="badge-success">
