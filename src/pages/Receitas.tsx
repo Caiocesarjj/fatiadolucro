@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { mapErrorToUserMessage } from "@/lib/errorHandler";
-import { Plus, Pencil, Trash2, CakeSlice } from "lucide-react";
+import { Plus, Pencil, Trash2, CakeSlice, FileText, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { escapeHtml } from "@/lib/htmlEscape";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { motion } from "framer-motion";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
@@ -29,7 +30,7 @@ const Receitas = () => {
   const [recipes, setRecipes] = useState<RecipeWithCost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const { canCreate, getLimit, getCount, refreshCounts } = useFreemiumLimits();
+  const { canCreate, getLimit, getCount, refreshCounts, planType } = useFreemiumLimits();
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   const handleNewRecipe = () => {
@@ -105,18 +106,92 @@ const Receitas = () => {
     return (profit / r.target_sale_price) * 100;
   };
 
+  const isPro = planType === "pro";
+
+  const generateRecipesPDF = () => {
+    if (!isPro) {
+      setShowUpgrade(true);
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({ variant: "destructive", title: "Erro", description: "Permita pop-ups para gerar o PDF" });
+      return;
+    }
+
+    const html = `<!DOCTYPE html><html><head><title>Relatório de Receitas</title>
+<style>
+  body{font-family:Arial,sans-serif;padding:20px;color:#333}
+  h1{text-align:center;color:#10B981;margin-bottom:8px}
+  .subtitle{text-align:center;color:#888;font-size:13px;margin-bottom:30px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#f0fdf4;padding:10px 8px;text-align:left;border-bottom:2px solid #10B981;font-weight:600}
+  td{padding:8px;border-bottom:1px solid #eee}
+  .num{text-align:right}
+  .positive{color:#16a34a;font-weight:600}
+  .negative{color:#dc2626;font-weight:600}
+  .footer{text-align:center;margin-top:30px;font-size:11px;color:#aaa}
+  @media print{body{padding:0}}
+</style></head><body>
+  <h1>Relatório de Receitas</h1>
+  <p class="subtitle">Gerado em ${new Date().toLocaleDateString("pt-BR")} — ${recipes.length} receita${recipes.length !== 1 ? "s" : ""}</p>
+  <table>
+    <thead><tr>
+      <th>Receita</th><th class="num">Rend.</th><th class="num">Custo Unit.</th>
+      <th class="num">Preço Venda</th><th class="num">Lucro Unit.</th><th class="num">Margem</th>
+    </tr></thead>
+    <tbody>
+      ${recipes.map(r => {
+        const unitCost = getUnitCost(r);
+        const profit = getProfit(r);
+        const margin = getMargin(r);
+        return `<tr>
+          <td>${escapeHtml(r.name)}</td>
+          <td class="num">${r.yield_amount} un</td>
+          <td class="num">${formatCurrency(unitCost)}</td>
+          <td class="num">${r.target_sale_price ? formatCurrency(r.target_sale_price) : "—"}</td>
+          <td class="num ${profit !== null ? (profit >= 0 ? "positive" : "negative") : ""}">${profit !== null ? formatCurrency(profit) : "—"}</td>
+          <td class="num ${margin !== null ? (margin >= 0 ? "positive" : "negative") : ""}">${margin !== null ? margin.toFixed(1) + "%" : "—"}</td>
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+  <div class="footer">Fatia do Lucro — Plano PRO</div>
+  <script>window.print();</script>
+</body></html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   return (
     <AppLayout title="Receitas">
       <div className="space-y-3">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             {recipes.length} receita{recipes.length !== 1 ? "s" : ""}
           </p>
-          <Button onClick={handleNewRecipe} className="hidden md:flex h-10 rounded-xl">
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Receita
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={generateRecipesPDF}
+              variant="outline"
+              className="hidden md:flex h-10 rounded-xl"
+              disabled={recipes.length === 0}
+            >
+              {isPro ? (
+                <FileText className="h-4 w-4 mr-2" />
+              ) : (
+                <Lock className="h-4 w-4 mr-2" />
+              )}
+              Gerar PDF
+            </Button>
+            <Button onClick={handleNewRecipe} className="hidden md:flex h-10 rounded-xl">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Receita
+            </Button>
+          </div>
         </div>
 
         {/* Recipe List — card-based for mobile */}
