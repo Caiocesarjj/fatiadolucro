@@ -232,6 +232,52 @@ const Index = () => {
         </div>
       </section>
 
+      {/* ===== FUNCIONALIDADES ===== */}
+      <section className="py-14 md:py-20 px-5">
+        <div className="container mx-auto max-w-3xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={fadeUp}
+            className="text-center mb-10"
+          >
+            <h2 className="text-2xl md:text-3xl font-extrabold">O que você pode fazer</h2>
+            <p className="mt-3 text-[#6B5744] text-sm max-w-md mx-auto">
+              Todas as ferramentas que um confeiteiro precisa, reunidas num app simples e bonito.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { icon: "🧁", title: "Receitas", desc: "Cadastre suas receitas com custo automático por unidade" },
+              { icon: "🥚", title: "Ingredientes", desc: "Controle preços e estoque de todos os insumos" },
+              { icon: "🛡️", title: "Preço Blindado", desc: "Calcule o preço ideal para delivery sem perder lucro" },
+              { icon: "📦", title: "Encomendas", desc: "Gerencie pedidos com status e datas de entrega" },
+              { icon: "👥", title: "Clientes", desc: "Cadastro completo com histórico de pedidos" },
+              { icon: "🛒", title: "Lista de Compras", desc: "Gere listas automáticas a partir das receitas" },
+              { icon: "📊", title: "Financeiro", desc: "Receitas, despesas e lucro real em um painel" },
+              { icon: "📱", title: "Catálogo Digital", desc: "Compartilhe seus produtos com um link bonito" },
+              { icon: "🧮", title: "Calculadora", desc: "Simule preços e margens antes de vender" },
+            ].map((feat, i) => (
+              <motion.div
+                key={feat.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-30px" }}
+                variants={fadeUp}
+                custom={i % 3}
+                className="bg-white rounded-2xl border border-[#E8D5C0] p-4 shadow-sm"
+              >
+                <span className="text-2xl">{feat.icon}</span>
+                <h3 className="font-bold text-sm mt-2">{feat.title}</h3>
+                <p className="text-xs text-[#6B5744] leading-relaxed mt-1">{feat.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== COMPARATIVO DE PLANOS ===== */}
       <section className="py-14 md:py-20 px-5 bg-gradient-to-b from-[#F5EDE3] to-[#FFF9F0]">
         <div className="container mx-auto max-w-2xl">
