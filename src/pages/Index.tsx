@@ -178,60 +178,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ===== 3 PILARES ===== */}
-      <section className="py-14 md:py-20 px-5">
-        <div className="container mx-auto max-w-3xl">
-          <motion.h2
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            variants={fadeUp}
-            className="text-2xl md:text-3xl font-extrabold text-center mb-10"
-          >
-            Tudo o que você precisa
-          </motion.h2>
-
-          <div className="grid gap-5 md:grid-cols-3">
-            {[
-              {
-                icon: Scale,
-                title: "Estoque Inteligente",
-                desc: "Saiba quanto custa cada grama do seu brownie.",
-                color: "bg-amber-100 text-amber-700",
-              },
-              {
-                icon: Package,
-                title: "Gestão de Pedidos",
-                desc: "Organize iFood, 99Food e encomendas num só lugar.",
-                color: "bg-emerald-100 text-emerald-700",
-              },
-              {
-                icon: BarChart3,
-                title: "Relatórios Simples",
-                desc: "Veja quanto você realmente ganhou no final do dia.",
-                color: "bg-sky-100 text-sky-700",
-              },
-            ].map((pillar, i) => (
-              <motion.div
-                key={pillar.title}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-40px" }}
-                variants={fadeUp}
-                custom={i}
-                className="bg-white rounded-2xl border border-[#E8D5C0] p-6 shadow-sm hover:shadow-lg hover:shadow-emerald-500/5 transition-shadow duration-300"
-              >
-                <div className={`w-12 h-12 rounded-xl ${pillar.color} flex items-center justify-center mb-4`}>
-                  <pillar.icon className="w-6 h-6" />
-                </div>
-                <h3 className="font-bold text-lg mb-1.5">{pillar.title}</h3>
-                <p className="text-sm text-[#6B5744] leading-relaxed">{pillar.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ===== FUNCIONALIDADES ===== */}
       <section className="py-14 md:py-20 px-5">
         <div className="container mx-auto max-w-3xl">
@@ -248,17 +194,56 @@ const Index = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { icon: "🧁", title: "Receitas", desc: "Cadastre suas receitas com custo automático por unidade" },
-              { icon: "🥚", title: "Ingredientes", desc: "Controle preços e estoque de todos os insumos" },
-              { icon: "🛡️", title: "Preço Blindado", desc: "Calcule o preço ideal para delivery sem perder lucro" },
-              { icon: "📦", title: "Encomendas", desc: "Gerencie pedidos com status e datas de entrega" },
-              { icon: "👥", title: "Clientes", desc: "Cadastro completo com histórico de pedidos" },
-              { icon: "🛒", title: "Lista de Compras", desc: "Gere listas automáticas a partir das receitas" },
-              { icon: "📊", title: "Financeiro", desc: "Receitas, despesas e lucro real em um painel" },
-              { icon: "📱", title: "Catálogo Digital", desc: "Compartilhe seus produtos com um link bonito" },
-              { icon: "🧮", title: "Calculadora", desc: "Simule preços e margens antes de vender" },
+              {
+                icon: "📖",
+                title: "Receitas Inteligentes",
+                desc: "Chega de dúvida. Calcule o custo exato de cada brigadeiro ou fatia de bolo automaticamente enquanto digita.",
+                badge: null,
+              },
+              {
+                icon: "🛡️",
+                title: "Preço Blindado",
+                desc: "Pare de pagar as taxas do iFood do seu bolso. Nossa inteligência calcula o preço certo para você lucrar em qualquer plataforma.",
+                badge: "MAIS USADO",
+              },
+              {
+                icon: "🛒",
+                title: "Estoque sob Controle",
+                desc: "Nunca mais perca uma venda por falta de insumo. Saiba exatamente o que tem no armário e o valor do seu estoque.",
+                badge: null,
+              },
+              {
+                icon: "📅",
+                title: "Gestão de Encomendas",
+                desc: "Sua agenda organizada. Controle prazos, status de produção e entregas sem usar papel ou planilhas.",
+                badge: null,
+              },
+              {
+                icon: "💰",
+                title: "Financeiro Profissional",
+                desc: "Onde foi parar o dinheiro? Visualize seu lucro real, despesas e metas em um painel simples e poderoso.",
+                badge: null,
+              },
+              {
+                icon: "🔗",
+                title: "Catálogo Digital",
+                desc: "Transforme seu WhatsApp em uma máquina de vendas com um cardápio online profissional e elegante.",
+                badge: null,
+              },
+              {
+                icon: "📝",
+                title: "Lista de Compras Automática",
+                desc: "Economize tempo no mercado. O app gera sua lista baseada no que você precisa produzir no dia.",
+                badge: null,
+              },
+              {
+                icon: "🧮",
+                title: "Simuladores de Margem",
+                desc: "Quer dar desconto ou mudar o preço? Simule o impacto no seu lucro antes de tomar a decisão.",
+                badge: null,
+              },
             ].map((feat, i) => (
               <motion.div
                 key={feat.title}
@@ -266,12 +251,17 @@ const Index = () => {
                 whileInView="visible"
                 viewport={{ once: true, margin: "-30px" }}
                 variants={fadeUp}
-                custom={i % 3}
-                className="bg-white rounded-2xl border border-[#E8D5C0] p-4 shadow-sm"
+                custom={i % 2}
+                className="relative bg-white rounded-2xl border border-[#E8D5C0] p-5 shadow-sm hover:shadow-lg hover:shadow-emerald-500/5 transition-shadow duration-300"
               >
+                {feat.badge && (
+                  <span className="absolute -top-2.5 right-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md">
+                    {feat.badge}
+                  </span>
+                )}
                 <span className="text-2xl">{feat.icon}</span>
-                <h3 className="font-bold text-sm mt-2">{feat.title}</h3>
-                <p className="text-xs text-[#6B5744] leading-relaxed mt-1">{feat.desc}</p>
+                <h3 className="font-bold text-sm mt-2.5">{feat.title}</h3>
+                <p className="text-xs text-[#6B5744] leading-relaxed mt-1.5">{feat.desc}</p>
               </motion.div>
             ))}
           </div>
