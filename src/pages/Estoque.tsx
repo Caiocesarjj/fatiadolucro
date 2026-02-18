@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ const Estoque = () => {
   const [adjustItem, setAdjustItem] = useState<StockIngredient | null>(null);
   const [adjustAmount, setAdjustAmount] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [newIngredient, setNewIngredient] = useState({
     name: "",
     brand: "",
@@ -232,33 +233,78 @@ const Estoque = () => {
           </Card>
         </div>
 
-        {/* Search, Filter & Add */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar ingrediente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10 rounded-xl"
-            />
+        {/* Search & Add */}
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar ingrediente..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                className="pl-11 h-12 rounded-2xl text-base"
+              />
+              {/* Suggestions dropdown */}
+              {showSuggestions && searchTerm.length > 0 && (
+                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border rounded-2xl shadow-lg max-h-48 overflow-y-auto">
+                  {ingredients
+                    .filter((i) =>
+                      i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      i.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .slice(0, 8)
+                    .map((item) => (
+                      <button
+                        key={item.id}
+                        className="w-full text-left px-4 py-3 hover:bg-accent/50 active:bg-accent flex items-center justify-between border-b border-border/30 last:border-0 transition-colors"
+                        onClick={() => {
+                          setSearchTerm(item.name);
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.name}</p>
+                          {item.brand && (
+                            <p className="text-xs text-muted-foreground truncate">{item.brand}</p>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                          {item.current_stock} {unitLabel(item.unit_type)}
+                        </span>
+                      </button>
+                    ))}
+                  {ingredients.filter((i) =>
+                    i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    i.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+                  ).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Nenhum ingrediente encontrado</p>
+                  )}
+                </div>
+              )}
+            </div>
+            <Button size="icon" className="rounded-2xl h-12 w-12 shrink-0" onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-5 w-5" />
+            </Button>
           </div>
-          <div className="flex gap-1">
+
+          {/* Filters */}
+          <div className="flex gap-2">
             {(["all", "low", "ok"] as const).map((f) => (
               <Button
                 key={f}
                 variant={filter === f ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter(f)}
-                className="rounded-xl text-xs px-3"
+                className="rounded-xl text-xs px-4 h-9"
               >
                 {f === "all" ? "Todos" : f === "low" ? "⚠️ Baixo" : "✅ OK"}
               </Button>
             ))}
           </div>
-          <Button size="icon" className="rounded-xl h-10 w-10 shrink-0" onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-5 w-5" />
-          </Button>
         </div>
 
         {/* Stock List */}
