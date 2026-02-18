@@ -15,6 +15,8 @@ import {
   MessageCircle,
   LogIn,
   UserPlus,
+  X,
+  Gift,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -63,18 +65,13 @@ const Index = () => {
       </nav>
 
       {/* ===== HERO ===== */}
-      <section className="relative pt-12 pb-16 md:pt-20 md:pb-28 px-5">
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/60 via-transparent to-transparent pointer-events-none" />
+      <section className="relative pt-12 pb-14 md:pt-20 md:pb-24 px-5">
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/40 via-transparent to-transparent pointer-events-none" />
         <div className="relative container mx-auto max-w-2xl text-center">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            custom={0}
-          >
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold mb-5">
-              <Sparkles className="w-3.5 h-3.5" />
-              Para confeiteiros que querem lucrar de verdade
+              <Gift className="w-3.5 h-3.5" />
+              7 dias de acesso total grátis
             </span>
           </motion.div>
 
@@ -85,11 +82,11 @@ const Index = () => {
             custom={1}
             className="text-3xl md:text-5xl font-extrabold leading-[1.15] tracking-tight"
           >
-            Pare de trabalhar{" "}
+            Saiba exatamente{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-400">
-              de graça
+              quanto cobrar
             </span>{" "}
-            na cozinha.
+            por cada doce.
           </motion.h1>
 
           <motion.p
@@ -99,8 +96,8 @@ const Index = () => {
             custom={2}
             className="mt-5 text-base md:text-lg text-[#6B5744] leading-relaxed max-w-xl mx-auto"
           >
-            Precifique com um toque, blinde seu lucro contra as taxas do iFood e
-            controle seu estoque no celular.
+            Controle ingredientes, calcule custos, defina preços e gerencie
+            encomendas — tudo num só lugar, feito para confeiteiros.
           </motion.p>
 
           <motion.div
@@ -115,12 +112,12 @@ const Index = () => {
                 size="lg"
                 className="rounded-full px-8 py-6 text-base font-bold shadow-xl shadow-emerald-500/25 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
               >
-                Começar Agora — R$ 19,90/mês
+                Experimentar Grátis por 7 Dias
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <p className="mt-3 text-xs text-[#9A8672]">
-              Sem fidelidade. Cancele quando quiser.
+              Sem cartão de crédito. Sem compromisso.
             </p>
           </motion.div>
         </div>
@@ -140,9 +137,7 @@ const Index = () => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 mb-4">
               <ShieldCheck className="w-7 h-7 text-emerald-600" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold">
-              Preço Blindado
-            </h2>
+            <h2 className="text-2xl md:text-3xl font-extrabold">Preço Blindado</h2>
             <p className="mt-3 text-[#6B5744] max-w-md mx-auto">
               Nossa inteligência calcula o preço exato para você nunca mais pagar
               a taxa do delivery do seu próprio bolso.
@@ -160,31 +155,22 @@ const Index = () => {
             <p className="text-center text-sm font-semibold text-[#9A8672] mb-5">
               Se você quer lucrar <span className="text-emerald-600 font-bold">R$ 30,00</span> líquidos:
             </p>
-
             <div className="grid grid-cols-2 gap-4">
-              {/* Balcão */}
               <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-center">
-                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">
-                  Balcão
-                </p>
+                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">Balcão</p>
                 <p className="text-3xl md:text-4xl font-extrabold text-emerald-600">
                   R$ 30<span className="text-lg">,00</span>
                 </p>
                 <p className="text-xs text-emerald-600/70 mt-1">Taxa: 0%</p>
               </div>
-
-              {/* iFood */}
               <div className="rounded-2xl bg-red-50 border border-red-200 p-5 text-center">
-                <p className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">
-                  iFood
-                </p>
+                <p className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">iFood</p>
                 <p className="text-3xl md:text-4xl font-extrabold text-red-500">
                   R$ 44<span className="text-lg">,11</span>
                 </p>
                 <p className="text-xs text-red-500/70 mt-1">Taxa: ~27,5%</p>
               </div>
             </div>
-
             <p className="text-center text-xs text-[#9A8672] mt-5">
               O app calcula o preço automaticamente para cada plataforma 🛡️
             </p>
@@ -202,7 +188,7 @@ const Index = () => {
             variants={fadeUp}
             className="text-2xl md:text-3xl font-extrabold text-center mb-10"
           >
-            Os 3 Pilares do Confeiteiro
+            Tudo o que você precisa
           </motion.h2>
 
           <div className="grid gap-5 md:grid-cols-3">
@@ -239,31 +225,26 @@ const Index = () => {
                   <pillar.icon className="w-6 h-6" />
                 </div>
                 <h3 className="font-bold text-lg mb-1.5">{pillar.title}</h3>
-                <p className="text-sm text-[#6B5744] leading-relaxed">
-                  {pillar.desc}
-                </p>
+                <p className="text-sm text-[#6B5744] leading-relaxed">{pillar.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== OFERTA / PRICING ===== */}
+      {/* ===== COMPARATIVO DE PLANOS ===== */}
       <section className="py-14 md:py-20 px-5 bg-gradient-to-b from-[#F5EDE3] to-[#FFF9F0]">
-        <div className="container mx-auto max-w-md text-center">
+        <div className="container mx-auto max-w-2xl">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
             variants={fadeUp}
-            custom={0}
+            className="text-center mb-10"
           >
-            <h2 className="text-2xl md:text-3xl font-extrabold mb-3">
-              Oferta Irresistível
-            </h2>
-            <p className="text-[#6B5744] text-sm mb-8">
-              Menos que o valor de uma lata de leite condensado para ter o
-              controle total do seu negócio.
+            <h2 className="text-2xl md:text-3xl font-extrabold">Compare os Planos</h2>
+            <p className="mt-3 text-[#6B5744] text-sm">
+              Comece grátis e evolua quando estiver pronto.
             </p>
           </motion.div>
 
@@ -273,48 +254,93 @@ const Index = () => {
             viewport={{ once: true, margin: "-60px" }}
             variants={fadeUp}
             custom={1}
-            className="bg-white rounded-3xl border-2 border-emerald-400 shadow-xl shadow-emerald-500/10 p-8 relative"
+            className="grid md:grid-cols-2 gap-5"
           >
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-md">
-              MAIS POPULAR
+            {/* Plano Grátis */}
+            <div className="bg-white rounded-3xl border border-[#E8D5C0] p-6 md:p-8">
+              <p className="text-sm text-[#9A8672] font-semibold">Plano Grátis</p>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-4xl font-extrabold text-[#3B2A1A]">R$ 0</span>
+                <span className="text-sm text-[#9A8672]">/mês</span>
+              </div>
+              <p className="text-xs text-emerald-600 font-medium mt-1">
+                + 7 dias de acesso PRO total
+              </p>
+
+              <ul className="mt-6 space-y-2.5 text-left">
+                {[
+                  { text: "Até 5 receitas", included: true },
+                  { text: "Até 15 ingredientes", included: true },
+                  { text: "Até 10 clientes", included: true },
+                  { text: "Até 10 encomendas", included: true },
+                  { text: "Catálogo Digital", included: false },
+                  { text: "Simuladores de Preço", included: false },
+                  { text: "Financeiro Completo", included: false },
+                ].map((item) => (
+                  <li key={item.text} className="flex items-center gap-2.5 text-sm">
+                    {item.included ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    ) : (
+                      <X className="w-4 h-4 text-[#C4B5A3] shrink-0" />
+                    )}
+                    <span className={item.included ? "text-[#3B2A1A]" : "text-[#B0A090]"}>
+                      {item.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link to="/auth" className="block mt-6">
+                <Button
+                  variant="outline"
+                  className="w-full rounded-full py-5 font-semibold border-[#E8D5C0] text-[#6B5744] hover:bg-[#F5EDE3]"
+                >
+                  Criar Conta Grátis
+                </Button>
+              </Link>
             </div>
 
-            <p className="text-sm text-[#9A8672] font-semibold mt-2">
-              Plano PRO
-            </p>
-            <div className="mt-3 flex items-baseline justify-center gap-1">
-              <span className="text-5xl font-extrabold text-emerald-600">
-                R$ 19
-              </span>
-              <span className="text-2xl font-bold text-emerald-600">,90</span>
-              <span className="text-sm text-[#9A8672]">/mês</span>
+            {/* Plano PRO */}
+            <div className="bg-white rounded-3xl border-2 border-emerald-400 shadow-xl shadow-emerald-500/10 p-6 md:p-8 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-md">
+                RECOMENDADO
+              </div>
+
+              <p className="text-sm text-[#9A8672] font-semibold mt-1">Plano PRO</p>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-4xl font-extrabold text-emerald-600">R$ 19</span>
+                <span className="text-xl font-bold text-emerald-600">,90</span>
+                <span className="text-sm text-[#9A8672]">/mês</span>
+              </div>
+
+              <ul className="mt-6 space-y-2.5 text-left">
+                {[
+                  "Receitas ilimitadas",
+                  "Ingredientes ilimitados",
+                  "Clientes ilimitados",
+                  "Encomendas ilimitadas",
+                  "Catálogo Digital",
+                  "Simuladores de Preço (Preço Blindado)",
+                  "Financeiro Completo",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#3B2A1A]">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <Link to="/auth" className="block mt-6">
+                <Button className="w-full rounded-full py-5 text-base font-bold shadow-lg shadow-emerald-500/20 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white">
+                  Começar Agora
+                  <ChevronRight className="ml-1 h-5 w-5" />
+                </Button>
+              </Link>
+
+              <p className="mt-3 text-xs text-center text-[#9A8672]">
+                Sem fidelidade. Cancele quando quiser.
+              </p>
             </div>
-
-            <ul className="mt-6 space-y-3 text-left">
-              {[
-                "Receitas e ingredientes ilimitados",
-                "Preço Blindado para delivery",
-                "Relatórios financeiros completos",
-                "Gestão de encomendas e clientes",
-                "Lista de compras inteligente",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm text-[#3B2A1A]">
-                  <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500 mt-0.5 shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <Link to="/auth" className="block mt-7">
-              <Button className="w-full rounded-full py-6 text-base font-bold shadow-lg shadow-emerald-500/20 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white">
-                Começar Agora
-                <ChevronRight className="ml-1 h-5 w-5" />
-              </Button>
-            </Link>
-
-            <p className="mt-4 text-xs text-[#9A8672]">
-              Sem fidelidade. Cancele quando quiser.
-            </p>
           </motion.div>
         </div>
       </section>
@@ -357,8 +383,7 @@ const Index = () => {
             </div>
 
             <p className="text-xs text-[#9A8672]">
-              © {new Date().getFullYear()} Fatia do Lucro. Feito com 💖 para
-              confeiteiros.
+              © {new Date().getFullYear()} Fatia do Lucro. Feito com 💖 para confeiteiros.
             </p>
           </div>
         </div>
