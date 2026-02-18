@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "react-router-dom";
-import { ClipboardList, ShoppingBag, Settings, Headset, Brain, LogOut, Shield, ChevronRight, Wallet, ShoppingCart, Lock } from "lucide-react";
+import { ClipboardList, ShoppingBag, Settings, Headset, Brain, LogOut, Shield, ChevronRight, Wallet, ShoppingCart, Lock, Boxes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 const menuItems = [
+  { icon: Boxes, label: "Estoque", description: "Controle de estoque inteligente", path: "/estoque", color: "bg-blue-500/10 text-blue-600", module: "estoque" },
   { icon: Wallet, label: "Financeiro", description: "Controle financeiro completo", path: "/financeiro", color: "bg-emerald-500/10 text-emerald-600", module: "financeiro" },
   { icon: ShoppingCart, label: "Lista de Compras", description: "Lista de compras inteligente", path: "/compras", color: "bg-cyan-500/10 text-cyan-600", module: "" },
   { icon: ClipboardList, label: "Encomendas", description: "Controle de pedidos", path: "/encomendas", color: "bg-orange-500/10 text-orange-600", module: "" },
