@@ -421,6 +421,7 @@ export type Database = {
           id: string
           ingredient_id: string
           is_checked: boolean
+          notes: string | null
           quantity_needed: number
           user_id: string
         }
@@ -429,6 +430,7 @@ export type Database = {
           id?: string
           ingredient_id: string
           is_checked?: boolean
+          notes?: string | null
           quantity_needed?: number
           user_id: string
         }
@@ -437,6 +439,7 @@ export type Database = {
           id?: string
           ingredient_id?: string
           is_checked?: boolean
+          notes?: string | null
           quantity_needed?: number
           user_id?: string
         }

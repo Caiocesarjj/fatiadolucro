@@ -1,0 +1,1 @@
+ALTER TABLE public.shopping_list_items ADD COLUMN notes text;

@@ -24,8 +24,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ShoppingCart, Check, Pencil, Store } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Check, Pencil, Store, PackagePlus } from "lucide-react";
 import { FileText, FileSpreadsheet } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -35,6 +36,7 @@ interface ShoppingListItem {
   ingredient_id: string;
   quantity_needed: number;
   checked: boolean;
+  notes: string | null;
   ingredients: {
     name: string;
     brand: string | null;
@@ -75,6 +77,16 @@ const Compras = () => {
     quantity_needed: "",
     store: "",
     price_paid: "",
+    notes: "",
+  });
+
+  const [creatingIngredient, setCreatingIngredient] = useState(false);
+  const [newIngForm, setNewIngForm] = useState({
+    name: "",
+    brand: "",
+    price_paid: "",
+    package_size: "",
+    unit_type: "weight" as "weight" | "unit" | "volume",
   });
 
   const [editForm, setEditForm] = useState({
@@ -137,7 +149,8 @@ const Compras = () => {
         user_id: user!.id,
         ingredient_id: form.ingredient_id,
         quantity_needed: parseFloat(form.quantity_needed.replace(",", ".")),
-      });
+        notes: form.notes || null,
+      } as any);
 
       if (error) throw error;
 
@@ -256,8 +269,42 @@ const Compras = () => {
   };
 
   const resetForm = () => {
-    setForm({ ingredient_id: "", quantity_needed: "", store: "", price_paid: "" });
+    setForm({ ingredient_id: "", quantity_needed: "", store: "", price_paid: "", notes: "" });
+    setCreatingIngredient(false);
+    setNewIngForm({ name: "", brand: "", price_paid: "", package_size: "", unit_type: "weight" });
     setDialogOpen(false);
+  };
+
+  const handleCreateIngredient = async () => {
+    if (!newIngForm.name || !newIngForm.price_paid || !newIngForm.package_size) {
+      toast({ variant: "destructive", title: "Preencha nome, preço e tamanho da embalagem." });
+      return;
+    }
+    const pricePaid = parseFloat(newIngForm.price_paid.replace(",", "."));
+    const packageSize = parseFloat(newIngForm.package_size.replace(",", "."));
+    const costPerUnit = pricePaid / (packageSize || 1);
+
+    const { data, error } = await supabase.from("ingredients").insert({
+      user_id: user!.id,
+      name: newIngForm.name.trim(),
+      brand: newIngForm.brand.trim() || null,
+      price_paid: pricePaid,
+      package_size: packageSize,
+      unit_type: newIngForm.unit_type,
+      cost_per_unit: costPerUnit,
+    }).select("id").single();
+
+    if (error) {
+      toast({ variant: "destructive", title: "Erro ao criar ingrediente", description: mapErrorToUserMessage(error) });
+      return;
+    }
+
+    toast({ title: "Ingrediente criado!" });
+    const newIng = { id: data.id, name: newIngForm.name.trim(), brand: newIngForm.brand.trim() || null, price_paid: pricePaid, package_size: packageSize, unit_type: newIngForm.unit_type, cost_per_unit: costPerUnit, store: null };
+    setIngredients(prev => [...prev, newIng as any].sort((a, b) => a.name.localeCompare(b.name)));
+    setForm({ ...form, ingredient_id: data.id, price_paid: newIngForm.price_paid, store: "" });
+    setCreatingIngredient(false);
+    setNewIngForm({ name: "", brand: "", price_paid: "", package_size: "", unit_type: "weight" });
   };
 
   const formatCurrency = (value: number) => {
@@ -408,6 +455,9 @@ const Compras = () => {
             <span className="ml-1">· {item.ingredients.store}</span>
           )}
         </p>
+        {item.notes && (
+          <p className="text-xs text-muted-foreground/70 italic mt-0.5">📝 {item.notes}</p>
+        )}
       </div>
       {!isChecked && (
         <div className="text-right shrink-0">
@@ -547,25 +597,87 @@ const Compras = () => {
               <DialogHeader>
                 <DialogTitle>Adicionar à Lista</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                 <div className="space-y-2">
-                  <Label>Ingrediente *</Label>
-                  <Select
-                    value={form.ingredient_id}
-                    onValueChange={handleIngredientChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um ingrediente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ingredients.map((ingredient) => (
-                        <SelectItem key={ingredient.id} value={ingredient.id}>
-                          {ingredient.name}
-                          {ingredient.brand && ` (${ingredient.brand})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center justify-between">
+                    <Label>Ingrediente *</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setCreatingIngredient(!creatingIngredient)}
+                    >
+                      <PackagePlus className="h-3.5 w-3.5 mr-1" />
+                      {creatingIngredient ? "Selecionar existente" : "Criar novo"}
+                    </Button>
+                  </div>
+
+                  {creatingIngredient ? (
+                    <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                      <Input
+                        value={newIngForm.name}
+                        onChange={(e) => setNewIngForm({ ...newIngForm, name: e.target.value })}
+                        placeholder="Nome do ingrediente *"
+                      />
+                      <Input
+                        value={newIngForm.brand}
+                        onChange={(e) => setNewIngForm({ ...newIngForm, brand: e.target.value })}
+                        placeholder="Marca (opcional)"
+                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-xs">Tipo</Label>
+                          <Select value={newIngForm.unit_type} onValueChange={(v: any) => setNewIngForm({ ...newIngForm, unit_type: v })}>
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="weight">Peso (g)</SelectItem>
+                              <SelectItem value="unit">Unidade</SelectItem>
+                              <SelectItem value="volume">Volume (ml)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Embalagem *</Label>
+                          <Input
+                            value={newIngForm.package_size}
+                            onChange={(e) => setNewIngForm({ ...newIngForm, package_size: e.target.value })}
+                            placeholder="1000"
+                            className="h-9"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Preço *</Label>
+                          <Input
+                            value={newIngForm.price_paid}
+                            onChange={(e) => setNewIngForm({ ...newIngForm, price_paid: e.target.value })}
+                            placeholder="12,90"
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                      <Button type="button" size="sm" onClick={handleCreateIngredient} className="w-full">
+                        Criar Ingrediente
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select
+                      value={form.ingredient_id}
+                      onValueChange={handleIngredientChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um ingrediente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ingredients.map((ingredient) => (
+                          <SelectItem key={ingredient.id} value={ingredient.id}>
+                            {ingredient.name}
+                            {ingredient.brand && ` (${ingredient.brand})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -610,6 +722,17 @@ const Compras = () => {
                       placeholder="Ex: 12,90"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Observação</Label>
+                  <Textarea
+                    id="notes"
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Ex: cor vermelha, sem glúten..."
+                    className="min-h-[60px] resize-none"
+                  />
                 </div>
 
                 {selectedIngredient && form.quantity_needed && (
