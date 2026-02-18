@@ -224,7 +224,7 @@ const Admin = () => {
     }
   };
 
-  const handleChangePlan = async (user: UserProfile, newPlan: "free" | "pro") => {
+  const handleChangePlan = async (user: UserProfile, newPlan: "free" | "pro" | "vip") => {
     try {
       const { error, count } = await supabase
         .from("profiles")
@@ -232,7 +232,8 @@ const Admin = () => {
         .eq("user_id", user.user_id)
         .select();
       if (error) throw error;
-      toast({ title: `Plano alterado para ${newPlan === "pro" ? "PRO" : "Grátis"}` });
+      const labels: Record<string, string> = { free: "Grátis", pro: "PRO", vip: "VIP" };
+      toast({ title: `Plano alterado para ${labels[newPlan] || newPlan}` });
       fetchUsers();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
@@ -450,12 +451,15 @@ const Admin = () => {
                             <TableCell className="text-center">{user.recipes_count ?? 0}</TableCell>
                             <TableCell className="text-center">{user.transactions_count ?? 0}</TableCell>
                             <TableCell className="text-center">
-                              <Select value={user.plan_type || "free"} onValueChange={(value: "free" | "pro") => handleChangePlan(user, value)}>
+                              <Select value={user.plan_type || "free"} onValueChange={(value: "free" | "pro" | "vip") => handleChangePlan(user, value)}>
                                 <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="free">Grátis</SelectItem>
                                   <SelectItem value="pro">
                                     <div className="flex items-center gap-1"><Crown className="h-3 w-3 text-primary" />PRO</div>
+                                  </SelectItem>
+                                  <SelectItem value="vip">
+                                    <div className="flex items-center gap-1">👑 VIP</div>
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
