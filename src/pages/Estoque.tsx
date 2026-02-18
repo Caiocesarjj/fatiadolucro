@@ -15,6 +15,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Package,
   Search,
   AlertTriangle,
@@ -52,6 +59,16 @@ const Estoque = () => {
   const [stockForm, setStockForm] = useState({ current_stock: "", minimum_stock: "" });
   const [adjustItem, setAdjustItem] = useState<StockIngredient | null>(null);
   const [adjustAmount, setAdjustAmount] = useState("");
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newIngredient, setNewIngredient] = useState({
+    name: "",
+    brand: "",
+    unit_type: "weight" as "weight" | "unit" | "volume",
+    package_size: "",
+    price_paid: "",
+    current_stock: "",
+    minimum_stock: "",
+  });
 
   useEffect(() => {
     if (user) fetchIngredients();
@@ -146,6 +163,33 @@ const Estoque = () => {
     }
   };
 
+  const handleAddIngredient = async () => {
+    if (!user || !newIngredient.name.trim()) return;
+    try {
+      const packageSize = parseFloat(newIngredient.package_size.replace(",", ".")) || 1;
+      const pricePaid = parseFloat(newIngredient.price_paid.replace(",", ".")) || 0;
+      const costPerUnit = packageSize > 0 ? pricePaid / packageSize : 0;
+      const { error } = await supabase.from("ingredients").insert({
+        user_id: user.id,
+        name: newIngredient.name.trim(),
+        brand: newIngredient.brand.trim() || null,
+        unit_type: newIngredient.unit_type,
+        package_size: packageSize,
+        price_paid: pricePaid,
+        cost_per_unit: costPerUnit,
+        current_stock: parseFloat(newIngredient.current_stock.replace(",", ".")) || 0,
+        minimum_stock: parseFloat(newIngredient.minimum_stock.replace(",", ".")) || 0,
+      });
+      if (error) throw error;
+      toast({ title: "Ingrediente adicionado!" });
+      setShowAddDialog(false);
+      setNewIngredient({ name: "", brand: "", unit_type: "weight", package_size: "", price_paid: "", current_stock: "", minimum_stock: "" });
+      fetchIngredients();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
+    }
+  };
+
   const openEdit = (item: StockIngredient) => {
     setStockForm({
       current_stock: item.current_stock.toString().replace(".", ","),
@@ -188,7 +232,7 @@ const Estoque = () => {
           </Card>
         </div>
 
-        {/* Search & Filter */}
+        {/* Search, Filter & Add */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -212,6 +256,9 @@ const Estoque = () => {
               </Button>
             ))}
           </div>
+          <Button size="icon" className="rounded-xl h-10 w-10 shrink-0" onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Stock List */}
@@ -370,6 +417,93 @@ const Estoque = () => {
                 onClick={() => handleAdjust("add")}
               >
                 <Plus className="h-4 w-4 mr-1" /> Adicionar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Ingredient Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Novo Ingrediente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Nome *</Label>
+              <Input
+                value={newIngredient.name}
+                onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
+                placeholder="Ex: Farinha de trigo"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Marca</Label>
+              <Input
+                value={newIngredient.brand}
+                onChange={(e) => setNewIngredient({ ...newIngredient, brand: e.target.value })}
+                placeholder="Opcional"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Tipo de Unidade</Label>
+              <Select
+                value={newIngredient.unit_type}
+                onValueChange={(v) => setNewIngredient({ ...newIngredient, unit_type: v as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weight">Peso (g/kg)</SelectItem>
+                  <SelectItem value="unit">Unidade (un)</SelectItem>
+                  <SelectItem value="volume">Volume (ml/L)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label>Tam. Embalagem</Label>
+                <Input
+                  value={newIngredient.package_size}
+                  onChange={(e) => setNewIngredient({ ...newIngredient, package_size: e.target.value })}
+                  placeholder="1000"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Preço Pago (R$)</Label>
+                <Input
+                  value={newIngredient.price_paid}
+                  onChange={(e) => setNewIngredient({ ...newIngredient, price_paid: e.target.value })}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label>Estoque Atual</Label>
+                <Input
+                  value={newIngredient.current_stock}
+                  onChange={(e) => setNewIngredient({ ...newIngredient, current_stock: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Estoque Mínimo</Label>
+                <Input
+                  value={newIngredient.minimum_stock}
+                  onChange={(e) => setNewIngredient({ ...newIngredient, minimum_stock: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowAddDialog(false)}>
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={handleAddIngredient} disabled={!newIngredient.name.trim()}>
+                Salvar
               </Button>
             </div>
           </div>
