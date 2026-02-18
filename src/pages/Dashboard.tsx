@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
+import { TrialBanner } from "@/components/TrialBanner";
 import {
   TrendingUp,
   TrendingDown,
@@ -50,6 +52,7 @@ const formatCurrency = (value: number) =>
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isInTrial, trialDaysLeft, hasFullAccess } = useFreemiumLimits();
   const [stats, setStats] = useState<DashboardStats>({
     totalIngredients: 0,
     totalRecipes: 0,
@@ -154,7 +157,9 @@ const Dashboard = () => {
   return (
     <AppLayout title="Início">
       <div className="space-y-5">
-        {/* Quick Actions — horizontal scrollable chips */}
+        {/* Trial Banner */}
+        {isInTrial && <TrialBanner daysLeft={trialDaysLeft} />}
+
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex flex-wrap gap-2.5">
             <Button
