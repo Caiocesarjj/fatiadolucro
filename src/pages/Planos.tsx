@@ -34,12 +34,13 @@ interface ProStatusCardProps {
   manageUrl: string | null;
   onVerify: () => void;
   verifying: boolean;
+  cooldown: boolean;
   onCancelClick: () => void;
 }
 
 const ProStatusCard = ({
   subscriptionId, subscriptionStatus, nextPaymentDate, manageUrl,
-  onVerify, verifying, onCancelClick,
+  onVerify, verifying, cooldown, onCancelClick,
 }: ProStatusCardProps) => {
   const friendlyDate = formatDateFriendly(nextPaymentDate);
   return (
@@ -65,9 +66,9 @@ const ProStatusCard = ({
             </a>
           </Button>
         )}
-        <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying}>
+        <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying || cooldown}>
           {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-          Verificar Assinatura
+          {cooldown ? "Aguarde 30s..." : "Verificar Assinatura"}
         </Button>
         <Button asChild className="w-full">
           <Link to="/dashboard">Voltar ao Dashboard</Link>
@@ -88,12 +89,13 @@ interface PendingSubscriptionCardProps {
   manageUrl: string | null;
   onVerify: () => void;
   verifying: boolean;
+  cooldown: boolean;
   onCancelClick: () => void;
 }
 
 const PendingSubscriptionCard = ({
   subscriptionStatus, nextPaymentDate, manageUrl,
-  onVerify, verifying, onCancelClick,
+  onVerify, verifying, cooldown, onCancelClick,
 }: PendingSubscriptionCardProps) => {
   const friendlyDate = formatDateFriendly(nextPaymentDate);
   return (
@@ -123,9 +125,9 @@ const PendingSubscriptionCard = ({
             </a>
           </Button>
         )}
-        <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying}>
+        <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying || cooldown}>
           {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-          Verificar Assinatura
+          {cooldown ? "Aguarde 30s..." : "Verificar Assinatura"}
         </Button>
         <Button variant="destructive" className="w-full" onClick={onCancelClick}>
           <XCircle className="h-4 w-4 mr-2" /> Cancelar Assinatura
@@ -163,6 +165,7 @@ const Planos = () => {
   const [cancelling, setCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [verifyCooldown, setVerifyCooldown] = useState(false);
 
   const basePrice = hasReferral ? PRICE_REFERRED : PRICE_FULL;
   const currentPrice = couponApplied ? Math.max(basePrice * (1 - couponDiscount / 100), 1) : basePrice;
@@ -209,12 +212,34 @@ const Planos = () => {
   };
 
   const handleVerifySubscription = async () => {
+    // Debounce: block repeated clicks for 30s
+    if (verifyCooldown) {
+      toast({ title: "Aguarde 30 segundos antes de verificar novamente." });
+      return;
+    }
+
+    // Skip if no subscription_id (pure free user)
+    if (!subscriptionId) {
+      toast({ title: "Nenhuma assinatura encontrada para verificar.", variant: "destructive" });
+      return;
+    }
+
+    // Skip if already confirmed PRO (vitalício/VIP filter)
+    if (planType === "pro" && (subscriptionStatus === "authorized" || subscriptionStatus === "active" || subscriptionStatus === "vip")) {
+      toast({ title: "✅ Sua assinatura PRO já está confirmada!" });
+      return;
+    }
+
     setVerifying(true);
+    setVerifyCooldown(true);
+    setTimeout(() => setVerifyCooldown(false), 30000);
+
     try {
       // Refresh session to avoid Invalid Refresh Token issues
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
-        console.warn("[Verify] Refresh token error, trying getSession:", refreshError.message);
+        // Don't kill the flow, try getSession as fallback
+        if (import.meta.env.DEV) console.warn("[Verify] Refresh token error:", refreshError.message);
       }
 
       const { data: sessionData } = await supabase.auth.getSession();
@@ -225,15 +250,7 @@ const Planos = () => {
         return;
       }
 
-      if (!subscriptionId) {
-        toast({ title: "Nenhuma assinatura encontrada para verificar.", variant: "destructive" });
-        return;
-      }
-
-      // Call Lovable Cloud edge function directly (not external Supabase)
       const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/sync-subscription`;
-      console.log("[Verify] Calling edge function:", cloudUrl);
-      console.log("[Verify] subscription_id:", subscriptionId);
 
       const response = await fetch(cloudUrl, {
         method: "POST",
@@ -246,29 +263,32 @@ const Planos = () => {
       });
 
       const result = await response.json();
-      console.log("[Verify] Edge function response:", JSON.stringify(result, null, 2));
+      
+      // Only log on status change or error
+      if (import.meta.env.DEV) {
+        console.log("[Verify] MP response:", result.mp_status, "→ plan:", result.plan_type);
+      }
 
       if (result.error && !result.mp_status) {
+        console.error("[Verify] Error:", result.error);
         toast({ title: result.error, variant: "destructive" });
         return;
       }
 
       if (result.mp_status_code) {
-        console.warn("[Verify] MP API returned error code:", result.mp_status_code, result.mp_error);
+        console.error("[Verify] MP API error:", result.mp_status_code);
         toast({ title: "Erro na conexão com Mercado Pago. Verifique o token.", variant: "destructive" });
         return;
       }
 
-      // Update profile on external Supabase based on MP response
       if (result.success) {
+        const oldPlan = planType;
         const updatePayload: Record<string, unknown> = {
           plan_type: result.plan_type,
           subscription_status: result.subscription_status,
         };
         if (result.next_payment_date) updatePayload.next_payment_date = result.next_payment_date;
         if (result.manage_url) updatePayload.mp_manage_subscription_url = result.manage_url;
-
-        console.log("[Verify] Updating profile with:", updatePayload);
 
         const { error: updateError } = await supabase
           .from("profiles")
@@ -284,6 +304,10 @@ const Planos = () => {
         if (result.manage_url) setManageUrl(result.manage_url);
 
         if (result.plan_type === "pro") {
+          // Only log status change
+          if (oldPlan !== "pro") {
+            console.log("[Verify] ✅ Status changed: free → pro");
+          }
           toast({ title: "🎉 Assinatura ativada! Você agora é PRO!" });
           setTimeout(() => window.location.reload(), 1500);
         } else if (result.subscription_status === "pending") {
@@ -462,6 +486,7 @@ const Planos = () => {
           manageUrl={manageUrl}
           onVerify={handleVerifySubscription}
           verifying={verifying}
+          cooldown={verifyCooldown}
           onCancelClick={() => setShowCancelDialog(true)}
         />
         <ConfirmationDialog
@@ -505,6 +530,7 @@ const Planos = () => {
                   manageUrl={manageUrl}
                   onVerify={handleVerifySubscription}
                   verifying={verifying}
+                  cooldown={verifyCooldown}
                   onCancelClick={() => setShowCancelDialog(true)}
                 />
                 <ConfirmationDialog

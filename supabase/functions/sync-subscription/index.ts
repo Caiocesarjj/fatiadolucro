@@ -30,7 +30,6 @@ Deno.serve(async (req) => {
     }
 
     // Query Mercado Pago API
-    console.log("Querying MP for subscription:", subscriptionId);
     const mpResponse = await fetch(
       `https://api.mercadopago.com/preapproval/${subscriptionId}`,
       { headers: { Authorization: `Bearer ${mpAccessToken}` } }
@@ -50,7 +49,6 @@ Deno.serve(async (req) => {
     }
 
     const mpData = await mpResponse.json();
-    console.log("MP response status:", mpData.status, "payer:", mpData.payer_email);
 
     // Map MP status
     let plan_type = "free";
