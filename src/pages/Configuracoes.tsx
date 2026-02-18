@@ -700,11 +700,27 @@ const Configuracoes = () => {
                           {isPro ? <Crown className="h-5 w-5 text-primary" /> : <User className="h-5 w-5 text-muted-foreground" />}
                         </div>
                         <div>
-                          <p className="font-semibold text-lg">Plano {isPro ? "PRO" : "Grátis"}</p>
-                          <p className="text-sm text-muted-foreground">{isPro ? "Acesso completo a todos os recursos" : "Recursos limitados — faça upgrade para crescer"}</p>
+                          <p className="font-semibold text-lg">
+                            Plano {planType === "vip" ? "VIP 👑" : isPro ? "PRO" : "Grátis"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {planType === "vip"
+                              ? "Acesso vitalício a todos os recursos"
+                              : isPro
+                              ? "Acesso completo a todos os recursos"
+                              : "Recursos limitados — faça upgrade para crescer"}
+                          </p>
                         </div>
                       </div>
                     </div>
+                    {isPro && (
+                      <div className="space-y-3">
+                        <Button onClick={() => navigate("/planos")} variant="outline" className="w-full">
+                          <Crown className="h-4 w-4 mr-2" />
+                          Gerenciar Assinatura
+                        </Button>
+                      </div>
+                    )}
                     {!isPro && (
                       <div className="space-y-3">
                         <Button onClick={() => navigate("/planos")} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
