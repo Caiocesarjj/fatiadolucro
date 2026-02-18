@@ -133,7 +133,9 @@ export type Database = {
           brand: string | null
           cost_per_unit: number | null
           created_at: string
+          current_stock: number
           id: string
+          minimum_stock: number
           name: string
           package_size: number
           price_paid: number
@@ -146,7 +148,9 @@ export type Database = {
           brand?: string | null
           cost_per_unit?: number | null
           created_at?: string
+          current_stock?: number
           id?: string
+          minimum_stock?: number
           name: string
           package_size?: number
           price_paid?: number
@@ -159,7 +163,9 @@ export type Database = {
           brand?: string | null
           cost_per_unit?: number | null
           created_at?: string
+          current_stock?: number
           id?: string
+          minimum_stock?: number
           name?: string
           package_size?: number
           price_paid?: number

@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import Catalogo from "./pages/Catalogo";
 import Planos from "./pages/Planos";
 import Inteligencia from "./pages/Inteligencia";
+import Estoque from "./pages/Estoque";
 import Mais from "./pages/Mais";
 import Receitas from "./pages/Receitas";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -86,6 +87,7 @@ const App = () => {
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/ingredientes" element={<ProtectedRoute><Ingredientes /></ProtectedRoute>} />
+            <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
             <Route path="/receitas" element={<ProtectedRoute><Receitas /></ProtectedRoute>} />
             <Route path="/calculadora" element={<ProtectedRoute><Calculadora /></ProtectedRoute>} />
             <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
