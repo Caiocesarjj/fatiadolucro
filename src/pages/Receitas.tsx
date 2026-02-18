@@ -108,7 +108,7 @@ const Receitas = () => {
     return (profit / r.target_sale_price) * 100;
   };
 
-  const isPro = planType === "pro";
+  const isPro = planType === "pro" || planType === "vip";
 
   const startPdfSelection = () => {
     if (!isPro) {

@@ -70,7 +70,7 @@ export const useFreemiumLimits = () => {
   }, [fetchCounts]);
 
   const canCreate = (module: FreemiumModule): boolean => {
-    if (planType === "pro") return true;
+    if (planType === "pro" || planType === "vip") return true;
     return counts[module] < FREE_LIMITS[module];
   };
 

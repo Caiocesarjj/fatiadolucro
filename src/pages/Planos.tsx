@@ -224,8 +224,14 @@ const Planos = () => {
       return;
     }
 
-    // Skip if already confirmed PRO (vitalício/VIP filter)
-    if (planType === "pro" && (subscriptionStatus === "authorized" || subscriptionStatus === "active" || subscriptionStatus === "vip")) {
+    // Skip if VIP (no subscription needed)
+    if (planType === "vip") {
+      toast({ title: "👑 Você é VIP! Acesso vitalício sem verificação." });
+      return;
+    }
+
+    // Skip if already confirmed PRO
+    if (planType === "pro" && (subscriptionStatus === "authorized" || subscriptionStatus === "active")) {
       toast({ title: "✅ Sua assinatura PRO já está confirmada!" });
       return;
     }
@@ -475,7 +481,29 @@ const Planos = () => {
     "Suporte prioritário",
   ];
 
-  // Already PRO
+  // VIP users - no subscription management needed
+  if (planType === "vip") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Crown className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle>Você é VIP! 👑</CardTitle>
+            <CardDescription>Acesso PRO vitalício — sem cobranças.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button asChild className="w-full">
+              <Link to="/dashboard">Voltar ao Dashboard</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Already PRO (with subscription)
   if (planType === "pro") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">

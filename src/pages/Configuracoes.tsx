@@ -37,7 +37,7 @@ const Configuracoes = () => {
   const { toast } = useToast();
   const { planType } = useSubscription();
   const navigate = useNavigate();
-  const isPro = planType === "pro";
+  const isPro = planType === "pro" || planType === "vip";
 
   const [profile, setProfile] = useState<Profile>({ store_name: "", logo_url: "" });
   const [platforms, setPlatforms] = useState<Platform[]>([]);
