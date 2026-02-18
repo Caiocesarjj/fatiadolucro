@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           created_at: string
@@ -525,6 +549,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_logs: { Args: never; Returns: undefined }
       get_admin_user_stats: {
         Args: never
         Returns: {
