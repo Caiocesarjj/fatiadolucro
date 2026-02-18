@@ -59,13 +59,11 @@ const ProStatusCard = ({
             <span>Próxima cobrança: <strong className="text-foreground">{friendlyDate}</strong></span>
           </div>
         )}
-        {manageUrl && (
-          <Button variant="outline" className="w-full" asChild>
-            <a href={manageUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-2" /> Gerenciar Pagamento
-            </a>
-          </Button>
-        )}
+        <Button variant="outline" className="w-full" asChild>
+          <a href={manageUrl || "https://www.mercadopago.com.br/subscriptions"} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-4 w-4 mr-2" /> Gerenciar Pagamento
+          </a>
+        </Button>
         <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying || cooldown}>
           {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
           {cooldown ? "Aguarde 30s..." : "Verificar Assinatura"}
@@ -118,13 +116,11 @@ const PendingSubscriptionCard = ({
             <span>Próxima cobrança: <strong className="text-foreground">{friendlyDate}</strong></span>
           </div>
         )}
-        {manageUrl && (
-          <Button variant="outline" className="w-full" asChild>
-            <a href={manageUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-2" /> Gerenciar Pagamento
-            </a>
-          </Button>
-        )}
+        <Button variant="outline" className="w-full" asChild>
+          <a href={manageUrl || "https://www.mercadopago.com.br/subscriptions"} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-4 w-4 mr-2" /> Gerenciar Pagamento
+          </a>
+        </Button>
         <Button onClick={onVerify} variant="secondary" className="w-full" disabled={verifying || cooldown}>
           {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
           {cooldown ? "Aguarde 30s..." : "Verificar Assinatura"}
