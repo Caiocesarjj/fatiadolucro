@@ -52,7 +52,7 @@ const formatCurrency = (value: number) =>
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { isInTrial, trialDaysLeft, hasFullAccess } = useFreemiumLimits();
+  const { isInTrial, trialDaysLeft, hasFullAccess, planType } = useFreemiumLimits();
   const [stats, setStats] = useState<DashboardStats>({
     totalIngredients: 0,
     totalRecipes: 0,
@@ -158,7 +158,7 @@ const Dashboard = () => {
     <AppLayout title="Início">
       <div className="space-y-5">
         {/* Trial Banner */}
-        {isInTrial && <TrialBanner daysLeft={trialDaysLeft} />}
+        {isInTrial && planType === "free" && <TrialBanner daysLeft={trialDaysLeft} />}
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex flex-wrap gap-2.5">
