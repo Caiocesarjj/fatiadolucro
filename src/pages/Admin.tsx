@@ -398,8 +398,8 @@ const Admin = () => {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">Plano PRO</p>
-                        <p className="text-2xl font-bold text-primary mt-1">{users.filter((u) => u.plan_type === "pro").length}</p>
+                        <p className="text-sm font-medium text-muted-foreground">PRO / VIP</p>
+                        <p className="text-2xl font-bold text-primary mt-1">{users.filter((u) => u.plan_type === "pro" || u.plan_type === "vip").length}</p>
                       </div>
                       <div className="p-3 rounded-xl bg-primary-light">
                         <Crown className="h-5 w-5 text-primary" />
