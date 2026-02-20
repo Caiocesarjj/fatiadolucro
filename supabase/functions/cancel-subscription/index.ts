@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       // No subscription to cancel on MP, just update local status
       await serviceClient
         .from("profiles")
-        .update({ subscription_status: "cancelled", plan_type: "free" })
+        .update({ subscription_status: "cancelled" })
         .eq("user_id", userId);
 
       return new Response(
@@ -98,10 +98,11 @@ Deno.serve(async (req) => {
 
     console.log("MP cancel success:", JSON.stringify(mpData));
 
-    // Update profile
+    // Update profile - keep plan_type as "pro" until next_payment_date
+    // The webhook or a cron job will downgrade to "free" when the period expires
     await serviceClient
       .from("profiles")
-      .update({ subscription_status: "cancelled", plan_type: "free" })
+      .update({ subscription_status: "cancelled" })
       .eq("user_id", userId);
 
     return new Response(

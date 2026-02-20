@@ -38,7 +38,7 @@ interface ModuleCounts {
 
 export const useFreemiumLimits = () => {
   const { user } = useAuth();
-  const { planType } = useSubscription();
+  const { planType, loading: subscriptionLoading } = useSubscription();
   const { isInTrial, trialDaysLeft, loading: trialLoading } = useTrial();
   const [counts, setCounts] = useState<ModuleCounts>({
     recipes: 0,
@@ -49,6 +49,7 @@ export const useFreemiumLimits = () => {
     catalog: 0,
   });
 
+  const isLoading = subscriptionLoading || trialLoading;
   const hasFullAccess = isPremiumPlan(planType) || isInTrial;
 
   const fetchCounts = useCallback(async () => {
@@ -77,11 +78,14 @@ export const useFreemiumLimits = () => {
   }, [fetchCounts]);
 
   const canCreate = (module: FreemiumModule): boolean => {
+    // While loading, allow actions to prevent false-positive blocks for PRO/VIP
+    if (isLoading) return true;
     if (hasFullAccess) return true;
     return counts[module] < FREE_LIMITS[module];
   };
 
   const isModuleLocked = (moduleName: string): boolean => {
+    if (isLoading) return false;
     if (hasFullAccess) return false;
     return PREMIUM_MODULES.includes(moduleName);
   };
@@ -112,6 +116,7 @@ export const useFreemiumLimits = () => {
     isInTrial,
     trialDaysLeft,
     trialLoading,
+    isLoading,
     refreshCounts: fetchCounts,
     FREE_LIMITS,
   };
