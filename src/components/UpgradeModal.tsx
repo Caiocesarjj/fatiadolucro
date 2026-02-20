@@ -16,14 +16,22 @@ interface UpgradeModalProps {
   moduleName?: string;
   currentCount?: number;
   maxCount?: number;
+  blockClose?: boolean;
 }
 
-export const UpgradeModal = ({ open, onOpenChange, type = "recipe_limit", moduleName, currentCount, maxCount }: UpgradeModalProps) => {
+export const UpgradeModal = ({ open, onOpenChange, type = "recipe_limit", moduleName, currentCount, maxCount, blockClose = false }: UpgradeModalProps) => {
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
     onOpenChange(false);
     navigate("/planos");
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+    if (blockClose) {
+      navigate(-1);
+    }
   };
 
   const getTitle = () => {
@@ -43,8 +51,8 @@ export const UpgradeModal = ({ open, onOpenChange, type = "recipe_limit", module
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
             {type === "module_locked" ? (
@@ -68,7 +76,7 @@ export const UpgradeModal = ({ open, onOpenChange, type = "recipe_limit", module
           </Button>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             className="w-full"
           >
             Voltar
