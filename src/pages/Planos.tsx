@@ -444,13 +444,30 @@ const Planos = () => {
   const handleCancelSubscription = async () => {
     setCancelling(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ subscription_status: "inactive", subscription_id: null } as any)
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      toast({ title: "Assinatura cancelada com sucesso." });
-      setSubscriptionId(null);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: "Sessão expirada. Faça login novamente.", variant: "destructive" });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-subscription`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Erro ao cancelar assinatura");
+      }
+
+      toast({ title: "Assinatura cancelada com sucesso no Mercado Pago." });
       setSubscriptionStatus("cancelled");
     } catch (error: any) {
       toast({ title: error.message || "Erro ao cancelar", variant: "destructive" });
