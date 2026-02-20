@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -44,20 +43,32 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!profile?.subscription_id) {
-      return new Response(JSON.stringify({ error: "Nenhuma assinatura encontrada" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // No subscription to cancel on MP, just update local status
+      await serviceClient
+        .from("profiles")
+        .update({ subscription_status: "cancelled", plan_type: "free" })
+        .eq("user_id", userId);
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Assinatura cancelada localmente (sem ID MP)" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Get MP access token
-    const { data: config } = await serviceClient
-      .from("app_config")
-      .select("mp_access_token")
-      .limit(1)
-      .maybeSingle();
+    // Get MP access token - try secret first, then app_config fallback
+    let mpAccessToken = Deno.env.get("MP_ACCESS_TOKEN");
 
-    if (!config?.mp_access_token) {
+    if (!mpAccessToken) {
+      const { data: config } = await serviceClient
+        .from("app_config")
+        .select("mp_access_token")
+        .limit(1)
+        .maybeSingle();
+
+      mpAccessToken = config?.mp_access_token || null;
+    }
+
+    if (!mpAccessToken) {
       return new Response(JSON.stringify({ error: "Mercado Pago não configurado" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -65,11 +76,12 @@ serve(async (req) => {
     }
 
     // Cancel on Mercado Pago
+    console.log("Cancelling subscription on MP:", profile.subscription_id);
     const mpResponse = await fetch(`https://api.mercadopago.com/preapproval/${profile.subscription_id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.mp_access_token}`,
+        "Authorization": `Bearer ${mpAccessToken}`,
       },
       body: JSON.stringify({ status: "cancelled" }),
     });
@@ -84,14 +96,16 @@ serve(async (req) => {
       });
     }
 
+    console.log("MP cancel success:", JSON.stringify(mpData));
+
     // Update profile
     await serviceClient
       .from("profiles")
-      .update({ subscription_status: "cancelled" })
+      .update({ subscription_status: "cancelled", plan_type: "free" })
       .eq("user_id", userId);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Assinatura cancelada com sucesso" }),
+      JSON.stringify({ success: true, message: "Assinatura cancelada com sucesso no Mercado Pago" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
