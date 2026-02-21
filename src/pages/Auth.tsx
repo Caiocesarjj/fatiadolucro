@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Cookie, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone, Gift } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone, Gift } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 import { z } from "zod";
 import { validateReferralCode } from "@/lib/referralValidation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -294,10 +295,9 @@ const Auth = () => {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 200 }}
-          className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-4 shadow-lg"
-          style={{ boxShadow: '0 8px 24px -4px hsl(160 84% 39% / 0.3)' }}
+          className="mb-4"
         >
-          <Cookie className="w-8 h-8 text-primary-foreground" />
+          <img src={logo} alt="Fatia do Lucro" className="w-16 h-16 rounded-2xl shadow-lg mx-auto" />
         </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
