@@ -6,7 +6,6 @@ import {
   Wallet,
   Settings,
   LogOut,
-  Cookie,
   ChevronLeft,
   Users,
   ClipboardList,
@@ -16,6 +15,7 @@ import {
   Brain,
   Boxes,
 } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 import {
   Sidebar,
   SidebarContent,
@@ -73,9 +73,7 @@ export function AppSidebar() {
           "flex items-center gap-3 transition-all duration-200",
           collapsed && "justify-center"
         )}>
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-primary shrink-0">
-            <Cookie className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img src={logo} alt="Fatia do Lucro" className="w-10 h-10 rounded-xl shrink-0 object-cover" />
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold text-foreground truncate">Fatia do Lucro</h1>
