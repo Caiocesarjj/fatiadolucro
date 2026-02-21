@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Cookie,
   ShieldCheck,
   Package,
   BarChart3,
@@ -18,6 +17,7 @@ import {
   X,
   Gift,
 } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 import { motion } from "framer-motion";
 
 const fadeUp = {
@@ -46,9 +46,7 @@ const Index = () => {
       <nav className="sticky top-0 z-50 bg-[#FFF9F0]/90 backdrop-blur-xl border-b border-[#E8D5C0]">
         <div className="container mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md">
-              <Cookie className="w-4.5 h-4.5 text-white" />
-            </div>
+            <img src={logo} alt="Fatia do Lucro" className="w-9 h-9 rounded-xl shadow-md object-cover" />
             <span className="text-lg font-bold tracking-tight">Fatia do Lucro</span>
           </div>
           <Link to="/auth">
@@ -386,9 +384,7 @@ const Index = () => {
         <div className="container mx-auto max-w-2xl">
           <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                <Cookie className="w-4 h-4 text-white" />
-              </div>
+              <img src={logo} alt="Fatia do Lucro" className="w-8 h-8 rounded-lg object-cover" />
               <span className="font-bold text-white">Fatia do Lucro</span>
             </div>
 
