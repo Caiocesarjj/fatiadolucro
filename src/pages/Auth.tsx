@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone, Gift } from "lucide-react";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import { z } from "zod";
 import { validateReferralCode } from "@/lib/referralValidation";
 import { motion, AnimatePresence } from "framer-motion";
