@@ -17,7 +17,7 @@ import {
   X,
   Gift,
 } from "lucide-react";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import { motion } from "framer-motion";
 
 const fadeUp = {
