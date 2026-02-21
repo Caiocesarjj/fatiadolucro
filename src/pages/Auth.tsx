@@ -297,7 +297,7 @@ const Auth = () => {
           transition={{ type: "spring", stiffness: 200 }}
           className="mb-4"
         >
-          <img src={logo} alt="Fatia do Lucro" className="w-16 h-16 rounded-2xl shadow-lg mx-auto" />
+          <img src={logo} alt="Fatia do Lucro" className="w-20 h-20 rounded-2xl shadow-lg mx-auto" />
         </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 10 }}

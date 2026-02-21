@@ -73,7 +73,7 @@ export function AppSidebar() {
           "flex items-center gap-3 transition-all duration-200",
           collapsed && "justify-center"
         )}>
-          <img src={logo} alt="Fatia do Lucro" className="w-10 h-10 rounded-xl shrink-0 object-cover" />
+          <img src={logo} alt="Fatia do Lucro" className="w-12 h-12 rounded-xl shrink-0 object-cover" />
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold text-foreground truncate">Fatia do Lucro</h1>

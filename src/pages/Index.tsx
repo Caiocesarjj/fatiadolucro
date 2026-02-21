@@ -46,7 +46,7 @@ const Index = () => {
       <nav className="sticky top-0 z-50 bg-[#FFF9F0]/90 backdrop-blur-xl border-b border-[#E8D5C0]">
         <div className="container mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img src={logo} alt="Fatia do Lucro" className="w-9 h-9 rounded-xl shadow-md object-cover" />
+            <img src={logo} alt="Fatia do Lucro" className="w-11 h-11 rounded-xl shadow-md object-cover" />
             <span className="text-lg font-bold tracking-tight">Fatia do Lucro</span>
           </div>
           <Link to="/auth">
@@ -384,7 +384,7 @@ const Index = () => {
         <div className="container mx-auto max-w-2xl">
           <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-2.5">
-              <img src={logo} alt="Fatia do Lucro" className="w-8 h-8 rounded-lg object-cover" />
+              <img src={logo} alt="Fatia do Lucro" className="w-10 h-10 rounded-lg object-cover" />
               <span className="font-bold text-white">Fatia do Lucro</span>
             </div>
 
