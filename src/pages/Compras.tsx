@@ -92,6 +92,7 @@ const Compras = () => {
   const [editForm, setEditForm] = useState({
     store: "",
     price_paid: "",
+    quantity_needed: "",
   });
 
   useEffect(() => {
@@ -170,19 +171,32 @@ const Compras = () => {
     if (!editingItem) return;
 
     try {
-      const updateData: Record<string, any> = {};
-      if (editForm.store !== undefined) updateData.store = editForm.store || null;
-      if (editForm.price_paid) updateData.price_paid = parseFloat(editForm.price_paid.replace(",", "."));
+      // Update ingredient store/price
+      const ingredientUpdate: Record<string, any> = {};
+      if (editForm.store !== undefined) ingredientUpdate.store = editForm.store || null;
+      if (editForm.price_paid) ingredientUpdate.price_paid = parseFloat(editForm.price_paid.replace(",", "."));
 
-      if (Object.keys(updateData).length > 0) {
+      if (Object.keys(ingredientUpdate).length > 0) {
         const { error } = await supabase
           .from("ingredients")
-          .update(updateData)
+          .update(ingredientUpdate)
           .eq("id", editingItem.ingredient_id);
         if (error) throw error;
       }
 
-      toast({ title: "Ingrediente atualizado!" });
+      // Update quantity on shopping list item
+      if (editForm.quantity_needed) {
+        const qty = parseFloat(editForm.quantity_needed.replace(",", "."));
+        if (qty > 0) {
+          const { error } = await supabase
+            .from("shopping_list_items")
+            .update({ quantity_needed: qty } as any)
+            .eq("id", editingItem.id);
+          if (error) throw error;
+        }
+      }
+
+      toast({ title: "Item atualizado!" });
       setEditDialogOpen(false);
       setEditingItem(null);
       fetchData();
@@ -200,6 +214,7 @@ const Compras = () => {
     setEditForm({
       store: item.ingredients.store || "",
       price_paid: item.ingredients.price_paid.toString().replace(".", ","),
+      quantity_needed: item.quantity_needed.toString().replace(".", ","),
     });
     setEditDialogOpen(true);
   };
@@ -787,21 +802,45 @@ const Compras = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Loja</Label>
+              <Label>Quantidade</Label>
               <Input
-                value={editForm.store}
-                onChange={(e) => setEditForm({ ...editForm, store: e.target.value })}
-                placeholder="Ex: Atacadão"
+                value={editForm.quantity_needed}
+                onChange={(e) => setEditForm({ ...editForm, quantity_needed: e.target.value })}
+                placeholder="Ex: 2"
+                type="number"
+                min="1"
+                step="1"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Preço (R$)</Label>
-              <Input
-                value={editForm.price_paid}
-                onChange={(e) => setEditForm({ ...editForm, price_paid: e.target.value })}
-                placeholder="Ex: 12,90"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Loja</Label>
+                <Input
+                  value={editForm.store}
+                  onChange={(e) => setEditForm({ ...editForm, store: e.target.value })}
+                  placeholder="Ex: Atacadão"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Preço (R$)</Label>
+                <Input
+                  value={editForm.price_paid}
+                  onChange={(e) => setEditForm({ ...editForm, price_paid: e.target.value })}
+                  placeholder="Ex: 12,90"
+                />
+              </div>
             </div>
+            {editForm.quantity_needed && editForm.price_paid && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Custo Estimado:</p>
+                <p className="text-lg font-bold text-primary">
+                  {formatCurrency(
+                    parseFloat(editForm.price_paid.replace(",", ".") || "0") *
+                    parseFloat(editForm.quantity_needed.replace(",", ".") || "0")
+                  )}
+                </p>
+              </div>
+            )}
             <div className="flex gap-2 pt-2">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="flex-1">
                 Cancelar
