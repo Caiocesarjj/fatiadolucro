@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Cookie, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, Lock, Eye, EyeOff } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { motion } from "framer-motion";
 
 const ResetPassword = () => {
@@ -71,7 +72,7 @@ const ResetPassword = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-4"
           >
-            <Cookie className="w-8 h-8 text-primary-foreground" />
+            <img src={logo} alt="Fatia do Lucro" className="w-12 h-12 rounded-xl" />
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground">Fatia do Lucro</h1>
           <p className="text-muted-foreground mt-2">Redefinição de senha</p>
