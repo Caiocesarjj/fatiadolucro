@@ -186,18 +186,26 @@ const Financeiro = () => {
       const actualType = form.entry_type === "profit_withdrawal" ? "expense" : form.type;
       const actualEntryType = form.entry_type === "profit_withdrawal" ? "profit_withdrawal" : (actualType === "revenue" ? form.entry_type : null);
 
-      const transactionData = {
+      // Build clean payload — only include fields that have values
+      const transactionData: Record<string, any> = {
         user_id: user!.id,
         type: actualType,
-        entry_type: actualEntryType,
         description: form.entry_type === "profit_withdrawal" ? (form.description || "Retirada de Lucro") : form.description,
         amount,
-        platform_id: form.platform_id || null,
-        client_id: form.client_id || null,
-        invoice_number: form.entry_type === "profit_withdrawal" ? null : (form.invoice_number || null),
-        platform_fee: platformFee,
         transaction_date: form.transaction_date,
       };
+
+      // Only add optional fields when they have actual values
+      if (actualEntryType) transactionData.entry_type = actualEntryType;
+      if (form.entry_type !== "profit_withdrawal") {
+        if (form.platform_id) transactionData.platform_id = form.platform_id;
+        if (form.client_id) transactionData.client_id = form.client_id;
+        if (form.invoice_number) transactionData.invoice_number = form.invoice_number;
+      }
+      if (platformFee > 0) {
+        transactionData.platform_fee = platformFee;
+        transactionData.net_amount = amount - platformFee;
+      }
 
       if (editingTransaction) {
         const { error } = await supabase
@@ -216,10 +224,11 @@ const Financeiro = () => {
       resetForm();
       fetchData();
     } catch (error: any) {
+      console.error("Erro ao salvar transação:", error);
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: mapErrorToUserMessage(error),
+        title: "Erro ao salvar",
+        description: error?.message || mapErrorToUserMessage(error),
       });
     }
   };
