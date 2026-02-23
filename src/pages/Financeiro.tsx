@@ -181,7 +181,7 @@ const Financeiro = () => {
         user_id: user!.id,
         type: actualType,
         entry_type: actualEntryType,
-        description: form.entry_type === "profit_withdrawal" ? "Retirada de Lucro" : form.description,
+        description: form.entry_type === "profit_withdrawal" ? (form.description || "Retirada de Lucro") : form.description,
         amount,
         platform_id: form.platform_id || null,
         client_id: form.client_id || null,
@@ -527,6 +527,14 @@ const Financeiro = () => {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
+                            </div>
+                          )}
+
+                          {/* Descrição para Retirada de Lucro */}
+                          {form.entry_type === "profit_withdrawal" && (
+                            <div className="space-y-2">
+                              <Label htmlFor="description">Descrição</Label>
+                              <Input id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Retirada mensal" />
                             </div>
                           )}
 
