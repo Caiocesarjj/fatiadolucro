@@ -134,15 +134,24 @@ const Financeiro = () => {
       const [transactionsRes, platformsRes, clientsRes] = await Promise.all([
         supabase
           .from("transactions")
-          .select("*, platforms(name, color), clients(name)")
+          .select("*")
           .order("transaction_date", { ascending: false }),
         supabase.from("platforms").select("*").order("name"),
         supabase.from("clients").select("id, name").order("name"),
       ]);
 
-      setTransactions(transactionsRes.data || []);
-      setPlatforms(platformsRes.data || []);
-      setClients(clientsRes.data || []);
+      const platformsList = platformsRes.data || [];
+      const clientsList = clientsRes.data || [];
+      setPlatforms(platformsList);
+      setClients(clientsList);
+
+      // Manually join platform and client data
+      const enrichedTransactions = (transactionsRes.data || []).map((t: any) => ({
+        ...t,
+        platforms: t.platform_id ? platformsList.find((p: any) => p.id === t.platform_id) ? { name: platformsList.find((p: any) => p.id === t.platform_id)!.name, color: platformsList.find((p: any) => p.id === t.platform_id)!.color } : null : null,
+        clients: t.client_id ? clientsList.find((c: any) => c.id === t.client_id) ? { name: clientsList.find((c: any) => c.id === t.client_id)!.name } : null : null,
+      }));
+      setTransactions(enrichedTransactions);
     } catch (error) {
       if (import.meta.env.DEV) console.error("Error fetching data:", error);
     } finally {
