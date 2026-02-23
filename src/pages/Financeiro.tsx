@@ -46,6 +46,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { ReportsTab } from "@/components/reports/ReportsTab";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -173,15 +174,18 @@ const Financeiro = () => {
         }
       }
 
+      const actualType = form.entry_type === "profit_withdrawal" ? "expense" : form.type;
+      const actualEntryType = form.entry_type === "profit_withdrawal" ? "profit_withdrawal" : (actualType === "revenue" ? form.entry_type : null);
+
       const transactionData = {
         user_id: user!.id,
-        type: form.type,
-        entry_type: form.type === "revenue" ? (form.entry_type as "direct_sale" | "transfer") : null,
-        description: form.description,
+        type: actualType,
+        entry_type: actualEntryType,
+        description: form.entry_type === "profit_withdrawal" ? "Retirada de Lucro" : form.description,
         amount,
         platform_id: form.platform_id || null,
         client_id: form.client_id || null,
-        invoice_number: form.invoice_number || null,
+        invoice_number: form.entry_type === "profit_withdrawal" ? null : (form.invoice_number || null),
         platform_fee: platformFee,
         transaction_date: form.transaction_date,
       };
@@ -461,33 +465,54 @@ const Financeiro = () => {
                           <DialogTitle>{editingTransaction ? "Editar Transação" : "Nova Transação"}</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>Tipo</Label>
-                            <Select value={form.type} onValueChange={(value: "revenue" | "expense") => setForm({ ...form, type: value, platform_id: "" })}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="revenue">
-                                  <div className="flex items-center gap-2">
-                                    <ArrowUpRight className="h-4 w-4 text-success" />
-                                    Entrada (Receita)
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="expense">
-                                  <div className="flex items-center gap-2">
-                                    <ArrowDownRight className="h-4 w-4 text-destructive" />
-                                    Saída (Despesa)
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          {/* Tipo Entrada/Saída - hidden for profit_withdrawal */}
+                          {form.entry_type !== "profit_withdrawal" && (
+                            <div className="space-y-2">
+                              <Label>Tipo</Label>
+                              <Select value={form.type} onValueChange={(value: "revenue" | "expense") => setForm({ ...form, type: value, platform_id: "", entry_type: value === "expense" ? "direct_sale" : form.entry_type })}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="revenue">
+                                    <div className="flex items-center gap-2">
+                                      <ArrowUpRight className="h-4 w-4 text-success" />
+                                      Entrada (Receita)
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="expense">
+                                    <div className="flex items-center gap-2">
+                                      <ArrowDownRight className="h-4 w-4 text-destructive" />
+                                      Saída (Despesa)
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
 
+                          {/* Categoria - only for revenue type */}
                           {form.type === "revenue" && (
                             <div className="space-y-2">
-                              <Label>Tipo de Entrada</Label>
-                              <Select value={form.entry_type} onValueChange={(value: "direct_sale" | "transfer" | "profit_withdrawal") => setForm({ ...form, entry_type: value })}>
+                              <Label>Categoria</Label>
+                              <Select
+                                value={form.entry_type}
+                                onValueChange={(value: "direct_sale" | "transfer" | "profit_withdrawal") => {
+                                  const updates: any = { entry_type: value };
+                                  if (value === "profit_withdrawal") {
+                                    updates.type = "expense";
+                                    updates.description = "Retirada de Lucro";
+                                    updates.platform_id = "";
+                                    updates.client_id = "";
+                                    updates.invoice_number = "";
+                                  }
+                                  if (value === "transfer") {
+                                    updates.client_id = "";
+                                    updates.invoice_number = "";
+                                  }
+                                  setForm({ ...form, ...updates });
+                                }}
+                              >
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
@@ -505,11 +530,7 @@ const Financeiro = () => {
                             </div>
                           )}
 
-                          <div className="space-y-2">
-                            <Label htmlFor="description">Descrição</Label>
-                            <Input id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Venda de 10 brownies" />
-                          </div>
-
+                          {/* Valor + Data (sempre visíveis) */}
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="amount">Valor (R$)</Label>
@@ -521,12 +542,69 @@ const Financeiro = () => {
                             </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="invoice">Nº Nota/Pedido (opcional)</Label>
-                            <Input id="invoice" value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="Ex: NF-001" />
-                          </div>
+                          {/* Expense type: description only */}
+                          {form.type === "expense" && form.entry_type !== "profit_withdrawal" && (
+                            <>
+                              <div className="space-y-2">
+                                <Label htmlFor="description">Descrição</Label>
+                                <Input id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Compra de embalagens" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="invoice">Nº Nota/Pedido (opcional)</Label>
+                                <Input id="invoice" value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="Ex: NF-001" />
+                              </div>
+                            </>
+                          )}
 
-                          {form.type === "revenue" && form.entry_type !== "profit_withdrawal" && (
+                          {/* Venda Direta: Descrição, Nota, Plataforma, Fonte */}
+                          {form.entry_type === "direct_sale" && form.type === "revenue" && (
+                            <>
+                              <div className="space-y-2">
+                                <Label htmlFor="description">Descrição</Label>
+                                <Input id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Venda de 10 brownies" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="invoice">Nº Nota/Pedido (opcional)</Label>
+                                <Input id="invoice" value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="Ex: NF-001" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Plataforma de Venda</Label>
+                                <Select value={form.platform_id} onValueChange={(value) => setForm({ ...form, platform_id: value })}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione a plataforma" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {platforms.map((platform) => (
+                                      <SelectItem key={platform.id} value={platform.id}>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPlatformColor(platform.name, platform.color) }} />
+                                          {platform.name}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Fonte (opcional)</Label>
+                                <Select value={form.client_id} onValueChange={(value) => setForm({ ...form, client_id: value })}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um cliente" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {clients.map((client) => (
+                                      <SelectItem key={client.id} value={client.id}>
+                                        {client.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Repasse: Plataforma, Descrição */}
+                          {form.entry_type === "transfer" && form.type === "revenue" && (
                             <>
                               <div className="space-y-2">
                                 <Label>Plataforma de Venda</Label>
@@ -546,24 +624,14 @@ const Financeiro = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
-
                               <div className="space-y-2">
-                                <Label>Fonte (opcional)</Label>
-                                <Select value={form.client_id} onValueChange={(value) => setForm({ ...form, client_id: value })}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um cliente" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {clients.map((client) => (
-                                      <SelectItem key={client.id} value={client.id}>
-                                        {client.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Label htmlFor="description">Descrição</Label>
+                                <Input id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Repasse iFood semana 1" />
                               </div>
                             </>
                           )}
+
+                          {/* Retirada de Lucro: nothing extra */}
 
                           <div className="flex gap-2 pt-4">
                             <Button type="button" variant="outline" onClick={resetForm} className="flex-1">Cancelar</Button>
@@ -599,17 +667,12 @@ const Financeiro = () => {
 
           {/* Reports Tab */}
           <TabsContent value="reports">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-lg font-semibold mb-2">Relatórios em Breve</h3>
-                  <p className="text-muted-foreground">
-                    Esta funcionalidade estará disponível em uma próxima atualização.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
+            <ReportsTab
+              transactions={transactions}
+              platforms={platforms}
+              formatCurrency={formatCurrency}
+              getPlatformColor={getPlatformColor}
+            />
           </TabsContent>
         </Tabs>
 

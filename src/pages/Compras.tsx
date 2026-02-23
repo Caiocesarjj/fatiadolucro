@@ -95,6 +95,9 @@ const Compras = () => {
     quantity_needed: "",
   });
 
+  const [showAddToStockDialog, setShowAddToStockDialog] = useState(false);
+  const [addingToStock, setAddingToStock] = useState(false);
+
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
@@ -262,9 +265,40 @@ const Compras = () => {
   };
 
   const handleClearChecked = async () => {
-    if (!confirm("Deseja remover todos os itens marcados?")) return;
+    // Show dialog asking if user wants to add to stock first
+    setShowAddToStockDialog(true);
+  };
 
+  const handleAddToStockAndClear = async (addToStock: boolean) => {
+    setAddingToStock(true);
     try {
+      if (addToStock) {
+        // Add checked item quantities to ingredient stock
+        for (const item of checkedItems) {
+          const { error } = await supabase.rpc("add_to_stock" as any, {
+            _ingredient_id: item.ingredient_id,
+            _quantity: item.quantity_needed,
+          }).then(async (res: any) => {
+            // Fallback: manual update if RPC doesn't exist
+            if (res.error) {
+              const { data: ing } = await supabase
+                .from("ingredients")
+                .select("current_stock")
+                .eq("id", item.ingredient_id)
+                .single();
+              const newStock = (ing?.current_stock || 0) + item.quantity_needed;
+              return supabase
+                .from("ingredients")
+                .update({ current_stock: newStock })
+                .eq("id", item.ingredient_id);
+            }
+            return res;
+          });
+        }
+        toast({ title: "Estoque atualizado com os itens comprados!" });
+      }
+
+      // Delete checked items
       const { error } = await supabase
         .from("shopping_list_items")
         .delete()
@@ -272,7 +306,7 @@ const Compras = () => {
         .eq("user_id", user!.id);
 
       if (error) throw error;
-      toast({ title: "Itens removidos!" });
+      toast({ title: "Itens removidos da lista!" });
       fetchData();
     } catch (error: any) {
       toast({
@@ -280,6 +314,9 @@ const Compras = () => {
         title: "Erro",
         description: mapErrorToUserMessage(error),
       });
+    } finally {
+      setAddingToStock(false);
+      setShowAddToStockDialog(false);
     }
   };
 
@@ -847,6 +884,48 @@ const Compras = () => {
               </Button>
               <Button onClick={handleEditSave} className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground">
                 Salvar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Stock Dialog */}
+      <Dialog open={showAddToStockDialog} onOpenChange={setShowAddToStockDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackagePlus className="h-5 w-5 text-primary" />
+              Adicionar ao Estoque?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Deseja adicionar os <span className="font-semibold text-foreground">{checkedItems.length} itens comprados</span> ao seu estoque atual?
+            </p>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {checkedItems.map(item => (
+                <div key={item.id} className="flex justify-between text-sm py-1">
+                  <span>{item.ingredients.name}</span>
+                  <span className="text-muted-foreground">+{item.quantity_needed} {item.ingredients.unit_type === "weight" ? `(${item.ingredients.package_size}g)` : "un"}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => handleAddToStockAndClear(false)}
+                disabled={addingToStock}
+              >
+                Não, apenas limpar
+              </Button>
+              <Button
+                className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
+                onClick={() => handleAddToStockAndClear(true)}
+                disabled={addingToStock}
+              >
+                {addingToStock ? "Atualizando..." : "Sim, adicionar"}
               </Button>
             </div>
           </div>
