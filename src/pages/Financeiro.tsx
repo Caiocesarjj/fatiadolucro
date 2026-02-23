@@ -207,16 +207,24 @@ const Financeiro = () => {
         transactionData.net_amount = amount - platformFee;
       }
 
+      // Debug: log payload and client info before saving
+      console.log("[Financeiro] Payload:", JSON.stringify(transactionData, null, 2));
+      console.log("[Financeiro] Supabase URL:", (supabase as any).supabaseUrl || "unknown");
+      console.log("[Financeiro] Auth session:", !!(await supabase.auth.getSession()).data.session);
+
       if (editingTransaction) {
-        const { error } = await supabase
+        const { error, data } = await supabase
           .from("transactions")
           .update(transactionData)
-          .eq("id", editingTransaction.id);
+          .eq("id", editingTransaction.id)
+          .select();
 
+        console.log("[Financeiro] Update result:", { error, data });
         if (error) throw error;
         toast({ title: "Transação atualizada!" });
       } else {
-        const { error } = await supabase.from("transactions").insert(transactionData);
+        const { error, data } = await supabase.from("transactions").insert(transactionData).select();
+        console.log("[Financeiro] Insert result:", { error, data });
         if (error) throw error;
         toast({ title: "Transação registrada!" });
       }
