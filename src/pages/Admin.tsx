@@ -26,6 +26,7 @@ import {
 import { motion } from "framer-motion";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
 import { FinanceiroTab } from "@/components/admin/FinanceiroTab";
+import { CouponsReportTab } from "@/components/admin/CouponsReportTab";
 
 // ... keep existing code (UserProfile interface and AVAILABLE_MODULES)
 interface UserProfile {
@@ -318,10 +319,11 @@ const Admin = () => {
   return (
     <AppLayout title="Administração">
       <Tabs defaultValue="usuarios" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="afiliados">Afiliados</TabsTrigger>
           <TabsTrigger value="cupons">Cupons</TabsTrigger>
+          <TabsTrigger value="relatorio">Relatório</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
         </TabsList>
 
@@ -595,6 +597,11 @@ const Admin = () => {
               </Card>
             </motion.div>
           </div>
+        </TabsContent>
+
+        {/* ====== RELATÓRIO CUPONS/AFILIADOS TAB ====== */}
+        <TabsContent value="relatorio">
+          <CouponsReportTab />
         </TabsContent>
 
         {/* ====== FINANCEIRO TAB ====== */}

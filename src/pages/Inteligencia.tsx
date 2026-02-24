@@ -24,6 +24,7 @@ import {
   BadgeDollarSign,
   Calculator,
   Info,
+  ShoppingCart,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -54,6 +55,10 @@ const Inteligencia = () => {
   const [autoFixedCosts, setAutoFixedCosts] = useState(0);
   const [editableFixedCosts, setEditableFixedCosts] = useState("");
   const [desiredProfit, setDesiredProfit] = useState("");
+
+  // "E se eu vender?" state
+  const [whatIfRecipeId, setWhatIfRecipeId] = useState("");
+  const [whatIfDailyQty, setWhatIfDailyQty] = useState("");
 
   useEffect(() => {
     if (user) fetchData();
@@ -206,14 +211,18 @@ const Inteligencia = () => {
   return (
     <AppLayout title="Simuladores">
       <Tabs defaultValue="discount" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="discount" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="discount" className="flex items-center gap-1 text-xs sm:text-sm">
             <PercentIcon className="h-4 w-4" />
-            Simulador de Descontos
+            <span className="hidden sm:inline">Simulador de</span> Descontos
           </TabsTrigger>
-          <TabsTrigger value="breakeven" className="flex items-center gap-2">
+          <TabsTrigger value="breakeven" className="flex items-center gap-1 text-xs sm:text-sm">
             <Target className="h-4 w-4" />
-            Ponto de Equilíbrio
+            <span className="hidden sm:inline">Ponto de</span> Equilíbrio
+          </TabsTrigger>
+          <TabsTrigger value="whatif" className="flex items-center gap-1 text-xs sm:text-sm">
+            <ShoppingCart className="h-4 w-4" />
+            E se eu vender?
           </TabsTrigger>
         </TabsList>
 
@@ -589,8 +598,149 @@ const Inteligencia = () => {
             </Card>
           </motion.div>
         </TabsContent>
+
+        {/* ========== E SE EU VENDER? ========== */}
+        <TabsContent value="whatif">
+          <WhatIfSimulator
+            recipes={recipes}
+            selectedRecipeId={whatIfRecipeId}
+            setSelectedRecipeId={setWhatIfRecipeId}
+            dailyQty={whatIfDailyQty}
+            setDailyQty={setWhatIfDailyQty}
+          />
+        </TabsContent>
       </Tabs>
     </AppLayout>
+  );
+};
+
+/* ========== "E se eu vender?" Sub-component ========== */
+interface WhatIfProps {
+  recipes: RecipeWithCost[];
+  selectedRecipeId: string;
+  setSelectedRecipeId: (id: string) => void;
+  dailyQty: string;
+  setDailyQty: (v: string) => void;
+}
+
+const WhatIfSimulator = ({ recipes, selectedRecipeId, setSelectedRecipeId, dailyQty, setDailyQty }: WhatIfProps) => {
+  const recipe = recipes.find((r) => r.id === selectedRecipeId);
+  const qty = parseInt(dailyQty) || 0;
+
+  const calc = useMemo(() => {
+    if (!recipe || !recipe.target_sale_price || qty <= 0) return null;
+    const unitCost = (recipe.ingredientsCost + recipe.labor_cost) / (recipe.yield_amount || 1);
+    const unitProfit = recipe.target_sale_price - unitCost;
+    return {
+      unitProfit,
+      daily: { qty, profit: unitProfit * qty },
+      weekly: { qty: qty * 7, profit: unitProfit * qty * 7 },
+      monthly: { qty: qty * 30, profit: unitProfit * qty * 30 },
+    };
+  }, [recipe, qty]);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-primary" />
+            E se eu vender...?
+          </CardTitle>
+          <CardDescription>
+            Veja quanto pode lucrar vendendo uma quantidade fixa por dia.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Produto (Receita)</Label>
+              <Select value={selectedRecipeId} onValueChange={setSelectedRecipeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um produto..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {recipes
+                    .filter((r) => r.target_sale_price && r.target_sale_price > 0)
+                    .map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name} — {formatCurrency(r.target_sale_price!)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dailyQty">Vendas por dia</Label>
+              <Input
+                id="dailyQty"
+                type="number"
+                min="1"
+                value={dailyQty}
+                onChange={(e) => setDailyQty(e.target.value)}
+                placeholder="Ex: 10"
+              />
+            </div>
+          </div>
+
+          {calc && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Daily */}
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}>
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardContent className="p-5 text-center space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Por Dia</p>
+                    <p className="text-sm text-muted-foreground">{calc.daily.qty} unidades</p>
+                    <p className="text-2xl font-bold text-success">{formatCurrency(calc.daily.profit)}</p>
+                    <p className="text-xs text-muted-foreground">de lucro</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              {/* Weekly */}
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}>
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardContent className="p-5 text-center space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Por Semana</p>
+                    <p className="text-sm text-muted-foreground">{calc.weekly.qty} unidades</p>
+                    <p className="text-2xl font-bold text-success">{formatCurrency(calc.weekly.profit)}</p>
+                    <p className="text-xs text-muted-foreground">de lucro</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              {/* Monthly */}
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }}>
+                <Card className="border-success/40 bg-success/10">
+                  <CardContent className="p-5 text-center space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Por Mês</p>
+                    <p className="text-sm text-muted-foreground">{calc.monthly.qty} unidades</p>
+                    <p className="text-3xl font-extrabold text-success">{formatCurrency(calc.monthly.profit)}</p>
+                    <p className="text-xs text-muted-foreground">de lucro projetado 🎉</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          )}
+
+          {calc && (
+            <div className="p-3 bg-muted/30 rounded-lg text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 mb-1">
+                <Info className="h-4 w-4" />
+                <span className="font-medium">Detalhes do cálculo</span>
+              </div>
+              <p>Lucro unitário: {formatCurrency(calc.unitProfit)} (preço de venda − custo unitário)</p>
+            </div>
+          )}
+
+          {recipes.filter((r) => r.target_sale_price && r.target_sale_price > 0).length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <ShoppingCart className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p className="font-medium">Nenhum produto com preço de venda</p>
+              <p className="text-sm">Cadastre receitas com preço de venda para usar este simulador.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 
