@@ -233,6 +233,7 @@ const Financeiro = () => {
       fetchData();
     } catch (error: any) {
       console.error("Erro ao salvar transação:", error);
+      alert("Erro do Banco: " + error.message + "\nDetalhes: " + error.details + "\nDica: " + error.hint);
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
