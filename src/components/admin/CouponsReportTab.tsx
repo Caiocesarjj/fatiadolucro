@@ -92,6 +92,7 @@ export const CouponsReportTab = () => {
       setAffiliates(affiliatesWithCount.sort((a, b) => b.referral_count - a.referral_count));
     } catch (err: any) {
       console.error("Report error:", err);
+      alert("Erro do Banco: " + (err?.message || "desconhecido") + "\nDetalhes: " + (err?.details || "N/A") + "\nDica: " + (err?.hint || "N/A") + "\nCódigo: " + (err?.code || "N/A"));
       if (err?.message?.includes("relation") || err?.code === "42P01") {
         setError("A tabela necessária não existe no banco de dados. Verifique o schema.");
       } else {
