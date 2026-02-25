@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
     const { data: coupon, error: queryError } = await supabase
       .from("coupons")
-      .select("code, value, type, is_active, valid_until")
+      .select("code, value, type, is_active, valid_until, usage_count")
       .eq("code", code)
       .eq("is_active", true)
       .maybeSingle();
@@ -102,6 +102,7 @@ Deno.serve(async (req) => {
         type: coupon.type,
         value: coupon.value,
         discount: coupon.value,
+        usage_count: coupon.usage_count || 0,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

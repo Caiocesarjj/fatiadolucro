@@ -205,6 +205,8 @@ const Financeiro = () => {
       if (platformFee > 0) {
         transactionData.platform_fee = platformFee;
         transactionData.net_amount = amount - platformFee;
+      } else {
+        transactionData.net_amount = amount;
       }
 
       // Debug: log payload and client info before saving
@@ -310,7 +312,7 @@ const Financeiro = () => {
       (t) => t.type === "revenue" && t.platform_id === platform.id
     );
     const total = platformTransactions.reduce(
-      (sum, t) => sum + Number(t.net_amount || 0),
+      (sum, t) => sum + Number(t.net_amount ?? t.amount ?? 0),
       0
     );
     return {
@@ -323,7 +325,7 @@ const Financeiro = () => {
 
   const totalRevenue = transactions
     .filter((t) => t.type === "revenue")
-    .reduce((sum, t) => sum + Number(t.net_amount || 0), 0);
+    .reduce((sum, t) => sum + Number(t.net_amount ?? t.amount ?? 0), 0);
 
   const totalExpenses = transactions
     .filter((t) => t.type === "expense")
