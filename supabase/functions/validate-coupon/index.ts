@@ -12,14 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ valid: false, error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -33,16 +25,6 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !userData?.user) {
-      console.error("Auth error:", authError?.message);
-      return new Response(JSON.stringify({ valid: false, error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     let body: any;
     try {
       body = await req.json();
@@ -54,6 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const code = typeof body.code === "string" ? body.code.trim().toUpperCase().slice(0, 50) : "";
+    const shouldApply = body.apply === true;
 
     if (!code) {
       return new Response(JSON.stringify({ valid: false, error: "Código inválido" }), {
@@ -62,7 +45,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log("Validating coupon code:", code);
+    let authenticatedUserId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !userData?.user) {
+        if (shouldApply) {
+          return new Response(JSON.stringify({ valid: false, error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else {
+        authenticatedUserId = userData.user.id;
+      }
+    } else if (shouldApply) {
+      return new Response(JSON.stringify({ valid: false, error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: coupon, error: queryError } = await supabase
       .from("coupons")
@@ -79,8 +83,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log("Coupon result:", JSON.stringify(coupon));
-
     if (!coupon) {
       return new Response(JSON.stringify({ valid: false }), {
         status: 200,
@@ -88,12 +90,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check expiry
     if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
       return new Response(JSON.stringify({ valid: false, error: "Cupom expirado" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    let usageCount = coupon.usage_count || 0;
+    let applied = false;
+    let planType: "vip" | null = null;
+
+    if (shouldApply && authenticatedUserId) {
+      if (coupon.type === "vip_access") {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ plan_type: "vip" })
+          .eq("user_id", authenticatedUserId);
+
+        if (profileError) {
+          console.error("Profile update error:", JSON.stringify(profileError));
+          return new Response(JSON.stringify({ valid: false, error: "Erro ao aplicar cupom VIP" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        planType = "vip";
+      }
+
+      const { error: usageError } = await supabase
+        .from("coupons")
+        .update({ usage_count: usageCount + 1 })
+        .eq("code", code);
+
+      if (usageError) {
+        console.error("Coupon usage update error:", JSON.stringify(usageError));
+        return new Response(JSON.stringify({ valid: false, error: "Erro ao registrar uso do cupom" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      usageCount += 1;
+      applied = true;
     }
 
     return new Response(
@@ -102,7 +142,9 @@ Deno.serve(async (req) => {
         type: coupon.type,
         value: coupon.value,
         discount: coupon.value,
-        usage_count: coupon.usage_count || 0,
+        usage_count: usageCount,
+        applied,
+        plan_type: planType,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

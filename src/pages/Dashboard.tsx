@@ -71,7 +71,7 @@ const Dashboard = () => {
 
   // 2. Sync com Mercado Pago imediatamente ao carregar
   useEffect(() => {
-    if (!user) return;
+    if (!user || planType === "vip") return;
     const syncSubscription = async () => {
       console.log("[Sync] Iniciando sync_subscription_status para:", user.email);
       const { data, error } = await supabase.rpc("sync_subscription_status");
@@ -87,7 +87,7 @@ const Dashboard = () => {
       }
     };
     syncSubscription();
-  }, [user]);
+  }, [user, planType]);
 
   const fetchDashboardData = async () => {
     try {
@@ -100,10 +100,10 @@ const Dashboard = () => {
 
       const transactions = transactionsRes.data || [];
       const revenue = transactions
-        .filter((t) => t.type === "revenue")
-        .reduce((sum, t) => sum + Number(t.net_amount || 0), 0);
+        .filter((t) => t.type === "revenue" || t.entry_type === "direct_sale" || t.entry_type === "transfer")
+        .reduce((sum, t) => sum + Number(t.net_amount ?? t.amount ?? 0), 0);
       const expenses = transactions
-        .filter((t) => t.type === "expense")
+        .filter((t) => t.type === "expense" || t.entry_type === "profit_withdrawal")
         .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
       setStats({
@@ -127,8 +127,11 @@ const Dashboard = () => {
         const date = new Date(t.transaction_date);
         const key = `${date.getFullYear()}-${date.getMonth()}`;
         if (monthlyData[key]) {
-          if (t.type === "revenue") monthlyData[key].receitas += Number(t.net_amount || 0);
-          else monthlyData[key].despesas += Number(t.amount || 0);
+          if (t.type === "revenue" || t.entry_type === "direct_sale" || t.entry_type === "transfer") {
+            monthlyData[key].receitas += Number(t.net_amount ?? t.amount ?? 0);
+          } else {
+            monthlyData[key].despesas += Number(t.amount || 0);
+          }
         }
       });
       setChartData(
@@ -145,7 +148,11 @@ const Dashboard = () => {
     }
   };
 
-  const hasData = stats.totalIngredients > 0 || stats.totalRecipes > 0;
+  const hasData =
+    stats.totalIngredients > 0 ||
+    stats.totalRecipes > 0 ||
+    stats.totalRevenue > 0 ||
+    stats.totalExpenses > 0;
 
   const statCards = [
     { title: "Ingredientes", value: stats.totalIngredients, icon: Package, color: "primary" as const },

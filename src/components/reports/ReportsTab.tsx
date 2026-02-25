@@ -58,20 +58,43 @@ export const ReportsTab = ({ transactions, platforms, formatCurrency, getPlatfor
     });
   }, [transactions, dateFrom, dateTo]);
 
+  const isRevenueTransaction = (t: Transaction) =>
+    t.type === "revenue" || t.entry_type === "direct_sale" || t.entry_type === "transfer";
+
+  const isExpenseTransaction = (t: Transaction) =>
+    t.type === "expense" || t.entry_type === "profit_withdrawal";
+
+  const getRevenueValue = (t: Transaction) => Number(t.net_amount ?? t.amount ?? 0);
+
   const stats = useMemo(() => {
-    const revenue = filtered.filter(t => t.type === "revenue").reduce((s, t) => s + Number(t.net_amount || 0), 0);
-    const expenses = filtered.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount || 0), 0);
-    const withdrawals = filtered.filter(t => t.entry_type === "profit_withdrawal").reduce((s, t) => s + Number(t.amount || 0), 0);
+    const revenue = filtered
+      .filter((t) => isRevenueTransaction(t))
+      .reduce((s, t) => s + getRevenueValue(t), 0);
+    const expenses = filtered
+      .filter((t) => isExpenseTransaction(t))
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+    const withdrawals = filtered
+      .filter((t) => t.entry_type === "profit_withdrawal")
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
     const balance = revenue - expenses;
     return { revenue, expenses, withdrawals, balance };
   }, [filtered]);
 
   const platformData = useMemo(() => {
-    return platforms.map((p) => {
-      const pTxns = filtered.filter(t => t.type === "revenue" && t.platform_id === p.id);
-      const total = pTxns.reduce((s, t) => s + Number(t.net_amount || 0), 0);
-      return { name: p.name, total, count: pTxns.length, color: getPlatformColor(p.name, p.color) };
-    }).filter(p => p.count > 0);
+    return platforms
+      .map((p) => {
+        const pTxns = filtered.filter(
+          (t) => isRevenueTransaction(t) && t.platform_id === p.id
+        );
+        const total = pTxns.reduce((s, t) => s + getRevenueValue(t), 0);
+        return {
+          name: p.name,
+          total,
+          count: pTxns.length,
+          color: getPlatformColor(p.name, p.color),
+        };
+      })
+      .filter((p) => p.count > 0);
   }, [filtered, platforms, getPlatformColor]);
 
   const periodLabel = `${format(dateFrom, "dd/MM/yyyy")} a ${format(dateTo, "dd/MM/yyyy")}`;
@@ -97,8 +120,8 @@ export const ReportsTab = ({ transactions, platforms, formatCurrency, getPlatfor
     }
 
     if (showEntriesVsExpenses) {
-      const revTxns = filtered.filter(t => t.type === "revenue");
-      const expTxns = filtered.filter(t => t.type === "expense" && t.entry_type !== "profit_withdrawal");
+      const revTxns = filtered.filter((t) => isRevenueTransaction(t));
+      const expTxns = filtered.filter((t) => isExpenseTransaction(t) && t.entry_type !== "profit_withdrawal");
       sections.push(`
         <div class="section">
           <h2>Entradas vs Saídas</h2>
@@ -185,13 +208,13 @@ export const ReportsTab = ({ transactions, platforms, formatCurrency, getPlatfor
       ["Data", "Tipo", "Categoria", "Descrição", "Plataforma", "Valor", "Taxa", "Líquido"].join(";"),
       ...filtered.map(t => [
         format(parseISO(t.transaction_date), "dd/MM/yyyy"),
-        t.type === "revenue" ? "Entrada" : "Saída",
+        isRevenueTransaction(t) ? "Entrada" : "Saída",
         t.entry_type === "direct_sale" ? "Venda Direta" : t.entry_type === "transfer" ? "Repasse" : t.entry_type === "profit_withdrawal" ? "Retirada" : "Despesa",
         t.description,
         t.platforms?.name || "",
         Number(t.amount).toFixed(2).replace(".", ","),
         Number(t.platform_fee || 0).toFixed(2).replace(".", ","),
-        Number(t.net_amount || t.amount).toFixed(2).replace(".", ","),
+        Number(t.net_amount ?? t.amount ?? 0).toFixed(2).replace(".", ","),
       ].join(";"))
     ].join("\n");
 
@@ -316,8 +339,8 @@ export const ReportsTab = ({ transactions, platforms, formatCurrency, getPlatfor
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
-                  { name: "Entradas", value: stats.revenue, fill: "#10b981" },
-                  { name: "Saídas", value: stats.expenses, fill: "#ef4444" },
+                  { name: "Entradas", value: stats.revenue, fill: "hsl(var(--success))" },
+                  { name: "Saídas", value: stats.expenses, fill: "hsl(var(--destructive))" },
                 ]}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="name" className="text-xs" />
@@ -325,8 +348,8 @@ export const ReportsTab = ({ transactions, platforms, formatCurrency, getPlatfor
                   <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {[
-                      { name: "Entradas", value: stats.revenue, fill: "#10b981" },
-                      { name: "Saídas", value: stats.expenses, fill: "#ef4444" },
+                      { name: "Entradas", value: stats.revenue, fill: "hsl(var(--success))" },
+                      { name: "Saídas", value: stats.expenses, fill: "hsl(var(--destructive))" },
                     ].map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                   </Bar>
                 </BarChart>

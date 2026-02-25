@@ -204,25 +204,84 @@ const Auth = () => {
         } else if (data.user) {
           if (referralCode.trim()) {
             const code = referralCode.trim().toUpperCase();
-            try {
-              // Validate coupon via edge function
-              const { data: couponResult, error: couponError } = await supabase.functions.invoke('validate-coupon', {
-                body: { code },
-              });
 
-              if (!couponError && couponResult?.valid) {
-                // Coupon is valid — apply it
-                if (couponResult.type === 'vip_access') {
-                  await supabase
+            const normalizeCouponResult = (raw: any) => {
+              const payload = Array.isArray(raw) ? raw[0] : raw;
+              if (!payload) return null;
+
+              const valid = Boolean(payload.valid ?? payload.is_valid ?? false);
+              if (!valid) return { valid: false };
+
+              return {
+                valid: true,
+                type: payload.type ?? (payload.vip_access ? "vip_access" : "percentage"),
+                usage_count: Number(payload.usage_count ?? 0),
+              };
+            };
+
+            try {
+              let couponResult: { valid: boolean; type?: string; usage_count?: number } | null = null;
+
+              const { data: rpcCouponData, error: rpcCouponError } = await supabase.rpc(
+                "validate_coupon",
+                { coupon_code: code } as any
+              );
+
+              if (!rpcCouponError) {
+                couponResult = normalizeCouponResult(rpcCouponData);
+              }
+
+              if (!couponResult) {
+                const { data: edgeCouponData, error: edgeCouponError } = await supabase.functions.invoke("validate-coupon", {
+                  body: { code },
+                });
+
+                if (!edgeCouponError) {
+                  couponResult = normalizeCouponResult(edgeCouponData);
+                }
+              }
+
+              if (couponResult?.valid) {
+                let vipApplied = false;
+                let activeSession = data.session;
+
+                if (!activeSession) {
+                  const { data: loginData } = await supabase.auth.signInWithPassword({ email, password });
+                  activeSession = loginData.session;
+                }
+
+                if (activeSession) {
+                  const { data: applyData, error: applyError } = await supabase.functions.invoke("validate-coupon", {
+                    body: { code, apply: true },
+                  });
+
+                  if (!applyError && applyData?.plan_type === "vip") {
+                    vipApplied = true;
+                  }
+                }
+
+                if (couponResult.type === "vip_access" && !vipApplied) {
+                  const { error: profileError } = await supabase
                     .from("profiles")
                     .update({ plan_type: "vip" } as any)
                     .eq("user_id", data.user.id);
+
+                  if (!profileError) {
+                    vipApplied = true;
+                  }
                 }
-                // Increment usage count
-                await supabase
-                  .from("coupons")
-                  .update({ usage_count: (couponResult.usage_count || 0) + 1 } as any)
-                  .eq("code", code);
+
+                if (couponResult.type === "vip_access" && vipApplied) {
+                  toast({
+                    title: "👑 VIP ativado!",
+                    description: "Seu plano foi atualizado para VIP agora.",
+                  });
+                } else if (couponResult.type !== "vip_access") {
+                  toast({
+                    title: "Cupom validado!",
+                    description: "Seu cupom foi reconhecido com sucesso.",
+                  });
+                }
               } else {
                 // Not a coupon — try as referral code
                 const validation = validateReferralCode(code);
