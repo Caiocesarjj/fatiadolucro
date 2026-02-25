@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { validateReferralCode } from "@/lib/referralValidation";
 import { mapErrorToUserMessage } from "@/lib/errorHandler";
-import { Gift, Loader2, Check } from "lucide-react";
+import { Gift, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export const ReferralCodeSection = () => {
@@ -25,44 +25,92 @@ export const ReferralCodeSection = () => {
   }, [user]);
 
   const checkVisibility = async () => {
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("referred_by, created_at")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
-      if (!data) return;
-
-      // Already has a referral
-      if (data.referred_by) {
-        setVisible(false);
-        return;
-      }
-
-      // Check if account is less than 7 days old
-      const createdAt = new Date(data.created_at);
-      const now = new Date();
-      const diffDays = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-
-      setVisible(diffDays <= 7);
-    } catch (error) {
-      if (import.meta.env.DEV) console.error("Error checking referral visibility:", error);
-    } finally {
-      setCheckingVisibility(false);
-    }
+    setVisible(true);
+    setCheckingVisibility(false);
   };
 
   const handleRedeem = async () => {
-    const validation = validateReferralCode(code);
-    if (!validation.valid) {
-      toast({ variant: "destructive", title: (validation as { valid: false; error: string }).error });
+    const normalizedCode = code.trim().toUpperCase();
+    if (!normalizedCode) {
+      toast({ variant: "destructive", title: "Informe um código" });
       return;
     }
 
     setLoading(true);
     try {
-      // Find owner of the code
+      const normalizeCouponResult = (raw: any) => {
+        const payload = Array.isArray(raw) ? raw[0] : raw;
+        if (!payload) return null;
+
+        const valid = Boolean(payload.valid ?? payload.is_valid ?? false);
+        if (!valid) return { valid: false };
+
+        return {
+          valid: true,
+          type: payload.type ?? (payload.vip_access ? "vip_access" : "percentage"),
+        };
+      };
+
+      let couponResult: { valid: boolean; type?: string } | null = null;
+
+      const { data: rpcCouponData, error: rpcCouponError } = await supabase.rpc(
+        "validate_coupon",
+        { coupon_code: normalizedCode } as any
+      );
+
+      if (!rpcCouponError) {
+        couponResult = normalizeCouponResult(rpcCouponData);
+      }
+
+      if (!couponResult) {
+        const { data: edgeCouponData, error: edgeCouponError } = await supabase.functions.invoke("validate-coupon", {
+          body: { code: normalizedCode },
+        });
+
+        if (!edgeCouponError) {
+          couponResult = normalizeCouponResult(edgeCouponData);
+        }
+      }
+
+      if (couponResult?.valid) {
+        let vipApplied = false;
+
+        const { data: applyData, error: applyError } = await supabase.functions.invoke("validate-coupon", {
+          body: { code: normalizedCode, apply: true },
+        });
+
+        if (!applyError && applyData?.plan_type === "vip") {
+          vipApplied = true;
+        }
+
+        if (couponResult.type === "vip_access" && !vipApplied) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ plan_type: "vip" } as any)
+            .eq("user_id", user!.id);
+
+          if (!profileError) {
+            vipApplied = true;
+          }
+        }
+
+        setRedeemed(true);
+        toast({
+          title: vipApplied ? "👑 Você é VIP agora!" : "Cupom aplicado com sucesso!",
+          description: vipApplied
+            ? "Seu plano foi atualizado para VIP em todo o sistema."
+            : "Seu cupom foi reconhecido e aplicado.",
+        });
+        return;
+      }
+
+      const validation = validateReferralCode(normalizedCode);
+      if (!validation.valid) {
+        toast({ variant: "destructive", title: "Código inválido", description: "Não encontramos um cupom ou código de indicação válido." });
+        return;
+      }
+
+      // Find owner of the referral code
       const { data: affiliate, error: findError } = await supabase
         .from("profiles")
         .select("user_id")
@@ -76,13 +124,11 @@ export const ReferralCodeSection = () => {
         return;
       }
 
-      // Don't allow self-referral
       if (affiliate.user_id === user!.id) {
         toast({ variant: "destructive", title: "Você não pode usar seu próprio código." });
         return;
       }
 
-      // Update referred_by
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ referred_by: affiliate.user_id } as any)
@@ -110,11 +156,10 @@ export const ReferralCodeSection = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gift className="h-5 w-5 text-primary" />
-            Código de Indicação
+            Código promocional ou indicação
           </CardTitle>
           <CardDescription>
-            Você tem um código de indicação? Resgate seu desconto vitalício de R$ 14,99/mês (ao invés de R$ 19,90).
-            Válido até 7 dias após a criação da conta.
+            Use um cupom (inclusive VIP) a qualquer momento, ou um código de indicação para ativar benefícios.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -131,7 +176,7 @@ export const ReferralCodeSection = () => {
           </div>
           <Button onClick={handleRedeem} disabled={loading} className="w-full">
             {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Gift className="h-4 w-4 mr-2" />}
-            Resgatar Desconto
+            Resgatar código
           </Button>
         </CardContent>
       </Card>

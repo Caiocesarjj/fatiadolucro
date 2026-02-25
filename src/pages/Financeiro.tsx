@@ -306,13 +306,21 @@ const Financeiro = () => {
     }).format(value);
   };
 
+  const isRevenueTransaction = (t: Transaction) =>
+    t.type === "revenue" || t.entry_type === "direct_sale" || t.entry_type === "transfer";
+
+  const isExpenseTransaction = (t: Transaction) =>
+    t.type === "expense" || t.entry_type === "profit_withdrawal";
+
+  const getRevenueValue = (t: Transaction) => Number(t.net_amount ?? t.amount ?? 0);
+
   // Calculate sales by platform for chart
   const salesByPlatform = platforms.map((platform) => {
     const platformTransactions = transactions.filter(
-      (t) => t.type === "revenue" && t.platform_id === platform.id
+      (t) => isRevenueTransaction(t) && t.platform_id === platform.id
     );
     const total = platformTransactions.reduce(
-      (sum, t) => sum + Number(t.net_amount ?? t.amount ?? 0),
+      (sum, t) => sum + getRevenueValue(t),
       0
     );
     return {
@@ -324,11 +332,11 @@ const Financeiro = () => {
   }).filter((p) => p.count > 0);
 
   const totalRevenue = transactions
-    .filter((t) => t.type === "revenue")
-    .reduce((sum, t) => sum + Number(t.net_amount ?? t.amount ?? 0), 0);
+    .filter((t) => isRevenueTransaction(t))
+    .reduce((sum, t) => sum + getRevenueValue(t), 0);
 
   const totalExpenses = transactions
-    .filter((t) => t.type === "expense")
+    .filter((t) => isExpenseTransaction(t))
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const totalWithdrawals = transactions
@@ -337,8 +345,8 @@ const Financeiro = () => {
 
   const netBalance = totalRevenue - totalExpenses;
 
-  const revenueTransactions = transactions.filter((t) => t.type === "revenue");
-  const expenseTransactions = transactions.filter((t) => t.type === "expense");
+  const revenueTransactions = transactions.filter((t) => isRevenueTransaction(t));
+  const expenseTransactions = transactions.filter((t) => isExpenseTransaction(t));
 
   return (
     <AppLayout title="Financeiro">
@@ -766,7 +774,7 @@ const TransactionTable = ({ transactions, formatCurrency, onEdit, onDelete, getP
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  {transaction.type === "revenue" ? (
+                  {(transaction.type === "revenue" || transaction.entry_type === "direct_sale" || transaction.entry_type === "transfer") ? (
                     transaction.entry_type === "profit_withdrawal" ? (
                       <PiggyBank className="h-4 w-4 text-muted-foreground" />
                     ) : (
