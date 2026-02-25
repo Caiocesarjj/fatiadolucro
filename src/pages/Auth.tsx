@@ -205,8 +205,26 @@ const Auth = () => {
           if (referralCode.trim()) {
             const code = referralCode.trim().toUpperCase();
             try {
-              const { data: couponData } = await supabase.rpc('validate_coupon', { coupon_code: code });
-              if (!couponData?.valid) {
+              // Validate coupon via edge function
+              const { data: couponResult, error: couponError } = await supabase.functions.invoke('validate-coupon', {
+                body: { code },
+              });
+
+              if (!couponError && couponResult?.valid) {
+                // Coupon is valid — apply it
+                if (couponResult.type === 'vip_access') {
+                  await supabase
+                    .from("profiles")
+                    .update({ plan_type: "vip" } as any)
+                    .eq("user_id", data.user.id);
+                }
+                // Increment usage count
+                await supabase
+                  .from("coupons")
+                  .update({ usage_count: (couponResult.usage_count || 0) + 1 } as any)
+                  .eq("code", code);
+              } else {
+                // Not a coupon — try as referral code
                 const validation = validateReferralCode(code);
                 if (validation.valid) {
                   const { data: affiliate } = await supabase
