@@ -243,21 +243,18 @@ const Auth = () => {
 
               if (couponResult?.valid) {
                 let vipApplied = false;
-                let activeSession = data.session;
 
-                if (!activeSession) {
-                  const { data: loginData } = await supabase.auth.signInWithPassword({ email, password });
-                  activeSession = loginData.session;
-                }
-
-                if (activeSession) {
+                // Try applying with edge function - pass user_id for cases without session
+                try {
                   const { data: applyData, error: applyError } = await supabase.functions.invoke("validate-coupon", {
-                    body: { code, apply: true },
+                    body: { code, apply: true, user_id: data.user.id },
                   });
 
                   if (!applyError && applyData?.plan_type === "vip") {
                     vipApplied = true;
                   }
+                } catch {
+                  // fallback below
                 }
 
                 if (couponResult.type === "vip_access" && !vipApplied) {
