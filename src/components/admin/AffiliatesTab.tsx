@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -11,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { mapErrorToUserMessage } from "@/lib/errorHandler";
 import { useToast } from "@/hooks/use-toast";
 import { validateReferralCode } from "@/lib/referralValidation";
-import { Loader2, Search, UserPlus, Users } from "lucide-react";
+import { Loader2, Search, UserPlus, Users, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface Affiliate {
@@ -40,7 +41,8 @@ export const AffiliatesTab = () => {
   const [newCode, setNewCode] = useState("");
   const [selectedUser, setSelectedUser] = useState<SearchResult | null>(null);
   const [saving, setSaving] = useState(false);
-
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteAffiliate, setConfirmDeleteAffiliate] = useState<Affiliate | null>(null);
   useEffect(() => {
     fetchAffiliates();
   }, []);
@@ -127,6 +129,24 @@ export const AffiliatesTab = () => {
       toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAffiliate = async (affiliate: Affiliate) => {
+    setDeletingId(affiliate.user_id);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ referral_code: null } as any)
+        .eq("user_id", affiliate.user_id);
+      if (error) throw error;
+      toast({ title: `Afiliado "${affiliate.store_name || affiliate.referral_code}" removido!` });
+      setConfirmDeleteAffiliate(null);
+      fetchAffiliates();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -226,6 +246,7 @@ export const AffiliatesTab = () => {
                       <TableHead>Confeitaria</TableHead>
                       <TableHead>Código</TableHead>
                       <TableHead className="text-center">Indicações</TableHead>
+                      <TableHead className="text-right">Ação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -236,6 +257,17 @@ export const AffiliatesTab = () => {
                           <Badge variant="outline" className="font-mono">{affiliate.referral_code}</Badge>
                         </TableCell>
                         <TableCell className="text-center font-bold">{affiliate.referral_count}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => setConfirmDeleteAffiliate(affiliate)}
+                            disabled={deletingId === affiliate.user_id}
+                          >
+                            {deletingId === affiliate.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -245,6 +277,16 @@ export const AffiliatesTab = () => {
           </CardContent>
         </Card>
       </motion.div>
+
+      <ConfirmationDialog
+        open={!!confirmDeleteAffiliate}
+        onOpenChange={(open) => !open && setConfirmDeleteAffiliate(null)}
+        title="Excluir Afiliado"
+        description={`Tem certeza que deseja remover o afiliado "${confirmDeleteAffiliate?.store_name || confirmDeleteAffiliate?.referral_code}"? O código de indicação será removido.`}
+        onConfirm={() => confirmDeleteAffiliate && handleDeleteAffiliate(confirmDeleteAffiliate)}
+        confirmText="Excluir"
+        variant="destructive"
+      />
     </div>
   );
 };

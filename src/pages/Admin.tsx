@@ -166,7 +166,7 @@ const Admin = () => {
         type: newCoupon.type,
         value: parseFloat(newCoupon.value),
         is_active: newCoupon.is_active,
-        valid_until: newCoupon.valid_until || null,
+        valid_until: newCoupon.valid_until ? newCoupon.valid_until + "T23:59:59" : null,
       } as any;
 
       if (editingCouponId) {
@@ -557,7 +557,11 @@ const Admin = () => {
                               <TableCell className="text-center">{coupon.usage_count}</TableCell>
                               <TableCell className="text-center text-sm">
                                 {(coupon as any).valid_until
-                                  ? new Date((coupon as any).valid_until).toLocaleDateString("pt-BR")
+                                  ? (() => {
+                                      const dateStr = String((coupon as any).valid_until).split("T")[0];
+                                      const [y, m, d] = dateStr.split("-");
+                                      return `${d}/${m}/${y}`;
+                                    })()
                                   : <span className="text-muted-foreground">Vitalício</span>}
                               </TableCell>
                               <TableCell className="text-center">

@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
 
     const code = typeof body.code === "string" ? body.code.trim().toUpperCase().slice(0, 50) : "";
     const shouldApply = body.apply === true;
+    const targetUserId = typeof body.user_id === "string" ? body.user_id : null;
 
     if (!code) {
       return new Response(JSON.stringify({ valid: false, error: "Código inválido" }), {
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
       } else {
         authenticatedUserId = userData.user.id;
       }
-    } else if (shouldApply) {
+    } else if (shouldApply && !targetUserId) {
       return new Response(JSON.stringify({ valid: false, error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -101,12 +102,14 @@ Deno.serve(async (req) => {
     let applied = false;
     let planType: "vip" | null = null;
 
-    if (shouldApply && authenticatedUserId) {
+    const applyUserId = authenticatedUserId || targetUserId;
+
+    if (shouldApply && applyUserId) {
       if (coupon.type === "vip_access") {
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ plan_type: "vip" })
-          .eq("user_id", authenticatedUserId);
+          .eq("user_id", applyUserId);
 
         if (profileError) {
           console.error("Profile update error:", JSON.stringify(profileError));
