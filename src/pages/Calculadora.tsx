@@ -327,18 +327,32 @@ const Calculadora = () => {
     };
   }, [selectedIngredients, ingredients, selectedRecipes, recipes, laborCost, yieldAmount, targetPrice, variableCostRate]);
 
-  // Platform results
+  // Suggested price calculation — base price WITHOUT platform fees
+  const suggestedPrice = useMemo(() => {
+    const markup = parseFloat(suggestedMarkup) || 100;
+    return calculations.unitCost * (1 + markup / 100);
+  }, [calculations.unitCost, suggestedMarkup]);
+
+  // Auto-sync markup result → targetPrice
+  useEffect(() => {
+    if (suggestedPrice > 0 && calculations.unitCost > 0) {
+      setTargetPrice(suggestedPrice.toFixed(2).replace(".", ","));
+    }
+  }, [suggestedPrice, calculations.unitCost]);
+
+  // Platform results — use suggestedPrice directly for immediate display
+  const effectiveTargetPrice = suggestedPrice > 0 ? suggestedPrice : calculations.targetPrice;
+
   const platformResults = useMemo<PlatformResult[]>(() => {
-    if (!calculations.targetPrice || calculations.targetPrice <= 0) return [];
+    if (!effectiveTargetPrice || effectiveTargetPrice <= 0) return [];
 
     return platforms
       .filter((p) => selectedPlatforms.includes(p.id))
       .map((platform) => {
-        // Markup Divisor: preço final = valor_líquido / (1 - taxa/100)
         const divisor = 1 - platform.fee_percentage / 100;
-        const sellingPrice = divisor > 0 ? calculations.targetPrice / divisor : 0;
-        const feeAmount = sellingPrice - calculations.targetPrice;
-        const netProfit = calculations.targetPrice - calculations.unitCost;
+        const sellingPrice = divisor > 0 ? effectiveTargetPrice / divisor : 0;
+        const feeAmount = sellingPrice - effectiveTargetPrice;
+        const netProfit = effectiveTargetPrice - calculations.unitCost;
         const margin = sellingPrice > 0 
           ? (netProfit / sellingPrice) * 100 
           : 0;
@@ -357,20 +371,7 @@ const Calculadora = () => {
           margin,
         };
       });
-  }, [platforms, selectedPlatforms, calculations]);
-
-  // Suggested price calculation — base price WITHOUT platform fees
-  const suggestedPrice = useMemo(() => {
-    const markup = parseFloat(suggestedMarkup) || 100;
-    return calculations.unitCost * (1 + markup / 100);
-  }, [calculations.unitCost, suggestedMarkup]);
-
-  // Auto-sync markup result → targetPrice
-  useEffect(() => {
-    if (suggestedPrice > 0 && calculations.unitCost > 0) {
-      setTargetPrice(suggestedPrice.toFixed(2).replace(".", ","));
-    }
-  }, [suggestedPrice, calculations.unitCost]);
+  }, [platforms, selectedPlatforms, effectiveTargetPrice, calculations.unitCost]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -981,7 +982,7 @@ const Calculadora = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Você recebe</span>
-                            <span>{formatCurrency(calculations.targetPrice)}</span>
+                            <span>{formatCurrency(effectiveTargetPrice)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Lucro</span>
