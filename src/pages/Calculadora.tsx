@@ -104,6 +104,7 @@ const Calculadora = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [recipeName, setRecipeName] = useState("");
   const [suggestedMarkup, setSuggestedMarkup] = useState("100");
+  const [chosenSalePrice, setChosenSalePrice] = useState<number | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeAsIngredient[]>([]);
   const [inputMode, setInputMode] = useState<"ingredient" | "recipe">("ingredient");
@@ -358,15 +359,18 @@ const Calculadora = () => {
       });
   }, [platforms, selectedPlatforms, calculations]);
 
-  // Suggested price calculation
+  // Suggested price calculation — base price WITHOUT platform fees
   const suggestedPrice = useMemo(() => {
     const markup = parseFloat(suggestedMarkup) || 100;
-    const maxFee = Math.max(...platforms.map((p) => p.fee_percentage), 0);
-    const basePrice = calculations.unitCost * (1 + markup / 100);
-    // Use markup divisor for the suggested price too
-    const divisor = 1 - maxFee / 100;
-    return divisor > 0 ? basePrice / divisor : basePrice;
-  }, [calculations.unitCost, suggestedMarkup, platforms]);
+    return calculations.unitCost * (1 + markup / 100);
+  }, [calculations.unitCost, suggestedMarkup]);
+
+  // Auto-sync markup result → targetPrice
+  useEffect(() => {
+    if (suggestedPrice > 0 && calculations.unitCost > 0) {
+      setTargetPrice(suggestedPrice.toFixed(2).replace(".", ","));
+    }
+  }, [suggestedPrice, calculations.unitCost]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -407,7 +411,7 @@ const Calculadora = () => {
         name: recipeName,
         yield_amount: calculations.yield,
         labor_cost: calculations.laborCost,
-        target_sale_price: calculations.targetPrice,
+        target_sale_price: chosenSalePrice ?? calculations.targetPrice,
         prep_time_minutes: parseInt(prepTime) || 0,
       };
 
@@ -849,36 +853,71 @@ const Calculadora = () => {
             </Card>
           </motion.div>
 
-          {/* Pricing */}
+          {/* Markup Suggestion */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card>
+            <Card className="border-primary/30">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  Precificação
+                  <Lightbulb className="h-5 w-5 text-warning" />
+                  Sugestão de Preço
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="targetPrice">Valor Líquido Desejado por Unidade (R$)</Label>
+                  <Label htmlFor="markup">Markup Desejado (%)</Label>
                   <Input
-                    id="targetPrice"
-                    value={targetPrice}
-                    onChange={(e) => setTargetPrice(e.target.value)}
-                    placeholder="Ex: 8,00"
-                    className="input-currency text-lg font-semibold"
+                    id="markup"
+                    type="number"
+                    value={suggestedMarkup}
+                    onChange={(e) => setSuggestedMarkup(e.target.value)}
+                    className="input-currency"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Quanto você quer receber limpo por unidade
+                </div>
+                <div className="bg-primary-light rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Preço Base de Venda (Sem taxas)
+                  </p>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrency(suggestedPrice)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatCurrency(calculations.unitCost)} + {suggestedMarkup}% de markup
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Pricing — Platforms */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  Precificação por Plataforma
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Valor Líquido Desejado</p>
+                    <p className="text-lg font-bold text-primary">{formatCurrency(parseFloat(targetPrice.replace(",", ".")) || 0)}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-[180px] text-right">
+                    Preenchido automaticamente pelo markup acima
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Plataformas para Comparar</Label>
+                  <Label>Plataformas</Label>
                   <div className="flex flex-wrap gap-4">
                     {platforms.map((platform) => (
                       <div key={platform.id} className="flex items-center gap-2">
@@ -905,6 +944,73 @@ const Calculadora = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Inline platform results */}
+                {platformResults.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    {platformResults.map((result, index) => (
+                      <div
+                        key={index}
+                        className={`p-4 rounded-lg border ${
+                          result.netProfit > 0
+                            ? "border-success/30 bg-success-light"
+                            : "border-destructive/30 bg-destructive/5"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          {result.icon}
+                          <span className="font-medium">{result.name}</span>
+                          <span className="badge-primary ml-auto">
+                            {result.fee}% taxa
+                          </span>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Venda por</span>
+                            <span className="text-lg font-bold text-primary">
+                              {formatCurrency(result.sellingPrice)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Taxa ({result.fee}%)
+                            </span>
+                            <span className="text-destructive">
+                              -{formatCurrency(result.feeAmount)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Você recebe</span>
+                            <span>{formatCurrency(calculations.targetPrice)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Lucro</span>
+                            <span
+                              className={`font-semibold ${
+                                result.netProfit > 0
+                                  ? "text-success"
+                                  : "text-destructive"
+                              }`}
+                            >
+                              {formatCurrency(result.netProfit)} ({result.margin.toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Button
+                            variant={chosenSalePrice === result.sellingPrice ? "default" : "outline"}
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={() => {
+                              setChosenSalePrice(result.sellingPrice);
+                              toast({ title: `Preço de ${result.name} selecionado para salvar!` });
+                            }}
+                          >
+                            {chosenSalePrice === result.sellingPrice ? "✓ Preço selecionado" : "Usar este preço"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -977,145 +1083,7 @@ const Calculadora = () => {
             </Card>
           </motion.div>
 
-          {/* Platform Comparison */}
-          {platformResults.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <TrendingUp className="h-5 w-5 text-success" />
-                    Preço por Plataforma
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {platformResults.map((result, index) => (
-                    <div
-                      key={index}
-                      className={`p-4 rounded-lg border ${
-                        result.netProfit > 0
-                          ? "border-success/30 bg-success-light"
-                          : "border-destructive/30 bg-destructive/5"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        {result.icon}
-                        <span className="font-medium">{result.name}</span>
-                        <span className="badge-primary ml-auto">
-                          {result.fee}% taxa
-                        </span>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Custo Unitário
-                          </span>
-                          <span>{formatCurrency(calculations.unitCost)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Valor Líquido Desejado
-                          </span>
-                          <span>{formatCurrency(calculations.targetPrice)}</span>
-                        </div>
-                        <div className="p-2 rounded-md bg-muted/50 space-y-1">
-                          <p className="text-xs text-muted-foreground">
-                            Cálculo: {formatCurrency(calculations.targetPrice)} ÷ {((100 - result.fee) / 100).toFixed(2)} = {formatCurrency(result.sellingPrice)}
-                          </p>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Taxa da Plataforma ({result.fee}%)
-                          </span>
-                          <span className="text-destructive">
-                            -{formatCurrency(result.feeAmount)}
-                          </span>
-                        </div>
-                        <div className="border-t pt-2 flex justify-between items-center">
-                          <span className="font-medium">Venda por</span>
-                          <span className="text-lg font-bold text-primary">
-                            {formatCurrency(result.sellingPrice)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Lucro Líquido</span>
-                          <span
-                            className={`font-semibold ${
-                              result.netProfit > 0
-                                ? "text-success"
-                                : "text-destructive"
-                            }`}
-                          >
-                            {formatCurrency(result.netProfit)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Margem</span>
-                          <span
-                            className={
-                              result.margin > 0
-                                ? "text-success"
-                                : "text-destructive"
-                            }
-                          >
-                            {result.margin.toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* AI Suggestion */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <Card className="border-primary/30">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Lightbulb className="h-5 w-5 text-warning" />
-                  Sugestão de Preço
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="markup">Markup Desejado (%)</Label>
-                  <Input
-                    id="markup"
-                    type="number"
-                    value={suggestedMarkup}
-                    onChange={(e) => setSuggestedMarkup(e.target.value)}
-                    className="input-currency"
-                  />
-                </div>
-                <div className="bg-primary-light rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Preço Sugerido (já com taxas)
-                  </p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(suggestedPrice)}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() =>
-                    setTargetPrice(suggestedPrice.toFixed(2).replace(".", ","))
-                  }
-                >
-                  Usar este preço
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
+          {/* (Platform cards and Markup suggestion moved to left column) */}
 
           {/* Save Button */}
           <Button
