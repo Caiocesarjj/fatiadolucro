@@ -18,6 +18,9 @@ import {
   ChefHat,
   Target,
   Sparkles,
+  Eye,
+  EyeOff,
+  CalendarDays,
 } from "lucide-react";
 import {
   BarChart,
@@ -38,6 +41,8 @@ interface DashboardStats {
   totalExpenses: number;
   netProfit: number;
   salaryGoal: number;
+  monthlyRevenue: number;
+  monthlyExpenses: number;
 }
 
 interface ChartData {
@@ -48,6 +53,8 @@ interface ChartData {
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
+const HIDDEN_VALUE = "••••••";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -60,9 +67,14 @@ const Dashboard = () => {
     totalExpenses: 0,
     netProfit: 0,
     salaryGoal: 0,
+    monthlyRevenue: 0,
+    monthlyExpenses: 0,
   });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hideValues, setHideValues] = useState(() => {
+    return localStorage.getItem("fatia-hide-values") === "true";
+  });
 
   // 1. Carrega dados do dashboard imediatamente (cache local)
   useEffect(() => {
@@ -99,11 +111,30 @@ const Dashboard = () => {
       ]);
 
       const transactions = transactionsRes.data || [];
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
       const revenue = transactions
         .filter((t) => t.type === "revenue" || t.entry_type === "direct_sale" || t.entry_type === "transfer")
         .reduce((sum, t) => sum + Number(t.net_amount ?? t.amount ?? 0), 0);
       const expenses = transactions
         .filter((t) => t.type === "expense" || t.entry_type === "profit_withdrawal")
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+      const monthlyRevenue = transactions
+        .filter((t) => {
+          const d = new Date(t.transaction_date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear &&
+            (t.type === "revenue" || t.entry_type === "direct_sale" || t.entry_type === "transfer");
+        })
+        .reduce((sum, t) => sum + Number(t.net_amount ?? t.amount ?? 0), 0);
+      const monthlyExpenses = transactions
+        .filter((t) => {
+          const d = new Date(t.transaction_date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear &&
+            (t.type === "expense" || t.entry_type === "profit_withdrawal");
+        })
         .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
       setStats({
@@ -113,14 +144,16 @@ const Dashboard = () => {
         totalExpenses: expenses,
         netProfit: revenue - expenses,
         salaryGoal: Number(profileRes.data?.salary_goal || 0),
+        monthlyRevenue,
+        monthlyExpenses,
       });
 
       // Chart data from transactions by month
       const monthlyData: Record<string, { receitas: number; despesas: number }> = {};
       const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-      const now = new Date();
+      const chartNow = new Date();
       for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const date = new Date(chartNow.getFullYear(), chartNow.getMonth() - i, 1);
         monthlyData[`${date.getFullYear()}-${date.getMonth()}`] = { receitas: 0, despesas: 0 };
       }
       transactions.forEach((t) => {
@@ -218,6 +251,21 @@ const Dashboard = () => {
         )}
 
         {/* Stats Grid — 2x2 on mobile */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-muted-foreground">Visão Geral</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg"
+            onClick={() => {
+              const next = !hideValues;
+              setHideValues(next);
+              localStorage.setItem("fatia-hide-values", String(next));
+            }}
+          >
+            {hideValues ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+          </Button>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {statCards.map((stat, index) => (
             <motion.div key={stat.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }}>
@@ -227,7 +275,7 @@ const Dashboard = () => {
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium text-muted-foreground">{stat.title}</p>
                       <p className="text-lg font-bold mt-0.5 truncate">
-                        {stat.isCurrency ? formatCurrency(stat.value) : stat.value}
+                        {hideValues ? HIDDEN_VALUE : (stat.isCurrency ? formatCurrency(stat.value) : stat.value)}
                       </p>
                     </div>
                     <div className={`p-2 rounded-xl shrink-0 ${
@@ -244,6 +292,42 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Monthly Totals Card */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-lg bg-primary/10">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                </div>
+                <span className="font-semibold text-sm text-foreground">Resumo do Mês</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Receitas</p>
+                  <p className="text-lg font-bold text-success mt-0.5">
+                    {hideValues ? HIDDEN_VALUE : formatCurrency(stats.monthlyRevenue)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Despesas</p>
+                  <p className="text-lg font-bold text-destructive mt-0.5">
+                    {hideValues ? HIDDEN_VALUE : formatCurrency(stats.monthlyExpenses)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Saldo do Mês</span>
+                  <span className={`text-sm font-bold ${(stats.monthlyRevenue - stats.monthlyExpenses) >= 0 ? "text-success" : "text-destructive"}`}>
+                    {hideValues ? HIDDEN_VALUE : formatCurrency(stats.monthlyRevenue - stats.monthlyExpenses)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Profit + Goal cards */}
         <div className="grid grid-cols-1 gap-3">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
@@ -256,16 +340,16 @@ const Dashboard = () => {
                   <span className="font-semibold text-sm text-foreground">Lucro Líquido</span>
                 </div>
                 <p className={`text-2xl font-bold ${stats.netProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                  {formatCurrency(stats.netProfit)}
+                  {hideValues ? HIDDEN_VALUE : formatCurrency(stats.netProfit)}
                 </p>
                 <div className="mt-3 space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Receitas</span>
-                    <span className="text-success font-medium">{formatCurrency(stats.totalRevenue)}</span>
+                    <span className="text-success font-medium">{hideValues ? HIDDEN_VALUE : formatCurrency(stats.totalRevenue)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Despesas</span>
-                    <span className="text-destructive font-medium">{formatCurrency(stats.totalExpenses)}</span>
+                    <span className="text-destructive font-medium">{hideValues ? HIDDEN_VALUE : formatCurrency(stats.totalExpenses)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -282,7 +366,7 @@ const Dashboard = () => {
                   <span className="font-semibold text-sm text-foreground">Meta Mensal</span>
                 </div>
                 <p className="text-2xl font-bold text-primary">
-                  {stats.salaryGoal > 0 ? formatCurrency(stats.salaryGoal) : "Não definida"}
+                  {hideValues ? HIDDEN_VALUE : (stats.salaryGoal > 0 ? formatCurrency(stats.salaryGoal) : "Não definida")}
                 </p>
                 {stats.salaryGoal > 0 && stats.netProfit > 0 && (
                   <div className="mt-3">
