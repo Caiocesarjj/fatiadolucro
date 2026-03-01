@@ -368,20 +368,29 @@ const Dashboard = () => {
                 <p className="text-2xl font-bold text-primary">
                   {hideValues ? HIDDEN_VALUE : (stats.salaryGoal > 0 ? formatCurrency(stats.salaryGoal) : "Não definida")}
                 </p>
-                {stats.salaryGoal > 0 && stats.netProfit > 0 && (
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground">Progresso</span>
-                      <span className="font-semibold">{Math.min(100, Math.round((stats.netProfit / stats.salaryGoal) * 100))}%</span>
+                {stats.salaryGoal > 0 && (() => {
+                  const monthlyProfit = stats.monthlyRevenue - stats.monthlyExpenses;
+                  const pct = Math.min(100, Math.max(0, Math.round((monthlyProfit / stats.salaryGoal) * 100)));
+                  return (
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-muted-foreground">
+                          {hideValues ? "Progresso" : `${formatCurrency(monthlyProfit)} de ${formatCurrency(stats.salaryGoal)}`}
+                        </span>
+                        <span className="font-semibold">{pct}%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2.5">
+                        <div
+                          className={`rounded-full h-2.5 transition-all duration-500 ${pct >= 100 ? "bg-success" : "bg-primary"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      {pct >= 100 && (
+                        <p className="text-xs text-success font-medium mt-1.5">🎉 Meta atingida!</p>
+                      )}
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary rounded-full h-2 transition-all"
-                        style={{ width: `${Math.min(100, (stats.netProfit / stats.salaryGoal) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
                 {stats.salaryGoal === 0 && (
                   <Button variant="link" className="p-0 h-auto mt-2 text-primary text-sm" onClick={() => navigate("/configuracoes")}>
                     Definir meta →
