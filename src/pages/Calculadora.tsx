@@ -255,8 +255,8 @@ const Calculadora = () => {
       return;
     }
     setSelectedRecipes([
-      ...selectedRecipes,
       { recipeId: recipes[0].id, quantity: 1 },
+      ...selectedRecipes,
     ]);
   };
 
