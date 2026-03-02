@@ -79,7 +79,7 @@ const Ingredientes = () => {
       const { data, error } = await supabase
         .from("ingredients")
         .select("*")
-        .order("name");
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setIngredients(data || []);
