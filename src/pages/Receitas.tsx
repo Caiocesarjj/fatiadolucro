@@ -69,17 +69,48 @@ const Receitas = () => {
 
     const recipesWithCost = await Promise.all(
       (data || []).map(async (recipe) => {
-        const { data: items } = await supabase
-          .from("recipe_items")
-          .select("quantity, ingredients(cost_per_unit)")
-          .eq("recipe_id", recipe.id);
+        const [itemsRes, subRecipesRes] = await Promise.all([
+          supabase
+            .from("recipe_items")
+            .select("quantity, ingredients(cost_per_unit)")
+            .eq("recipe_id", recipe.id),
+          supabase
+            .from("recipe_recipe_items" as any)
+            .select("sub_recipe_id, quantity")
+            .eq("recipe_id", recipe.id),
+        ]);
 
-        const ingredientsCost = items?.reduce((total, item) => {
+        const ingredientsCost = itemsRes.data?.reduce((total, item) => {
           const costPerUnit = (item.ingredients as any)?.cost_per_unit || 0;
           return total + costPerUnit * item.quantity;
         }, 0) || 0;
 
-        return { ...recipe, ingredientsCost };
+        // Calculate sub-recipe costs
+        let subRecipeCost = 0;
+        if (subRecipesRes.data && (subRecipesRes.data as any[]).length > 0) {
+          for (const sub of subRecipesRes.data as any[]) {
+            const { data: subItems } = await supabase
+              .from("recipe_items")
+              .select("quantity, ingredients(cost_per_unit)")
+              .eq("recipe_id", sub.sub_recipe_id);
+            
+            const { data: subRecipe } = await supabase
+              .from("recipes")
+              .select("labor_cost, yield_amount")
+              .eq("id", sub.sub_recipe_id)
+              .single();
+
+            const subIngCost = subItems?.reduce((t, i) => {
+              return t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity;
+            }, 0) || 0;
+
+            const subTotalCost = subIngCost + (subRecipe?.labor_cost || 0);
+            const subUnitCost = subTotalCost / (subRecipe?.yield_amount || 1);
+            subRecipeCost += subUnitCost * sub.quantity;
+          }
+        }
+
+        return { ...recipe, ingredientsCost: ingredientsCost + subRecipeCost };
       })
     );
 
