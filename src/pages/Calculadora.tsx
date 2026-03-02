@@ -397,15 +397,7 @@ const Calculadora = () => {
     }).format(value);
   };
 
-  const formatUnitCost = (value: number) => {
-    const decimals = yieldUnit === "unit" ? 2 : 4;
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(value);
-  };
+  const formatUnitCost = (value: number) => formatCurrency(value);
 
   const resetRecipe = () => {
     setRecipeName("");

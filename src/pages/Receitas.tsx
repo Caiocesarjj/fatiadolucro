@@ -103,15 +103,7 @@ const Receitas = () => {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  const formatUnitCost = (value: number, unit: string) => {
-    const decimals = unit === "unit" ? 2 : 4;
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(value);
-  };
+  const formatUnitCost = (value: number, _unit?: string) => formatCurrency(value);
 
   const getTotalCost = (r: RecipeWithCost) => r.ingredientsCost + r.labor_cost;
   const getUnitCost = (r: RecipeWithCost) => getTotalCost(r) / (r.yield_amount || 1);
