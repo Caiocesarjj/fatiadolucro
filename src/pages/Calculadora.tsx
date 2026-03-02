@@ -188,7 +188,7 @@ const Calculadora = () => {
     const [ingredientsRes, platformsRes, recipesRes, profileRes] = await Promise.all([
       supabase.from("ingredients").select("id, name, unit_type, cost_per_unit").order("name"),
       supabase.from("platforms").select("*").eq("is_active", true).order("name"),
-      supabase.from("recipes").select("id, name, yield_amount, labor_cost").order("name"),
+      supabase.from("recipes").select("id, name, yield_amount, labor_cost, yield_unit").order("name"),
       supabase.from("profiles").select("minute_rate, variable_cost_rate").eq("user_id", user!.id).maybeSingle(),
     ]);
 
@@ -592,222 +592,171 @@ const Calculadora = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "ingredient" | "recipe")}>
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="ingredient">Ingrediente</TabsTrigger>
-                    <TabsTrigger value="recipe">Produto Pronto (Combo)</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="ingredient">
-                    {/* Add buttons */}
-                    <div className="pb-3 border-b mb-3 flex gap-2">
-                      <Button onClick={addIngredient} size="sm" variant="outline" className="flex-1">
+                {/* Ingredientes */}
+                <div className="pb-3 border-b mb-3 flex gap-2">
+                  <Button onClick={addIngredient} size="sm" variant="outline" className="flex-1">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Ingrediente
+                  </Button>
+                  <Button onClick={addRecipeAsIngredient} size="sm" variant="outline" className="flex-1">
+                    <Cake className="h-4 w-4 mr-1" />
+                    Produto Pronto
+                  </Button>
+                  <Dialog open={showNewIngredient} onOpenChange={setShowNewIngredient}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="secondary" className="shrink-0">
                         <Plus className="h-4 w-4 mr-1" />
-                        Adicionar
+                        Criar Novo
                       </Button>
-                      <Dialog open={showNewIngredient} onOpenChange={setShowNewIngredient}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="secondary" className="shrink-0">
-                            <Plus className="h-4 w-4 mr-1" />
-                            Criar Novo
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-sm">
-                          <DialogHeader>
-                            <DialogTitle>Novo Ingrediente</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Nome</Label>
-                              <Input
-                                value={newIngName}
-                                onChange={(e) => setNewIngName(e.target.value)}
-                                placeholder="Ex: Farinha de Trigo"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Tipo de Medida</Label>
-                              <Select value={newIngUnitType} onValueChange={(v) => setNewIngUnitType(v as any)}>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="weight">Peso (g/kg)</SelectItem>
-                                  <SelectItem value="unit">Unidade (un)</SelectItem>
-                                  <SelectItem value="volume">Volume (ml/L)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label>Tamanho Emb. ({newIngUnitType === "weight" ? "g" : newIngUnitType === "volume" ? "ml" : "un"})</Label>
-                                <Input
-                                  value={newIngPackageSize}
-                                  onChange={(e) => setNewIngPackageSize(e.target.value)}
-                                  placeholder="Ex: 1000"
-                                  inputMode="decimal"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Preço Pago (R$)</Label>
-                                <Input
-                                  value={newIngPricePaid}
-                                  onChange={(e) => setNewIngPricePaid(e.target.value)}
-                                  placeholder="Ex: 5,90"
-                                  inputMode="decimal"
-                                />
-                              </div>
-                            </div>
-                            <Button onClick={handleQuickAddIngredient} className="w-full">
-                              Salvar e Adicionar à Receita
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto" data-ingredient-list>
-                    {selectedIngredients.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">
-                        Clique em "Adicionar" para começar
-                      </p>
-                    ) : (
-                    <div className="space-y-2">
-                    {selectedIngredients.map((item, index) => {
-                      const ingredient = ingredients.find(
-                        (i) => i.id === item.ingredientId
-                      );
-                      const itemCost = ingredient && item.quantity > 0 ? ingredient.cost_per_unit * item.quantity : 0;
-                      return (
-                        <div
-                          key={index}
-                          className="p-3 bg-muted/50 rounded-xl space-y-2"
-                        >
-                          {/* Row 1: Name + Remove */}
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={item.ingredientId}
-                              onChange={(e) =>
-                                updateIngredient(index, "ingredientId", e.target.value)
-                              }
-                              className="flex-1 bg-background border rounded-lg px-3 py-2.5 text-sm min-h-[44px]"
-                            >
-                              {ingredients.map((ing) => (
-                                <option key={ing.id} value={ing.id}>
-                                  {ing.name}
-                                </option>
-                              ))}
-                            </select>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeIngredient(index)}
-                              className="h-10 w-10 shrink-0"
-                            >
-                              <Minus className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                          {/* Row 2: Quantity + Unit + Cost */}
-                          <div className="flex items-center gap-3 pl-1">
+                    </DialogTrigger>
+                    <DialogContent className="max-w-sm">
+                      <DialogHeader>
+                        <DialogTitle>Novo Ingrediente</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Nome</Label>
+                          <Input
+                            value={newIngName}
+                            onChange={(e) => setNewIngName(e.target.value)}
+                            placeholder="Ex: Farinha de Trigo"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Tipo de Medida</Label>
+                          <Select value={newIngUnitType} onValueChange={(v) => setNewIngUnitType(v as any)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="weight">Peso (g/kg)</SelectItem>
+                              <SelectItem value="unit">Unidade (un)</SelectItem>
+                              <SelectItem value="volume">Volume (ml/L)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label>Tamanho Emb. ({newIngUnitType === "weight" ? "g" : newIngUnitType === "volume" ? "ml" : "un"})</Label>
                             <Input
-                              type="number"
-                              value={item.quantity || ""}
-                              onChange={(e) =>
-                                updateIngredient(
-                                  index,
-                                  "quantity",
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
-                              placeholder="Qtd"
-                              className="w-24 input-currency h-10"
+                              value={newIngPackageSize}
+                              onChange={(e) => setNewIngPackageSize(e.target.value)}
+                              placeholder="Ex: 1000"
                               inputMode="decimal"
                             />
-                            <span className="text-sm text-muted-foreground">
-                              {ingredient?.unit_type === "weight" ? "g" : ingredient?.unit_type === "volume" ? "ml" : "un"}
-                            </span>
-                            {itemCost > 0 && (
-                              <span className="ml-auto text-sm text-primary font-semibold">
-                                {formatCurrency(itemCost)}
-                              </span>
-                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Preço Pago (R$)</Label>
+                            <Input
+                              value={newIngPricePaid}
+                              onChange={(e) => setNewIngPricePaid(e.target.value)}
+                              placeholder="Ex: 5,90"
+                              inputMode="decimal"
+                            />
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                    )}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="recipe">
-                    <div className="flex justify-end mb-3">
-                      <Button onClick={addRecipeAsIngredient} size="sm" variant="outline">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Adicionar Produto
-                      </Button>
-                    </div>
-                    {selectedRecipes.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">
-                        Adicione receitas existentes para criar um combo/kit
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {selectedRecipes.map((item, index) => {
-                          const recipe = recipes.find((r) => r.id === item.recipeId);
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
-                            >
-                              <Cake className="h-4 w-4 text-primary shrink-0" />
-                              <select
-                                value={item.recipeId}
-                                onChange={(e) =>
-                                  updateRecipeAsIngredient(index, "recipeId", e.target.value)
-                                }
-                                className="flex-1 bg-background border rounded-md px-3 py-2 text-sm"
-                              >
-                                {recipes.map((rec) => (
-                                  <option key={rec.id} value={rec.id}>
-                                    {rec.name}
-                                  </option>
-                                ))}
-                              </select>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  value={item.quantity || ""}
-                                  onChange={(e) =>
-                                    updateRecipeAsIngredient(
-                                      index,
-                                      "quantity",
-                                      parseFloat(e.target.value) || 0
-                                    )
-                                  }
-                                  placeholder="Qtd"
-                                  className="w-24 input-currency"
-                                />
-                                <span className="text-sm text-muted-foreground">{yieldUnitLabel((recipe?.yield_unit as YieldUnit) || "unit")}</span>
-                              </div>
-                              {recipe && (
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {formatCurrency((recipe.total_cost || 0) / recipe.yield_amount)}/{yieldUnitLabel((recipe?.yield_unit as YieldUnit) || "unit")}
-                                </span>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeRecipeAsIngredient(index)}
-                              >
-                                <Minus className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          );
-                        })}
+                        <Button onClick={handleQuickAddIngredient} className="w-full">
+                          Salvar e Adicionar à Receita
+                        </Button>
                       </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <div className="space-y-2 max-h-[500px] overflow-y-auto" data-ingredient-list>
+                  {selectedIngredients.length === 0 && selectedRecipes.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      Clique em "Ingrediente" ou "Produto Pronto" para começar
+                    </p>
+                  )}
+
+                  {/* Ingredientes */}
+                  {selectedIngredients.map((item, index) => {
+                    const ingredient = ingredients.find((i) => i.id === item.ingredientId);
+                    const itemCost = ingredient && item.quantity > 0 ? ingredient.cost_per_unit * item.quantity : 0;
+                    return (
+                      <div key={`ing-${index}`} className="p-3 bg-muted/50 rounded-xl space-y-2">
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={item.ingredientId}
+                            onChange={(e) => updateIngredient(index, "ingredientId", e.target.value)}
+                            className="flex-1 bg-background border rounded-lg px-3 py-2.5 text-sm min-h-[44px]"
+                          >
+                            {ingredients.map((ing) => (
+                              <option key={ing.id} value={ing.id}>{ing.name}</option>
+                            ))}
+                          </select>
+                          <Button variant="ghost" size="icon" onClick={() => removeIngredient(index)} className="h-10 w-10 shrink-0">
+                            <Minus className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-3 pl-1">
+                          <Input
+                            type="number"
+                            value={item.quantity || ""}
+                            onChange={(e) => updateIngredient(index, "quantity", parseFloat(e.target.value) || 0)}
+                            placeholder="Qtd"
+                            className="w-24 input-currency h-10"
+                            inputMode="decimal"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {ingredient?.unit_type === "weight" ? "g" : ingredient?.unit_type === "volume" ? "ml" : "un"}
+                          </span>
+                          {itemCost > 0 && (
+                            <span className="ml-auto text-sm text-primary font-semibold">{formatCurrency(itemCost)}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Produtos Prontos (sub-receitas) */}
+                  {selectedRecipes.map((item, index) => {
+                    const recipe = recipes.find((r) => r.id === item.recipeId);
+                    const unitCost = recipe ? (recipe.total_cost || 0) / recipe.yield_amount : 0;
+                    const itemCost = unitCost * item.quantity;
+                    return (
+                      <div key={`rec-${index}`} className="p-3 bg-primary/5 rounded-xl space-y-2 border border-primary/20">
+                        <div className="flex items-center gap-2">
+                          <Cake className="h-4 w-4 text-primary shrink-0" />
+                          <select
+                            value={item.recipeId}
+                            onChange={(e) => updateRecipeAsIngredient(index, "recipeId", e.target.value)}
+                            className="flex-1 bg-background border rounded-lg px-3 py-2.5 text-sm min-h-[44px]"
+                          >
+                            {recipes.map((rec) => (
+                              <option key={rec.id} value={rec.id}>{rec.name}</option>
+                            ))}
+                          </select>
+                          <Button variant="ghost" size="icon" onClick={() => removeRecipeAsIngredient(index)} className="h-10 w-10 shrink-0">
+                            <Minus className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-3 pl-1">
+                          <Input
+                            type="number"
+                            value={item.quantity || ""}
+                            onChange={(e) => updateRecipeAsIngredient(index, "quantity", parseFloat(e.target.value) || 0)}
+                            placeholder="Qtd"
+                            className="w-24 input-currency h-10"
+                            inputMode="decimal"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {yieldUnitLabel((recipe?.yield_unit as YieldUnit) || "unit")}
+                          </span>
+                          {recipe && (
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {formatCurrency(unitCost)}/{yieldUnitLabel((recipe?.yield_unit as YieldUnit) || "unit")}
+                            </span>
+                          )}
+                          {itemCost > 0 && (
+                            <span className="ml-auto text-sm text-primary font-semibold">{formatCurrency(itemCost)}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
