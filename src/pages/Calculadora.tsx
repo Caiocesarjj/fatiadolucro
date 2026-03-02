@@ -787,11 +787,11 @@ const Calculadora = () => {
                                   placeholder="Qtd"
                                   className="w-24 input-currency"
                                 />
-                                <span className="text-sm text-muted-foreground">un</span>
+                                <span className="text-sm text-muted-foreground">{yieldUnitLabel((recipe?.yield_unit as YieldUnit) || "unit")}</span>
                               </div>
                               {recipe && (
                                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {formatCurrency((recipe.total_cost || 0) / recipe.yield_amount)}/un
+                                  {formatCurrency((recipe.total_cost || 0) / recipe.yield_amount)}/{yieldUnitLabel((recipe?.yield_unit as YieldUnit) || "unit")}
                                 </span>
                               )}
                               <Button
