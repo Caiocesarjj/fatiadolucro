@@ -376,6 +376,45 @@ export type Database = {
           },
         ]
       }
+      recipe_recipe_items: {
+        Row: {
+          created_at: string
+          id: string
+          quantity: number
+          recipe_id: string
+          sub_recipe_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quantity?: number
+          recipe_id: string
+          sub_recipe_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quantity?: number
+          recipe_id?: string
+          sub_recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_recipe_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_recipe_items_sub_recipe_id_fkey"
+            columns: ["sub_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           category: string | null

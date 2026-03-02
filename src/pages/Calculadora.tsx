@@ -168,16 +168,31 @@ const Calculadora = () => {
     setPrepTime(recipe.prep_time_minutes ? String(recipe.prep_time_minutes) : "");
     setTargetPrice(recipe.target_sale_price ? String(recipe.target_sale_price).replace(".", ",") : "");
 
-    // Load recipe items
-    const { data: items } = await supabase
-      .from("recipe_items")
-      .select("ingredient_id, quantity")
-      .eq("recipe_id", recipeId);
+    // Load recipe items and sub-recipes in parallel
+    const [itemsRes, subRecipesRes] = await Promise.all([
+      supabase
+        .from("recipe_items")
+        .select("ingredient_id, quantity")
+        .eq("recipe_id", recipeId),
+      supabase
+        .from("recipe_recipe_items" as any)
+        .select("sub_recipe_id, quantity")
+        .eq("recipe_id", recipeId),
+    ]);
 
-    if (items) {
+    if (itemsRes.data) {
       setSelectedIngredients(
-        items.map((item) => ({
+        itemsRes.data.map((item: any) => ({
           ingredientId: item.ingredient_id,
+          quantity: item.quantity,
+        }))
+      );
+    }
+
+    if (subRecipesRes.data && (subRecipesRes.data as any[]).length > 0) {
+      setSelectedRecipes(
+        (subRecipesRes.data as any[]).map((item: any) => ({
+          recipeId: item.sub_recipe_id,
           quantity: item.quantity,
         }))
       );
@@ -449,8 +464,11 @@ const Calculadora = () => {
         if (recipeError) throw recipeError;
         recipeId = editId;
 
-        // Delete old ingredients then re-insert
-        await supabase.from("recipe_items").delete().eq("recipe_id", editId);
+        // Delete old ingredients and sub-recipes then re-insert
+        await Promise.all([
+          supabase.from("recipe_items").delete().eq("recipe_id", editId),
+          supabase.from("recipe_recipe_items" as any).delete().eq("recipe_id", editId),
+        ]);
       } else {
         // INSERT new recipe
         const { data: recipe, error: recipeError } = await supabase
@@ -463,6 +481,7 @@ const Calculadora = () => {
         recipeId = recipe.id;
       }
 
+      // Save ingredients
       if (selectedIngredients.length > 0) {
         const recipeItems = selectedIngredients.map((item) => ({
           recipe_id: recipeId,
@@ -475,6 +494,21 @@ const Calculadora = () => {
           .insert(recipeItems);
 
         if (itemsError) throw itemsError;
+      }
+
+      // Save sub-recipes (produtos prontos)
+      if (selectedRecipes.length > 0) {
+        const subRecipeItems = selectedRecipes.map((item) => ({
+          recipe_id: recipeId,
+          sub_recipe_id: item.recipeId,
+          quantity: item.quantity,
+        }));
+
+        const { error: subError } = await supabase
+          .from("recipe_recipe_items" as any)
+          .insert(subRecipeItems);
+
+        if (subError) throw subError;
       }
 
       toast({ title: editId ? "Receita atualizada com sucesso!" : "Receita salva com sucesso!" });
