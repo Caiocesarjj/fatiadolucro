@@ -18,10 +18,17 @@ interface RecipeWithCost {
   id: string;
   name: string;
   yield_amount: number;
+  yield_unit: string;
   labor_cost: number;
   target_sale_price: number | null;
   ingredientsCost: number;
 }
+
+const yieldUnitLabel = (unit: string) => {
+  if (unit === "weight") return "g";
+  if (unit === "volume") return "ml";
+  return "un";
+};
 
 const Receitas = () => {
   const { user } = useAuth();
@@ -51,7 +58,7 @@ const Receitas = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("recipes")
-      .select("id, name, yield_amount, labor_cost, target_sale_price")
+      .select("id, name, yield_amount, yield_unit, labor_cost, target_sale_price")
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -185,7 +192,7 @@ const Receitas = () => {
         <div class="recipe-card">
           <h2>${escapeHtml(r.name)}</h2>
           <div class="meta">
-            Rendimento: <strong>${r.yield_amount} un</strong> · 
+            Rendimento: <strong>${r.yield_amount} ${yieldUnitLabel((r as any).yield_unit || 'unit')}</strong> · 
             Mão de obra: <strong>${formatCurrency(r.labor_cost)}</strong>
             ${r.target_sale_price ? ` · Preço de venda: <strong>${formatCurrency(r.target_sale_price)}</strong>` : ""}
           </div>
@@ -203,7 +210,7 @@ const Receitas = () => {
               <tr><td colspan="3">Custo dos ingredientes</td><td class="num">${formatCurrency(r.ingredientsCost)}</td></tr>
               <tr><td colspan="3">Mão de obra</td><td class="num">${formatCurrency(r.labor_cost)}</td></tr>
               <tr class="total"><td colspan="3">Custo Total</td><td class="num">${formatCurrency(totalCost)}</td></tr>
-              <tr class="total"><td colspan="3">Custo Unitário (÷${r.yield_amount})</td><td class="num">${formatCurrency(unitCost)}</td></tr>
+              <tr class="total"><td colspan="3">Custo Unitário (÷${r.yield_amount})</td><td class="num">${formatCurrency(unitCost)}/${yieldUnitLabel((r as any).yield_unit || 'unit')}</td></tr>
               ${profit !== null ? `<tr class="${profit >= 0 ? "positive" : "negative"}"><td colspan="3">Lucro Unitário</td><td class="num">${formatCurrency(profit)}</td></tr>` : ""}
               ${margin !== null ? `<tr class="${margin >= 0 ? "positive" : "negative"}"><td colspan="3">Margem</td><td class="num">${margin.toFixed(1)}%</td></tr>` : ""}
             </tfoot>
@@ -357,7 +364,7 @@ const Receitas = () => {
                           <div className="flex items-baseline gap-2">
                             <h3 className="font-semibold text-[15px] text-foreground truncate">{recipe.name}</h3>
                             <span className="text-xs text-muted-foreground shrink-0">
-                              {recipe.yield_amount} un
+                              {recipe.yield_amount} {yieldUnitLabel(recipe.yield_unit)}
                             </span>
                           </div>
                           <div className="flex items-center gap-3 mt-1.5 text-sm">

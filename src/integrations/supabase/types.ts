@@ -390,6 +390,7 @@ export type Database = {
           updated_at: string
           user_id: string
           yield_amount: number
+          yield_unit: string
         }
         Insert: {
           category?: string | null
@@ -404,6 +405,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           yield_amount?: number
+          yield_unit?: string
         }
         Update: {
           category?: string | null
@@ -418,6 +420,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           yield_amount?: number
+          yield_unit?: string
         }
         Relationships: []
       }

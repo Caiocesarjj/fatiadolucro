@@ -46,13 +46,28 @@ import { useSubscription, FREE_RECIPE_LIMIT_VALUE } from "@/hooks/useSubscriptio
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { motion } from "framer-motion";
 
+type YieldUnit = "unit" | "weight" | "volume";
+
 interface Recipe {
   id: string;
   name: string;
   yield_amount: number;
   labor_cost: number;
   total_cost?: number;
+  yield_unit?: YieldUnit;
 }
+
+const yieldUnitLabel = (unit: YieldUnit) => {
+  if (unit === "weight") return "g";
+  if (unit === "volume") return "ml";
+  return "un";
+};
+
+const yieldUnitNameSingular = (unit: YieldUnit) => {
+  if (unit === "weight") return "Grama";
+  if (unit === "volume") return "Mililitro";
+  return "Unidade";
+};
 
 interface Ingredient {
   id: string;
@@ -100,6 +115,7 @@ const Calculadora = () => {
   const [laborCost, setLaborCost] = useState("");
   const [prepTime, setPrepTime] = useState("");
   const [yieldAmount, setYieldAmount] = useState("");
+  const [yieldUnit, setYieldUnit] = useState<YieldUnit>("unit");
   const [targetPrice, setTargetPrice] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [recipeName, setRecipeName] = useState("");
@@ -147,6 +163,7 @@ const Calculadora = () => {
 
     setRecipeName(recipe.name);
     setYieldAmount(String(recipe.yield_amount || ""));
+    setYieldUnit((recipe as any).yield_unit || "unit");
     setLaborCost(recipe.labor_cost ? String(recipe.labor_cost).replace(".", ",") : "");
     setPrepTime(recipe.prep_time_minutes ? String(recipe.prep_time_minutes) : "");
     setTargetPrice(recipe.target_sale_price ? String(recipe.target_sale_price).replace(".", ",") : "");
@@ -387,6 +404,7 @@ const Calculadora = () => {
     setLaborCost("");
     setPrepTime("");
     setYieldAmount("");
+    setYieldUnit("unit");
     setTargetPrice("");
     setInputMode("ingredient");
     toast({ title: "Campos limpos para nova receita!" });
@@ -411,6 +429,7 @@ const Calculadora = () => {
       const recipeData = {
         name: recipeName,
         yield_amount: calculations.yield,
+        yield_unit: yieldUnit,
         labor_cost: calculations.laborCost,
         target_sale_price: chosenSalePrice ?? calculations.targetPrice,
         prep_time_minutes: parseInt(prepTime) || 0,
@@ -837,16 +856,29 @@ const Calculadora = () => {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="yieldAmount">Rendimento (un)</Label>
-                    <Input
-                      id="yieldAmount"
-                      type="number"
-                      value={yieldAmount}
-                      onChange={(e) => setYieldAmount(e.target.value)}
-                      placeholder="Ex: 12"
-                    />
+                    <Label htmlFor="yieldAmount">Rendimento</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="yieldAmount"
+                        type="number"
+                        value={yieldAmount}
+                        onChange={(e) => setYieldAmount(e.target.value)}
+                        placeholder={yieldUnit === "unit" ? "Ex: 12" : yieldUnit === "weight" ? "Ex: 1000" : "Ex: 500"}
+                        className="flex-1"
+                      />
+                      <Select value={yieldUnit} onValueChange={(v) => setYieldUnit(v as YieldUnit)}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unit">UN</SelectItem>
+                          <SelectItem value="weight">g</SelectItem>
+                          <SelectItem value="volume">ml</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Quantas unidades produz
+                      Quanto a receita rende em {yieldUnit === "unit" ? "unidades" : yieldUnit === "weight" ? "gramas" : "mililitros"}
                     </p>
                   </div>
                 </div>
@@ -1071,13 +1103,13 @@ const Calculadora = () => {
                 </div>
                 <div className="bg-primary-light rounded-lg p-4">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">Custo por Unidade</span>
+                    <span className="font-medium">Custo por {yieldUnitNameSingular(yieldUnit)}</span>
                     <span className="text-xl font-bold text-primary">
                       {formatCurrency(calculations.unitCost)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Baseado em {calculations.yield} unidade(s)
+                    Baseado em {calculations.yield} {yieldUnitLabel(yieldUnit)}
                   </p>
                 </div>
               </CardContent>
