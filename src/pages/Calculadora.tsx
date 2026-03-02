@@ -397,6 +397,16 @@ const Calculadora = () => {
     }).format(value);
   };
 
+  const formatUnitCost = (value: number) => {
+    const decimals = yieldUnit === "unit" ? 2 : 4;
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  };
+
   const resetRecipe = () => {
     setRecipeName("");
     setSelectedIngredients([]);
@@ -918,7 +928,7 @@ const Calculadora = () => {
                     {formatCurrency(suggestedPrice)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {formatCurrency(calculations.unitCost)} + {suggestedMarkup}% de markup
+                    {formatUnitCost(calculations.unitCost)} + {suggestedMarkup}% de markup
                   </p>
                 </div>
               </CardContent>
@@ -1105,7 +1115,7 @@ const Calculadora = () => {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Custo por {yieldUnitNameSingular(yieldUnit)}</span>
                     <span className="text-xl font-bold text-primary">
-                      {formatCurrency(calculations.unitCost)}
+                      {formatUnitCost(calculations.unitCost)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">

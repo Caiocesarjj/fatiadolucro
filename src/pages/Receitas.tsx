@@ -103,6 +103,16 @@ const Receitas = () => {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
+  const formatUnitCost = (value: number, unit: string) => {
+    const decimals = unit === "unit" ? 2 : 4;
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  };
+
   const getTotalCost = (r: RecipeWithCost) => r.ingredientsCost + r.labor_cost;
   const getUnitCost = (r: RecipeWithCost) => getTotalCost(r) / (r.yield_amount || 1);
   const getProfit = (r: RecipeWithCost) => {
@@ -210,7 +220,7 @@ const Receitas = () => {
               <tr><td colspan="3">Custo dos ingredientes</td><td class="num">${formatCurrency(r.ingredientsCost)}</td></tr>
               <tr><td colspan="3">Mão de obra</td><td class="num">${formatCurrency(r.labor_cost)}</td></tr>
               <tr class="total"><td colspan="3">Custo Total</td><td class="num">${formatCurrency(totalCost)}</td></tr>
-              <tr class="total"><td colspan="3">Custo Unitário (÷${r.yield_amount})</td><td class="num">${formatCurrency(unitCost)}/${yieldUnitLabel((r as any).yield_unit || 'unit')}</td></tr>
+              <tr class="total"><td colspan="3">Custo Unitário (÷${r.yield_amount})</td><td class="num">${r.yield_unit === 'unit' ? formatCurrency(unitCost) : formatUnitCost(unitCost, r.yield_unit || 'unit')}/${yieldUnitLabel((r as any).yield_unit || 'unit')}</td></tr>
               ${profit !== null ? `<tr class="${profit >= 0 ? "positive" : "negative"}"><td colspan="3">Lucro Unitário</td><td class="num">${formatCurrency(profit)}</td></tr>` : ""}
               ${margin !== null ? `<tr class="${margin >= 0 ? "positive" : "negative"}"><td colspan="3">Margem</td><td class="num">${margin.toFixed(1)}%</td></tr>` : ""}
             </tfoot>
@@ -369,7 +379,7 @@ const Receitas = () => {
                           </div>
                           <div className="flex items-center gap-3 mt-1.5 text-sm">
                             <span className="text-muted-foreground">
-                              {formatCurrency(getUnitCost(recipe))}
+                              {formatUnitCost(getUnitCost(recipe), recipe.yield_unit)}
                             </span>
                             {recipe.target_sale_price && (
                               <span className="text-muted-foreground">
