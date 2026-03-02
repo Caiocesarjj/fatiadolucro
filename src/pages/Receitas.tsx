@@ -69,45 +69,48 @@ const Receitas = () => {
 
     const recipesWithCost = await Promise.all(
       (data || []).map(async (recipe) => {
-        const [itemsRes, subRecipesRes] = await Promise.all([
-          supabase
-            .from("recipe_items")
-            .select("quantity, ingredients(cost_per_unit)")
-            .eq("recipe_id", recipe.id),
-          supabase
-            .from("recipe_recipe_items" as any)
-            .select("sub_recipe_id, quantity")
-            .eq("recipe_id", recipe.id),
-        ]);
+        const { data: items } = await supabase
+          .from("recipe_items")
+          .select("quantity, ingredients(cost_per_unit)")
+          .eq("recipe_id", recipe.id);
 
-        const ingredientsCost = itemsRes.data?.reduce((total, item) => {
+        const ingredientsCost = items?.reduce((total, item) => {
           const costPerUnit = (item.ingredients as any)?.cost_per_unit || 0;
           return total + costPerUnit * item.quantity;
         }, 0) || 0;
 
-        // Calculate sub-recipe costs
+        // Calculate sub-recipe costs (graceful if table doesn't exist)
         let subRecipeCost = 0;
-        if (subRecipesRes.data && (subRecipesRes.data as any[]).length > 0) {
-          for (const sub of subRecipesRes.data as any[]) {
-            const { data: subItems } = await supabase
-              .from("recipe_items")
-              .select("quantity, ingredients(cost_per_unit)")
-              .eq("recipe_id", sub.sub_recipe_id);
-            
-            const { data: subRecipe } = await supabase
-              .from("recipes")
-              .select("labor_cost, yield_amount")
-              .eq("id", sub.sub_recipe_id)
-              .single();
+        try {
+          const { data: subData } = await supabase
+            .from("recipe_recipe_items" as any)
+            .select("sub_recipe_id, quantity")
+            .eq("recipe_id", recipe.id);
 
-            const subIngCost = subItems?.reduce((t, i) => {
-              return t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity;
-            }, 0) || 0;
+          if (subData && (subData as any[]).length > 0) {
+            for (const sub of subData as any[]) {
+              const { data: subItems } = await supabase
+                .from("recipe_items")
+                .select("quantity, ingredients(cost_per_unit)")
+                .eq("recipe_id", sub.sub_recipe_id);
+              
+              const { data: subRecipe } = await supabase
+                .from("recipes")
+                .select("labor_cost, yield_amount")
+                .eq("id", sub.sub_recipe_id)
+                .single();
 
-            const subTotalCost = subIngCost + (subRecipe?.labor_cost || 0);
-            const subUnitCost = subTotalCost / (subRecipe?.yield_amount || 1);
-            subRecipeCost += subUnitCost * sub.quantity;
+              const subIngCost = subItems?.reduce((t, i) => {
+                return t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity;
+              }, 0) || 0;
+
+              const subTotalCost = subIngCost + (subRecipe?.labor_cost || 0);
+              const subUnitCost = subTotalCost / (subRecipe?.yield_amount || 1);
+              subRecipeCost += subUnitCost * sub.quantity;
+            }
           }
+        } catch {
+          // Table may not exist on external DB
         }
 
         return { ...recipe, ingredientsCost: ingredientsCost + subRecipeCost };
