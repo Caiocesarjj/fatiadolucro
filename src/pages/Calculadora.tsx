@@ -808,7 +808,7 @@ const Calculadora = () => {
           >
              <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="prepTime" className="flex items-center gap-1">
                       Tempo de Preparo (min)
