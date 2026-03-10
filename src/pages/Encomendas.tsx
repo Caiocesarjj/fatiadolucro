@@ -88,6 +88,7 @@ const Encomendas = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const { canCreate, getLimit, getCount } = useFreemiumLimits();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   const [form, setForm] = useState({
     client_id: "",
