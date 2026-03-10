@@ -165,7 +165,7 @@ const Index = () => {
             { emoji: "👥", title: "Gestão de Clientes", desc: "Cadastre seus clientes, histórico de pedidos e informações de contato. Nunca mais perca uma encomenda.", badge: "Grátis" },
             { emoji: "📋", title: "Controle de Encomendas", desc: "Registre pedidos, datas de entrega e valores. Veja tudo que você tem para entregar em um único lugar.", badge: "Grátis" },
             { emoji: "💰", title: "Módulo Financeiro", desc: "Registre receitas e despesas, veja seu lucro líquido mensal e acompanhe a meta que você mesmo define.", badge: "PRO" },
-            { emoji: "🧠", title: "Simuladores de Negócio", desc: "Simule cenários: "quanto preciso vender para ganhar R$ 5.000?" ou "qual o ponto de equilíbrio do meu negócio?"", badge: "PRO" },
+            { emoji: "🧠", title: "Simuladores de Negócio", desc: 'Simule cenários: "quanto preciso vender para ganhar R$ 5.000?" ou "qual o ponto de equilíbrio do meu negócio?"', badge: "PRO" },
             { emoji: "🛒", title: "Lista de Compras", desc: "Gere automaticamente a lista de compras baseada nas receitas que você vai produzir. Sem esquecer nada no mercado.", badge: "Grátis" },
             { emoji: "📊", title: "Dashboard com Gráficos", desc: "Visualize receitas, despesas e lucro dos últimos 6 meses em gráficos claros. Tome decisões com dados reais.", badge: "Grátis" },
             { emoji: "📄", title: "Relatórios em PDF", desc: "Exporte fichas técnicas completas das suas receitas em PDF profissional para compartilhar ou imprimir.", badge: "PRO" },
