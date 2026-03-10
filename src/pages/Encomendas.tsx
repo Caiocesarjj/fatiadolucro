@@ -274,7 +274,11 @@ const Encomendas = () => {
     <AppLayout title="Encomendas">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowExport(true)}>
+            <FileDown className="h-4 w-4 mr-2" />
+            Exportar PDF
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
