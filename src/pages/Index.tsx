@@ -113,7 +113,7 @@ const Index = () => {
         <div className="problem-grid">
           <div className="problem-cards">
             {[
-              { icon: "😰", title: "Preço no chute", desc: "Você cobra o que "acha justo" sem saber se está cobrindo os custos reais de ingredientes, luz, gás e seu trabalho." },
+              { icon: "😰", title: "Preço no chute", desc: 'Você cobra o que "acha justo" sem saber se está cobrindo os custos reais de ingredientes, luz, gás e seu trabalho.' },
               { icon: "📊", title: "Sem controle financeiro", desc: "O dinheiro entra e sai sem registro. No fim do mês você não sabe se o negócio deu lucro ou prejuízo." },
               { icon: "📱", title: "Planilha que não funciona", desc: "Planilhas do Excel são lentas, complicadas e não funcionam bem no celular — onde você mais precisa." },
               { icon: "🤯", title: "Cada ingrediente tem custo diferente", desc: "Chocolate 70%, manteiga, ovo... calcular o custo por grama de cada um é um pesadelo que você evita." },
