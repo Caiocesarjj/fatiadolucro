@@ -34,7 +34,9 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
+  FileDown,
 } from "lucide-react";
+import { ExportPdfDialog } from "@/components/encomendas/ExportPdfDialog";
 import { motion } from "framer-motion";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths } from "date-fns";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
@@ -86,6 +88,7 @@ const Encomendas = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const { canCreate, getLimit, getCount } = useFreemiumLimits();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   const [form, setForm] = useState({
     client_id: "",
@@ -271,7 +274,11 @@ const Encomendas = () => {
     <AppLayout title="Encomendas">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowExport(true)}>
+            <FileDown className="h-4 w-4 mr-2" />
+            Exportar PDF
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
@@ -603,6 +610,12 @@ const Encomendas = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <ExportPdfDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        orders={orders}
+        currentMonth={currentMonth}
+      />
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
