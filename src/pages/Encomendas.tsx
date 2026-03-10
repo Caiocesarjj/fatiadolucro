@@ -610,6 +610,12 @@ const Encomendas = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <ExportPdfDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        orders={orders}
+        currentMonth={currentMonth}
+      />
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
