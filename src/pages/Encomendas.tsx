@@ -34,7 +34,9 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
+  FileDown,
 } from "lucide-react";
+import { ExportPdfDialog } from "@/components/encomendas/ExportPdfDialog";
 import { motion } from "framer-motion";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths } from "date-fns";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
