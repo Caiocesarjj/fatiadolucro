@@ -815,7 +815,8 @@ const Calculadora = () => {
                     </Label>
                     <Input
                       id="prepTime"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={prepTime}
                       onChange={(e) => setPrepTime(e.target.value)}
                       placeholder="Ex: 30"
