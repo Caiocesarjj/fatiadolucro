@@ -345,7 +345,8 @@
     .card-metric,
     .rounded-lg {
       max-width: 100%;
-      overflow: hidden;
+      /* isolation instead of overflow:hidden to preserve box-shadow on Safari */
+      isolation: isolate;
     }
   }
 

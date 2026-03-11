@@ -58,7 +58,10 @@ export function AppLayout({ children, title, headerAction }: AppLayoutProps) {
             </div>
           </header>
           {/* Content area with safe padding for bottom nav */}
-          <div className={`flex-1 px-4 py-4 md:px-6 md:py-6 animate-fade-in overflow-x-hidden ${isMobile ? 'pb-24' : ''}`}>
+          <div
+            className="flex-1 px-4 py-4 md:px-6 md:py-6 animate-fade-in overflow-x-hidden"
+            style={isMobile ? { paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' } : undefined}
+          >
             {children}
           </div>
         </main>

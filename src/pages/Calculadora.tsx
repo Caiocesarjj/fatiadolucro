@@ -632,18 +632,18 @@ const Calculadora = () => {
               </CardHeader>
               <CardContent>
                 {/* Ingredientes */}
-                <div className="pb-3 border-b mb-3 flex gap-2">
-                  <Button onClick={addIngredient} size="sm" variant="outline" className="flex-1">
+                <div className="pb-3 border-b mb-3 grid grid-cols-2 sm:flex gap-2">
+                  <Button onClick={addIngredient} size="sm" variant="outline" className="sm:flex-1">
                     <Plus className="h-4 w-4 mr-1" />
                     Ingrediente
                   </Button>
-                  <Button onClick={addRecipeAsIngredient} size="sm" variant="outline" className="flex-1">
+                  <Button onClick={addRecipeAsIngredient} size="sm" variant="outline" className="sm:flex-1">
                     <Cake className="h-4 w-4 mr-1" />
                     Produto Pronto
                   </Button>
                   <Dialog open={showNewIngredient} onOpenChange={setShowNewIngredient}>
                     <DialogTrigger asChild>
-                      <Button size="sm" variant="secondary" className="shrink-0">
+                      <Button size="sm" variant="secondary" className="col-span-2 sm:shrink-0">
                         <Plus className="h-4 w-4 mr-1" />
                         Criar Novo
                       </Button>
@@ -702,7 +702,7 @@ const Calculadora = () => {
                   </Dialog>
                 </div>
 
-                <div className="space-y-2 max-h-[500px] overflow-y-auto" data-ingredient-list>
+                <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'min(500px, 40dvh)' }} data-ingredient-list>
                   {selectedIngredients.length === 0 && selectedRecipes.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
                       Clique em "Ingrediente" ou "Produto Pronto" para começar
@@ -815,7 +815,8 @@ const Calculadora = () => {
                     </Label>
                     <Input
                       id="prepTime"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={prepTime}
                       onChange={(e) => setPrepTime(e.target.value)}
                       placeholder="Ex: 30"
@@ -826,6 +827,7 @@ const Calculadora = () => {
                     <Label htmlFor="laborCost">Mão de Obra (R$)</Label>
                     <Input
                       id="laborCost"
+                      inputMode="decimal"
                       value={laborCost}
                       onChange={(e) => {
                         setLaborCost(e.target.value);
@@ -850,7 +852,8 @@ const Calculadora = () => {
                     <div className="flex gap-2">
                       <Input
                         id="yieldAmount"
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={yieldAmount}
                         onChange={(e) => setYieldAmount(e.target.value)}
                         placeholder={yieldUnit === "unit" ? "Ex: 12" : yieldUnit === "weight" ? "Ex: 1000" : "Ex: 500"}
@@ -894,7 +897,8 @@ const Calculadora = () => {
                   <Label htmlFor="markup">Markup Desejado (%)</Label>
                   <Input
                     id="markup"
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={suggestedMarkup}
                     onChange={(e) => setSuggestedMarkup(e.target.value)}
                     className="input-currency"

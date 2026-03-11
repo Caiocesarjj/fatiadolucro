@@ -250,13 +250,13 @@ const Ingredientes = () => {
                   Novo Ingrediente
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
                 <DialogHeader>
                   <DialogTitle>
                     {editingId ? "Editar Ingrediente" : "Novo Ingrediente"}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome *</Label>
                     <Input
@@ -299,6 +299,7 @@ const Ingredientes = () => {
                         }
                         placeholder="Ex: 12,90"
                         className="input-currency"
+                        inputMode="decimal"
                       />
                     </div>
                     <div className="space-y-2">
@@ -311,6 +312,7 @@ const Ingredientes = () => {
                         }
                         placeholder="Ex: 1000"
                         className="input-currency"
+                        inputMode="decimal"
                       />
                     </div>
                   </div>

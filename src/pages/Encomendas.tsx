@@ -295,13 +295,13 @@ const Encomendas = () => {
                 Nova Encomenda
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
               <DialogHeader>
                 <DialogTitle>
                   {editingId ? "Editar Encomenda" : "Nova Encomenda"}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
                 <div className="space-y-2">
                   <Label>Cliente</Label>
                   <Select
@@ -335,7 +335,7 @@ const Encomendas = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="total_amount">Valor Total (R$)</Label>
-                    <Input
+                     <Input
                       id="total_amount"
                       value={form.total_amount}
                       onChange={(e) =>
@@ -343,6 +343,7 @@ const Encomendas = () => {
                       }
                       placeholder="Ex: 150,00"
                       className="input-currency"
+                      inputMode="decimal"
                     />
                   </div>
                 </div>
@@ -475,7 +476,7 @@ const Encomendas = () => {
                       return (
                         <div
                           key={day.toISOString()}
-                          className={`min-h-[80px] p-1 border rounded-lg ${
+                          className={`min-h-[44px] sm:min-h-[80px] p-1 border rounded-lg aspect-square sm:aspect-auto ${
                             isToday(day)
                               ? "border-primary bg-primary/5"
                               : "border-border"

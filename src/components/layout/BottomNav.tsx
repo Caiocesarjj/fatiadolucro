@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/dashboard" },
-  { icon: Package, label: "Ingredientes", path: "/ingredientes" },
+  { icon: Package, label: "Ingred.", path: "/ingredientes" },
   { icon: Cake, label: "Receitas", path: "/receitas" },
   { icon: Users, label: "Clientes", path: "/clientes" },
   { icon: MoreHorizontal, label: "Mais", path: "/mais" },
