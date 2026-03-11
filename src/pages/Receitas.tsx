@@ -453,6 +453,7 @@ const Receitas = () => {
           </div>
         )}
       </div>
+      </PullToRefresh>
 
       {/* FAB */}
       <Button
