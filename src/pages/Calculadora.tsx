@@ -852,7 +852,8 @@ const Calculadora = () => {
                     <div className="flex gap-2">
                       <Input
                         id="yieldAmount"
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={yieldAmount}
                         onChange={(e) => setYieldAmount(e.target.value)}
                         placeholder={yieldUnit === "unit" ? "Ex: 12" : yieldUnit === "weight" ? "Ex: 1000" : "Ex: 500"}
