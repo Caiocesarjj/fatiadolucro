@@ -238,17 +238,36 @@ const Dashboard = () => {
                   <Sparkles className="h-8 w-8 text-primary" />
                 </div>
                 <h2 className="text-xl font-bold text-foreground">Bem-vindo ao Fatia do Lucro! 🎂</h2>
-                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                  Comece cadastrando seus ingredientes e receitas para calcular custos e lucros.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-1">
-                  <Button onClick={() => navigate("/ingredientes")} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-12 rounded-xl">
-                    <Package className="h-4 w-4" /> 1. Cadastrar Ingredientes
-                  </Button>
-                  <Button onClick={() => navigate("/receitas")} variant="outline" className="gap-2 h-12 rounded-xl">
-                    <ChefHat className="h-4 w-4" /> 2. Criar Receitas
-                  </Button>
-                </div>
+
+                {stats.salaryGoal === 0 ? (
+                  <>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                      Primeiro, configure sua <strong>precificação</strong> — defina seu salário-meta, dias e horas trabalhados para que o sistema calcule automaticamente o custo da mão-de-obra nas suas receitas.
+                    </p>
+                    <div className="flex flex-col gap-2.5 justify-center pt-1">
+                      <Button onClick={() => navigate("/configuracoes")} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-12 rounded-xl">
+                        <Settings className="h-4 w-4" /> Configurar Precificação
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Passo 1 de 3 — Precificação → Ingredientes → Receitas
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                      ✅ Precificação configurada! Agora cadastre seus ingredientes e crie suas receitas para calcular custos e lucros.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-1">
+                      <Button onClick={() => navigate("/ingredientes")} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-12 rounded-xl">
+                        <Package className="h-4 w-4" /> 2. Cadastrar Ingredientes
+                      </Button>
+                      <Button onClick={() => navigate("/receitas")} variant="outline" className="gap-2 h-12 rounded-xl">
+                        <ChefHat className="h-4 w-4" /> 3. Criar Receitas
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>
