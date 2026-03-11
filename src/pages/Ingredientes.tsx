@@ -154,22 +154,24 @@ const Ingredientes = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja realmente excluir este ingrediente?")) return;
+  const handleDelete = (id: string) => {
+    const ingredient = ingredients.find((i) => i.id === id);
+    // Optimistically remove from UI
+    setIngredients((prev) => prev.filter((i) => i.id !== id));
 
-    try {
-      const { error } = await supabase.from("ingredients").delete().eq("id", id);
-
-      if (error) throw error;
-      toast({ title: "Ingrediente excluído!" });
-      fetchIngredients();
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir",
-        description: mapErrorToUserMessage(error),
-      });
-    }
+    undoableDelete({
+      itemLabel: ingredient?.name || "Ingrediente",
+      onDelete: async () => {
+        const { error } = await supabase.from("ingredients").delete().eq("id", id);
+        if (error) {
+          fetchIngredients(); // Restore on error
+          throw error;
+        }
+      },
+      onUndo: () => {
+        fetchIngredients(); // Restore
+      },
+    });
   };
 
   const resetForm = () => {

@@ -136,22 +136,23 @@ const Clientes = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja realmente excluir este cliente?")) return;
+  const handleDelete = (id: string) => {
+    const client = clients.find((c) => c.id === id);
+    setClients((prev) => prev.filter((c) => c.id !== id));
 
-    try {
-      const { error } = await supabase.from("clients").delete().eq("id", id);
-
-      if (error) throw error;
-      toast({ title: "Cliente excluído!" });
-      fetchClients();
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir",
-        description: mapErrorToUserMessage(error),
-      });
-    }
+    undoableDelete({
+      itemLabel: client?.name || "Cliente",
+      onDelete: async () => {
+        const { error } = await supabase.from("clients").delete().eq("id", id);
+        if (error) {
+          fetchClients();
+          throw error;
+        }
+      },
+      onUndo: () => {
+        fetchClients();
+      },
+    });
   };
 
   const resetForm = () => {
