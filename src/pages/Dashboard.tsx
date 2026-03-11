@@ -442,6 +442,7 @@ const Dashboard = () => {
           </motion.div>
         )}
       </div>
+      </PullToRefresh>
     </AppLayout>
   );
 };
