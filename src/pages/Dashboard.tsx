@@ -33,6 +33,8 @@ import {
   Legend,
 } from "recharts";
 import { motion } from "framer-motion";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface DashboardStats {
   totalIngredients: number;
