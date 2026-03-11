@@ -827,6 +827,7 @@ const Calculadora = () => {
                     <Label htmlFor="laborCost">Mão de Obra (R$)</Label>
                     <Input
                       id="laborCost"
+                      inputMode="decimal"
                       value={laborCost}
                       onChange={(e) => {
                         setLaborCost(e.target.value);
