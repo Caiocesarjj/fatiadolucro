@@ -198,6 +198,8 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Início">
+      <OnboardingWizard />
+      <PullToRefresh onRefresh={fetchDashboardData}>
       <div className="space-y-5">
         {/* Trial Banner */}
         {isInTrial && planType === "free" && <TrialBanner daysLeft={trialDaysLeft} />}
