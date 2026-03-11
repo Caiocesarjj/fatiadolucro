@@ -125,15 +125,24 @@ const Receitas = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
-    const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
-    if (error) {
-      toast({ variant: "destructive", title: "Erro ao excluir", description: mapErrorToUserMessage(error) });
-    } else {
-      toast({ title: "Receita excluída!" });
-      setRecipes((prev) => prev.filter((r) => r.id !== deleteId));
-    }
+    const recipe = recipes.find(r => r.id === deleteId);
+    setRecipes((prev) => prev.filter((r) => r.id !== deleteId));
     setDeleteId(null);
+
+    undoableDelete({
+      itemLabel: recipe?.name || "Receita",
+      onDelete: async () => {
+        await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
+        const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
+        if (error) {
+          fetchRecipes();
+          throw error;
+        }
+      },
+      onUndo: () => {
+        fetchRecipes();
+      },
+    });
   };
 
   const formatCurrency = (value: number) =>
