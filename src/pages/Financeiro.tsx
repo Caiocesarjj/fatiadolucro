@@ -500,7 +500,7 @@ const Financeiro = () => {
                         <DialogHeader>
                           <DialogTitle>{editingTransaction ? "Editar Transação" : "Nova Transação"}</DialogTitle>
                         </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
                           {/* Tipo Entrada/Saída - hidden for profit_withdrawal */}
                           {form.entry_type !== "profit_withdrawal" && (
                             <div className="space-y-2">
