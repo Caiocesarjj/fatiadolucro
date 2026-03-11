@@ -215,7 +215,7 @@ const Clientes = () => {
                 Novo Cliente
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
               <DialogHeader>
                 <DialogTitle>
                   {editingId ? "Editar Cliente" : "Novo Cliente"}
