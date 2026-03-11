@@ -11,6 +11,8 @@ import { useNavigate } from "react-router-dom";
 import { escapeHtml } from "@/lib/htmlEscape";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { motion } from "framer-motion";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { undoableDelete } from "@/lib/undoDelete";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -123,15 +125,24 @@ const Receitas = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
-    const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
-    if (error) {
-      toast({ variant: "destructive", title: "Erro ao excluir", description: mapErrorToUserMessage(error) });
-    } else {
-      toast({ title: "Receita excluída!" });
-      setRecipes((prev) => prev.filter((r) => r.id !== deleteId));
-    }
+    const recipe = recipes.find(r => r.id === deleteId);
+    setRecipes((prev) => prev.filter((r) => r.id !== deleteId));
     setDeleteId(null);
+
+    undoableDelete({
+      itemLabel: recipe?.name || "Receita",
+      onDelete: async () => {
+        await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
+        const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
+        if (error) {
+          fetchRecipes();
+          throw error;
+        }
+      },
+      onUndo: () => {
+        fetchRecipes();
+      },
+    });
   };
 
   const formatCurrency = (value: number) =>
@@ -286,6 +297,7 @@ const Receitas = () => {
 
   return (
     <AppLayout title="Receitas">
+      <PullToRefresh onRefresh={fetchRecipes}>
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
@@ -450,6 +462,7 @@ const Receitas = () => {
           </div>
         )}
       </div>
+      </PullToRefresh>
 
       {/* FAB */}
       <Button

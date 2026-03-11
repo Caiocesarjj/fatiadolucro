@@ -33,6 +33,8 @@ import {
   Legend,
 } from "recharts";
 import { motion } from "framer-motion";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface DashboardStats {
   totalIngredients: number;
@@ -196,6 +198,8 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Início">
+      <OnboardingWizard />
+      <PullToRefresh onRefresh={fetchDashboardData}>
       <div className="space-y-5">
         {/* Trial Banner */}
         {isInTrial && planType === "free" && <TrialBanner daysLeft={trialDaysLeft} />}
@@ -438,6 +442,7 @@ const Dashboard = () => {
           </motion.div>
         )}
       </div>
+      </PullToRefresh>
     </AppLayout>
   );
 };

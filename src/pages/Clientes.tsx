@@ -26,6 +26,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Users, Search, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { undoableDelete } from "@/lib/undoDelete";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -134,22 +136,23 @@ const Clientes = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja realmente excluir este cliente?")) return;
+  const handleDelete = (id: string) => {
+    const client = clients.find((c) => c.id === id);
+    setClients((prev) => prev.filter((c) => c.id !== id));
 
-    try {
-      const { error } = await supabase.from("clients").delete().eq("id", id);
-
-      if (error) throw error;
-      toast({ title: "Cliente excluído!" });
-      fetchClients();
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir",
-        description: mapErrorToUserMessage(error),
-      });
-    }
+    undoableDelete({
+      itemLabel: client?.name || "Cliente",
+      onDelete: async () => {
+        const { error } = await supabase.from("clients").delete().eq("id", id);
+        if (error) {
+          fetchClients();
+          throw error;
+        }
+      },
+      onUndo: () => {
+        fetchClients();
+      },
+    });
   };
 
   const resetForm = () => {
@@ -186,6 +189,7 @@ const Clientes = () => {
 
   return (
     <AppLayout title="Clientes">
+      <PullToRefresh onRefresh={fetchClients}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -419,6 +423,7 @@ const Clientes = () => {
           </Card>
         </motion.div>
       </div>
+      </PullToRefresh>
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}

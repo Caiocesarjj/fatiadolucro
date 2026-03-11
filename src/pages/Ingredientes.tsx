@@ -32,6 +32,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Package, Search, Filter, Group } from "lucide-react";
 import { motion } from "framer-motion";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { undoableDelete } from "@/lib/undoDelete";
 import { Switch } from "@/components/ui/switch";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -152,22 +154,24 @@ const Ingredientes = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja realmente excluir este ingrediente?")) return;
+  const handleDelete = (id: string) => {
+    const ingredient = ingredients.find((i) => i.id === id);
+    // Optimistically remove from UI
+    setIngredients((prev) => prev.filter((i) => i.id !== id));
 
-    try {
-      const { error } = await supabase.from("ingredients").delete().eq("id", id);
-
-      if (error) throw error;
-      toast({ title: "Ingrediente excluído!" });
-      fetchIngredients();
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir",
-        description: mapErrorToUserMessage(error),
-      });
-    }
+    undoableDelete({
+      itemLabel: ingredient?.name || "Ingrediente",
+      onDelete: async () => {
+        const { error } = await supabase.from("ingredients").delete().eq("id", id);
+        if (error) {
+          fetchIngredients(); // Restore on error
+          throw error;
+        }
+      },
+      onUndo: () => {
+        fetchIngredients(); // Restore
+      },
+    });
   };
 
   const resetForm = () => {
@@ -220,6 +224,7 @@ const Ingredientes = () => {
 
   return (
     <AppLayout title="Ingredientes">
+      <PullToRefresh onRefresh={fetchIngredients}>
       <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col gap-4">
@@ -557,6 +562,7 @@ const Ingredientes = () => {
           <Plus className="h-6 w-6" />
         </Button>
       </div>
+      </PullToRefresh>
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
