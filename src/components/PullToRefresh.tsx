@@ -17,12 +17,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const startY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  if (!isMobile) {
-    return <>{children}</>;
-  }
-
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    // Only start pull if scrolled to the top
     const scrollTop = containerRef.current?.closest('[class*="flex-1"]')?.scrollTop
       ?? document.documentElement.scrollTop
       ?? 0;
@@ -60,6 +55,10 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
     }
   }, [pulling, pullDistance, onRefresh]);
 
+  if (!isMobile) {
+    return <>{children}</>;
+  }
+
   const progress = Math.min(pullDistance / THRESHOLD, 1);
 
   return (
@@ -69,17 +68,13 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Pull indicator */}
       <div
         className="flex justify-center overflow-hidden transition-all duration-200"
         style={{ height: pullDistance > 0 || refreshing ? Math.max(pullDistance, refreshing ? 40 : 0) : 0 }}
       >
         <div
           className="flex items-center justify-center"
-          style={{
-            opacity: progress,
-            transform: `scale(${0.5 + progress * 0.5})`,
-          }}
+          style={{ opacity: progress, transform: `scale(${0.5 + progress * 0.5})` }}
         >
           <div className="bg-card rounded-full p-2 shadow-md border border-border/50">
             <Loader2
