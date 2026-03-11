@@ -702,7 +702,7 @@ const Calculadora = () => {
                   </Dialog>
                 </div>
 
-                <div className="space-y-2 max-h-[500px] overflow-y-auto" data-ingredient-list>
+                <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'min(500px, 40dvh)' }} data-ingredient-list>
                   {selectedIngredients.length === 0 && selectedRecipes.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
                       Clique em "Ingrediente" ou "Produto Pronto" para começar
