@@ -632,18 +632,18 @@ const Calculadora = () => {
               </CardHeader>
               <CardContent>
                 {/* Ingredientes */}
-                <div className="pb-3 border-b mb-3 flex gap-2">
-                  <Button onClick={addIngredient} size="sm" variant="outline" className="flex-1">
+                <div className="pb-3 border-b mb-3 grid grid-cols-2 sm:flex gap-2">
+                  <Button onClick={addIngredient} size="sm" variant="outline" className="sm:flex-1">
                     <Plus className="h-4 w-4 mr-1" />
                     Ingrediente
                   </Button>
-                  <Button onClick={addRecipeAsIngredient} size="sm" variant="outline" className="flex-1">
+                  <Button onClick={addRecipeAsIngredient} size="sm" variant="outline" className="sm:flex-1">
                     <Cake className="h-4 w-4 mr-1" />
                     Produto Pronto
                   </Button>
                   <Dialog open={showNewIngredient} onOpenChange={setShowNewIngredient}>
                     <DialogTrigger asChild>
-                      <Button size="sm" variant="secondary" className="shrink-0">
+                      <Button size="sm" variant="secondary" className="col-span-2 sm:shrink-0">
                         <Plus className="h-4 w-4 mr-1" />
                         Criar Novo
                       </Button>
