@@ -236,9 +236,7 @@ const Dashboard = () => {
           <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
             <Card className="border-primary/20 bg-primary/5 rounded-2xl">
               <CardContent className="p-6 text-center space-y-4">
-                <div className="inline-flex p-3.5 rounded-2xl bg-primary/10 mx-auto">
-                  <Sparkles className="h-8 w-8 text-primary" />
-                </div>
+                <img src={logo} alt="Fatia do Lucro" className="h-8 w-8 mx-auto rounded-lg" />
                 <h2 className="text-xl font-bold text-foreground">Bem-vindo ao Fatia do Lucro! 🎂</h2>
 
                 {stats.salaryGoal === 0 ? (
