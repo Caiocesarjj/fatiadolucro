@@ -496,7 +496,7 @@ const Financeiro = () => {
                           Nova Transação
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
+                      <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
                         <DialogHeader>
                           <DialogTitle>{editingTransaction ? "Editar Transação" : "Nova Transação"}</DialogTitle>
                         </DialogHeader>
