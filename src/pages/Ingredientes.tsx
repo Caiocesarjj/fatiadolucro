@@ -312,6 +312,7 @@ const Ingredientes = () => {
                         }
                         placeholder="Ex: 1000"
                         className="input-currency"
+                        inputMode="decimal"
                       />
                     </div>
                   </div>

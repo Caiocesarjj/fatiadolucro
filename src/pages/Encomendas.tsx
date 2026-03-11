@@ -335,7 +335,7 @@ const Encomendas = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="total_amount">Valor Total (R$)</Label>
-                    <Input
+                     <Input
                       id="total_amount"
                       value={form.total_amount}
                       onChange={(e) =>
@@ -343,6 +343,7 @@ const Encomendas = () => {
                       }
                       placeholder="Ex: 150,00"
                       className="input-currency"
+                      inputMode="decimal"
                     />
                   </div>
                 </div>

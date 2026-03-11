@@ -309,69 +309,111 @@ const Clientes = () => {
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Endereço</TableHead>
-                        <TableHead>Observações</TableHead>
-                        <TableHead className="w-[120px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredClients.map((client) => (
-                        <TableRow key={client.id} className="table-row-hover">
-                          <TableCell className="font-medium">
-                            {client.name}
-                          </TableCell>
-                          <TableCell>
-                            {client.phone ? (
-                              <div className="flex items-center gap-2">
-                                <span>{client.phone}</span>
+                <>
+                  {/* Mobile card list */}
+                  <div className="md:hidden space-y-2">
+                    {filteredClients.map((client) => (
+                      <div
+                        key={client.id}
+                        className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-sm font-bold text-primary">
+                            {client.name[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-[15px] truncate">{client.name}</h3>
+                          {client.phone && (
+                            <p className="text-xs text-muted-foreground">{client.phone}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {client.phone && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-full text-success"
+                              onClick={() => openWhatsApp(client.phone!)}
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => handleEdit(client)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => handleDelete(client.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead>Endereço</TableHead>
+                          <TableHead>Observações</TableHead>
+                          <TableHead className="w-[120px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredClients.map((client) => (
+                          <TableRow key={client.id} className="table-row-hover">
+                            <TableCell className="font-medium">
+                              {client.name}
+                            </TableCell>
+                            <TableCell>
+                              {client.phone ? (
+                                <div className="flex items-center gap-2">
+                                  <span>{client.phone}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-success hover:text-success/80 hover:bg-success/10"
+                                    onClick={() => openWhatsApp(client.phone!)}
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
+                            <TableCell className="max-w-[200px] truncate">
+                              {client.address || "-"}
+                            </TableCell>
+                            <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                              {client.notes || "-"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 justify-end">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-success hover:text-success/80 hover:bg-success/10"
-                                  onClick={() => openWhatsApp(client.phone!)}
+                                  onClick={() => handleEdit(client)}
                                 >
-                                  <MessageCircle className="h-4 w-4" />
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(client.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {client.address || "-"}
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                            {client.notes || "-"}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1 justify-end">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(client)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(client.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

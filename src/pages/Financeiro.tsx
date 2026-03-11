@@ -578,7 +578,7 @@ const Financeiro = () => {
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="amount">Valor (R$)</Label>
-                              <Input id="amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="Ex: 80,00" className="input-currency" />
+                              <Input id="amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="Ex: 80,00" className="input-currency" inputMode="decimal" />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="date">Data</Label>

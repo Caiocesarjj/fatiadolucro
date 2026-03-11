@@ -897,7 +897,8 @@ const Calculadora = () => {
                   <Label htmlFor="markup">Markup Desejado (%)</Label>
                   <Input
                     id="markup"
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={suggestedMarkup}
                     onChange={(e) => setSuggestedMarkup(e.target.value)}
                     className="input-currency"
