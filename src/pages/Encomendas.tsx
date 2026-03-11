@@ -301,7 +301,7 @@ const Encomendas = () => {
                   {editingId ? "Editar Encomenda" : "Nova Encomenda"}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
                 <div className="space-y-2">
                   <Label>Cliente</Label>
                   <Select
