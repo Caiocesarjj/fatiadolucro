@@ -299,6 +299,7 @@ const Ingredientes = () => {
                         }
                         placeholder="Ex: 12,90"
                         className="input-currency"
+                        inputMode="decimal"
                       />
                     </div>
                     <div className="space-y-2">
