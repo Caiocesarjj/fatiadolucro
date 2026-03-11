@@ -423,6 +423,7 @@ const Clientes = () => {
           </Card>
         </motion.div>
       </div>
+      </PullToRefresh>
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}

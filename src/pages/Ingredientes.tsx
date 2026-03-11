@@ -562,6 +562,7 @@ const Ingredientes = () => {
           <Plus className="h-6 w-6" />
         </Button>
       </div>
+      </PullToRefresh>
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
