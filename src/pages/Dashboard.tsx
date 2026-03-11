@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
   CalendarDays,
+  Settings,
 } from "lucide-react";
 import {
   BarChart,
