@@ -475,7 +475,7 @@ const Encomendas = () => {
                       return (
                         <div
                           key={day.toISOString()}
-                          className={`min-h-[80px] p-1 border rounded-lg ${
+                          className={`min-h-[44px] sm:min-h-[80px] p-1 border rounded-lg aspect-square sm:aspect-auto ${
                             isToday(day)
                               ? "border-primary bg-primary/5"
                               : "border-border"
