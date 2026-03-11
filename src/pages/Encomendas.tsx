@@ -295,7 +295,7 @@ const Encomendas = () => {
                 Nova Encomenda
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
               <DialogHeader>
                 <DialogTitle>
                   {editingId ? "Editar Encomenda" : "Nova Encomenda"}
