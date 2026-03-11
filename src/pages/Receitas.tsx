@@ -288,6 +288,7 @@ const Receitas = () => {
 
   return (
     <AppLayout title="Receitas">
+      <PullToRefresh onRefresh={fetchRecipes}>
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
