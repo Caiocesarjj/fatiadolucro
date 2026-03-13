@@ -421,7 +421,7 @@ const Planos = () => {
         title: 'Assinatura Fatia do Lucro',
         price: currentPrice,
         frequency: 1,
-        frequency_type: 'days',
+        frequency_type: 'months',
         payer_email: user.email ?? '',
       });
       if (error) throw error;
@@ -558,10 +558,6 @@ const Planos = () => {
               <p className="text-muted-foreground">Desbloqueie todos os recursos do Fatia do Lucro</p>
             </div>
 
-            <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 dark:text-yellow-400 rounded-lg p-3 mb-6 text-sm max-w-2xl mx-auto">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>Modo de Teste: Cobrança Diária (Cancele após testar)</span>
-            </div>
 
             {hasActiveSubscription && (
               <>
