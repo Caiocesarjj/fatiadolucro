@@ -421,7 +421,7 @@ const Planos = () => {
         title: 'Assinatura Fatia do Lucro',
         price: currentPrice,
         frequency: 1,
-        frequency_type: 'days',
+        frequency_type: 'months',
         payer_email: user.email ?? '',
       });
       if (error) throw error;
