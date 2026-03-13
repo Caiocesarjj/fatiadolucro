@@ -549,6 +549,7 @@ const Ingredientes = () => {
             </CardContent>
           </Card>
         </motion.div>
+        )}
 
         {/* FAB for mobile */}
         <Button

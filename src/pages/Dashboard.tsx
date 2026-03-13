@@ -292,7 +292,7 @@ const Dashboard = () => {
             onClick={() => {
               const next = !hideValues;
               setHideValues(next);
-              localStorage.setItem("fatia-hide-values", String(next));
+              safeStorage.set("fatia-hide-values", String(next));
             }}
           >
             {hideValues ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}

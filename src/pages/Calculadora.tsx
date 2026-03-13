@@ -1063,8 +1063,8 @@ const Calculadora = () => {
           </motion.div>
         </div>
 
-        {/* Right Column - Results */}
-        <div className="space-y-6">
+        {/* Right Column - Results — aparece primeiro em mobile */}
+        <div className="space-y-6 order-1 lg:order-2">
           {/* Cost Summary */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

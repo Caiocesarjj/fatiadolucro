@@ -754,7 +754,7 @@ const TransactionTable = ({ transactions, formatCurrency, onEdit, onDelete, getP
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table className="min-w-[640px]">
         <TableHeader>
           <TableRow>
             <TableHead>Data</TableHead>
