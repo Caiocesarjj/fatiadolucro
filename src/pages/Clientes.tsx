@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Users, Search, MessageCircle } from "lucide-react";
+import { SkeletonList } from "@/components/ui/skeleton-list";
 import { motion } from "framer-motion";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { undoableDelete } from "@/lib/undoDelete";
