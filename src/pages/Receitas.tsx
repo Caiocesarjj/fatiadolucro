@@ -58,6 +58,7 @@ const Receitas = () => {
 
   const fetchRecipes = async () => {
     setLoading(true);
+
     const { data, error } = await supabase
       .from("recipes")
       .select("id, name, yield_amount, yield_unit, labor_cost, target_sale_price")
@@ -69,55 +70,77 @@ const Receitas = () => {
       return;
     }
 
-    const recipesWithCost = await Promise.all(
-      (data || []).map(async (recipe) => {
-        const { data: items } = await supabase
-          .from("recipe_items")
-          .select("quantity, ingredients(cost_per_unit)")
-          .eq("recipe_id", recipe.id);
+    if (!data || data.length === 0) {
+      setRecipes([]);
+      setLoading(false);
+      return;
+    }
 
-        const ingredientsCost = items?.reduce((total, item) => {
-          const costPerUnit = (item.ingredients as any)?.cost_per_unit || 0;
-          return total + costPerUnit * item.quantity;
-        }, 0) || 0;
+    const recipeIds = data.map((r) => r.id);
 
-        // Calculate sub-recipe costs (graceful if table doesn't exist)
-        let subRecipeCost = 0;
-        try {
-          const { data: subData } = await supabase
-            .from("recipe_recipe_items" as any)
-            .select("sub_recipe_id, quantity")
-            .eq("recipe_id", recipe.id);
+    // 1 query: todos os itens de todas as receitas
+    const { data: allItems } = await supabase
+      .from("recipe_items")
+      .select("recipe_id, quantity, ingredients(cost_per_unit)")
+      .in("recipe_id", recipeIds);
 
-          if (subData && (subData as any[]).length > 0) {
-            for (const sub of subData as any[]) {
-              const { data: subItems } = await supabase
-                .from("recipe_items")
-                .select("quantity, ingredients(cost_per_unit)")
-                .eq("recipe_id", sub.sub_recipe_id);
-              
-              const { data: subRecipe } = await supabase
-                .from("recipes")
-                .select("labor_cost, yield_amount")
-                .eq("id", sub.sub_recipe_id)
-                .single();
+    const itemsByRecipe = new Map<string, typeof allItems>();
+    for (const item of allItems || []) {
+      const list = itemsByRecipe.get(item.recipe_id) ?? [];
+      list.push(item);
+      itemsByRecipe.set(item.recipe_id, list);
+    }
 
-              const subIngCost = subItems?.reduce((t, i) => {
-                return t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity;
-              }, 0) || 0;
+    // Sub-receitas — 1 query (graceful)
+    let subMap = new Map<string, { subRecipeId: string; quantity: number }[]>();
+    let subCostById = new Map<string, number>();
+    try {
+      const { data: subLinks } = await supabase
+        .from("recipe_recipe_items" as any)
+        .select("recipe_id, sub_recipe_id, quantity")
+        .in("recipe_id", recipeIds);
 
-              const subTotalCost = subIngCost + (subRecipe?.labor_cost || 0);
-              const subUnitCost = subTotalCost / (subRecipe?.yield_amount || 1);
-              subRecipeCost += subUnitCost * sub.quantity;
-            }
-          }
-        } catch {
-          // Table may not exist on external DB
+      if (subLinks && (subLinks as any[]).length > 0) {
+        const subIds = [...new Set((subLinks as any[]).map((s: any) => s.sub_recipe_id))];
+
+        const [{ data: subItems }, { data: subRecipeData }] = await Promise.all([
+          supabase.from("recipe_items").select("recipe_id, quantity, ingredients(cost_per_unit)").in("recipe_id", subIds),
+          supabase.from("recipes").select("id, labor_cost, yield_amount").in("id", subIds),
+        ]);
+
+        const subItemsByRecipe = new Map<string, any[]>();
+        for (const item of subItems || []) {
+          const list = subItemsByRecipe.get(item.recipe_id) ?? [];
+          list.push(item);
+          subItemsByRecipe.set(item.recipe_id, list);
         }
 
-        return { ...recipe, ingredientsCost: ingredientsCost + subRecipeCost };
-      })
-    );
+        const subRecipeById = new Map((subRecipeData || []).map((r) => [r.id, r]));
+
+        for (const subId of subIds) {
+          const items = subItemsByRecipe.get(subId) || [];
+          const subRecipe = subRecipeById.get(subId);
+          const ingCost = items.reduce((t: number, i: any) => t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity, 0);
+          const total = ingCost + (subRecipe?.labor_cost || 0);
+          subCostById.set(subId, total / (subRecipe?.yield_amount || 1));
+        }
+
+        for (const link of subLinks as any[]) {
+          const list = subMap.get(link.recipe_id) ?? [];
+          list.push({ subRecipeId: link.sub_recipe_id, quantity: link.quantity });
+          subMap.set(link.recipe_id, list);
+        }
+      }
+    } catch {
+      // recipe_recipe_items may not exist
+    }
+
+    const recipesWithCost = data.map((recipe) => {
+      const items = itemsByRecipe.get(recipe.id) || [];
+      const ingredientsCost = items.reduce((t: number, i: any) => t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity, 0);
+      const subRecipeCost = (subMap.get(recipe.id) || []).reduce((t, s) => t + (subCostById.get(s.subRecipeId) || 0) * s.quantity, 0);
+      return { ...recipe, ingredientsCost: ingredientsCost + subRecipeCost };
+    });
 
     setRecipes(recipesWithCost);
     setLoading(false);
