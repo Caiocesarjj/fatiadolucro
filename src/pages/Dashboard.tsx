@@ -76,8 +76,17 @@ const Dashboard = () => {
   });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const safeStorage = {
+    get: (key: string): string | null => {
+      try { return localStorage.getItem(key); } catch { return null; }
+    },
+    set: (key: string, value: string): void => {
+      try { localStorage.setItem(key, value); } catch { /* silencioso */ }
+    },
+  };
+
   const [hideValues, setHideValues] = useState(() => {
-    return localStorage.getItem("fatia-hide-values") === "true";
+    return safeStorage.get("fatia-hide-values") === "true";
   });
 
   // 1. Carrega dados do dashboard imediatamente (cache local)
