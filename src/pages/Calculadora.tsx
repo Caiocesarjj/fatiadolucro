@@ -126,6 +126,7 @@ const Calculadora = () => {
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeAsIngredient[]>([]);
   const [inputMode, setInputMode] = useState<"ingredient" | "recipe">("ingredient");
   const { canCreateRecipe, recipeCount, planType } = useSubscription();
+  const isMobile = useIsMobile();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [minuteRate, setMinuteRate] = useState(0);
   const [variableCostRate, setVariableCostRate] = useState(10);
