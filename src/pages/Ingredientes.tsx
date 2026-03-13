@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Package, Search, Filter, Group } from "lucide-react";
+import { SkeletonList } from "@/components/ui/skeleton-list";
 import { motion } from "framer-motion";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { undoableDelete } from "@/lib/undoDelete";
@@ -423,7 +424,9 @@ const Ingredientes = () => {
 
         {/* Mobile Card List */}
         <div className="md:hidden space-y-2">
-          {filteredIngredients.length === 0 ? (
+          {loading ? (
+            <SkeletonList count={5} variant="list" />
+          ) : filteredIngredients.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="font-medium">Nenhum ingrediente cadastrado</p>
@@ -477,6 +480,7 @@ const Ingredientes = () => {
         </div>
 
         {/* Desktop Table */}
+        {!loading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -545,6 +549,7 @@ const Ingredientes = () => {
             </CardContent>
           </Card>
         </motion.div>
+        )}
 
         {/* FAB for mobile */}
         <Button

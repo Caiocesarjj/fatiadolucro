@@ -76,8 +76,17 @@ const Dashboard = () => {
   });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const safeStorage = {
+    get: (key: string): string | null => {
+      try { return localStorage.getItem(key); } catch { return null; }
+    },
+    set: (key: string, value: string): void => {
+      try { localStorage.setItem(key, value); } catch { /* silencioso */ }
+    },
+  };
+
   const [hideValues, setHideValues] = useState(() => {
-    return localStorage.getItem("fatia-hide-values") === "true";
+    return safeStorage.get("fatia-hide-values") === "true";
   });
 
   // 1. Carrega dados do dashboard imediatamente (cache local)
@@ -283,7 +292,7 @@ const Dashboard = () => {
             onClick={() => {
               const next = !hideValues;
               setHideValues(next);
-              localStorage.setItem("fatia-hide-values", String(next));
+              safeStorage.set("fatia-hide-values", String(next));
             }}
           >
             {hideValues ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}

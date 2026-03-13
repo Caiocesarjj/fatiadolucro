@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Users, Search, MessageCircle } from "lucide-react";
+import { SkeletonList } from "@/components/ui/skeleton-list";
 import { motion } from "framer-motion";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { undoableDelete } from "@/lib/undoDelete";
@@ -304,7 +305,9 @@ const Clientes = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {filteredClients.length === 0 ? (
+              {loading ? (
+                <SkeletonList count={5} variant="list" />
+              ) : filteredClients.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhum cliente cadastrado</p>
