@@ -424,7 +424,9 @@ const Ingredientes = () => {
 
         {/* Mobile Card List */}
         <div className="md:hidden space-y-2">
-          {filteredIngredients.length === 0 ? (
+          {loading ? (
+            <SkeletonList count={5} variant="list" />
+          ) : filteredIngredients.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="font-medium">Nenhum ingrediente cadastrado</p>
