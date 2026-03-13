@@ -574,9 +574,27 @@ const Calculadora = () => {
           Voltar para Receitas
         </Button>
       </div>
+      {/* Barra de custo sticky — só mobile */}
+      {isMobile && calculations.unitCost > 0 && (
+        <div className="sticky top-0 z-20 -mx-4 px-4 py-2.5 bg-background/95 backdrop-blur border-b border-border/50 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            Custo por {yieldUnitNameSingular(yieldUnit)}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold text-primary">
+              {formatCurrency(calculations.unitCost)}
+            </span>
+            {calculations.yield > 1 && (
+              <span className="text-xs text-muted-foreground">
+                ({calculations.yield} {yieldUnitLabel(yieldUnit)})
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Inputs */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Em mobile: resumo aparece primeiro (order-1), inputs depois (order-2) */}
+        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
           {/* Recipe Name */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
