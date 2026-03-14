@@ -37,6 +37,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { ExportPdfDialog } from "@/components/encomendas/ExportPdfDialog";
+import { SkeletonList } from "@/components/ui/skeleton-list";
 import { motion } from "framer-motion";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths } from "date-fns";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
@@ -289,7 +290,7 @@ const Encomendas = () => {
                   }
                   resetForm();
                 }}
-                className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                className="hidden md:flex bg-primary hover:bg-primary-hover text-primary-foreground"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Encomenda
@@ -533,7 +534,9 @@ const Encomendas = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {upcomingOrders.length === 0 ? (
+                  {loading ? (
+                    <SkeletonList count={5} variant="list" />
+                  ) : upcomingOrders.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>Nenhuma encomenda pendente</p>
@@ -611,6 +614,21 @@ const Encomendas = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Button
+        onClick={() => {
+          if (!canCreate("orders")) {
+            setShowUpgrade(true);
+            return;
+          }
+          resetForm();
+          setEditingId(null);
+          setDialogOpen(true);
+        }}
+        className="fab bg-primary hover:bg-primary/90 text-primary-foreground md:hidden"
+        size="icon"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
       <ExportPdfDialog
         open={showExport}
         onOpenChange={setShowExport}
