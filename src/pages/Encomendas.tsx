@@ -37,6 +37,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { ExportPdfDialog } from "@/components/encomendas/ExportPdfDialog";
+import { SkeletonList } from "@/components/ui/skeleton-list";
 import { motion } from "framer-motion";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths } from "date-fns";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
