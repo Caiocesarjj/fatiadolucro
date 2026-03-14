@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "@/assets/logo.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,6 @@ import {
   Eye,
   EyeOff,
   CalendarDays,
-  Settings,
 } from "lucide-react";
 import {
   BarChart,
@@ -35,8 +33,6 @@ import {
   Legend,
 } from "recharts";
 import { motion } from "framer-motion";
-import { OnboardingWizard } from "@/components/OnboardingWizard";
-import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface DashboardStats {
   totalIngredients: number;
@@ -60,6 +56,16 @@ const formatCurrency = (value: number) =>
 
 const HIDDEN_VALUE = "••••••";
 
+// localStorage falha silenciosamente em modo incógnito no iOS Safari
+const safeStorage = {
+  get: (key: string): string | null => {
+    try { return localStorage.getItem(key); } catch { return null; }
+  },
+  set: (key: string, value: string): void => {
+    try { localStorage.setItem(key, value); } catch { /* silencioso */ }
+  },
+};
+
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -76,15 +82,6 @@ const Dashboard = () => {
   });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
-  const safeStorage = {
-    get: (key: string): string | null => {
-      try { return localStorage.getItem(key); } catch { return null; }
-    },
-    set: (key: string, value: string): void => {
-      try { localStorage.setItem(key, value); } catch { /* silencioso */ }
-    },
-  };
-
   const [hideValues, setHideValues] = useState(() => {
     return safeStorage.get("fatia-hide-values") === "true";
   });
@@ -107,7 +104,6 @@ const Dashboard = () => {
       }
       if (data?.plan_type === "pro" || data?.synced) {
         console.log("[Sync] Usuário é PRO — atualizando estado local");
-        // Re-fetch dashboard data to reflect pro status
         fetchDashboardData();
       }
     };
@@ -161,7 +157,6 @@ const Dashboard = () => {
         monthlyExpenses,
       });
 
-      // Chart data from transactions by month
       const monthlyData: Record<string, { receitas: number; despesas: number }> = {};
       const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
       const chartNow = new Date();
@@ -209,10 +204,7 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Início">
-      <OnboardingWizard />
-      <PullToRefresh onRefresh={fetchDashboardData}>
       <div className="space-y-5">
-        {/* Trial Banner */}
         {isInTrial && planType === "free" && <TrialBanner daysLeft={trialDaysLeft} />}
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -240,49 +232,30 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Onboarding State */}
         {!loading && !hasData && (
           <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
             <Card className="border-primary/20 bg-primary/5 rounded-2xl">
               <CardContent className="p-6 text-center space-y-4">
-                <h2 className="text-xl font-bold text-foreground">Bem-vindo ao Fatia do Lucro!</h2>
-                <img src={logo} alt="Fatia do Lucro" className="h-8 w-8 mx-auto rounded-lg" />
-
-                {stats.salaryGoal === 0 ? (
-                  <>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                      Primeiro, configure sua <strong>precificação</strong> — defina seu salário-meta, dias e horas trabalhados para que o sistema calcule automaticamente o custo da mão-de-obra nas suas receitas.
-                    </p>
-                    <div className="flex flex-col gap-2.5 justify-center pt-1">
-                      <Button onClick={() => navigate("/configuracoes")} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-12 rounded-xl">
-                        <Settings className="h-4 w-4" /> Configurar Precificação
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Passo 1 de 3 — Precificação → Ingredientes → Receitas
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                      ✅ Precificação configurada! Agora cadastre seus ingredientes e crie suas receitas para calcular custos e lucros.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-1">
-                      <Button onClick={() => navigate("/ingredientes")} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-12 rounded-xl">
-                        <Package className="h-4 w-4" /> 2. Cadastrar Ingredientes
-                      </Button>
-                      <Button onClick={() => navigate("/receitas")} variant="outline" className="gap-2 h-12 rounded-xl">
-                        <ChefHat className="h-4 w-4" /> 3. Criar Receitas
-                      </Button>
-                    </div>
-                  </>
-                )}
+                <div className="inline-flex p-3.5 rounded-2xl bg-primary/10 mx-auto">
+                  <Sparkles className="h-8 w-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold text-foreground">Bem-vindo ao Fatia do Lucro! 🎂</h2>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                  Comece cadastrando seus ingredientes e receitas para calcular custos e lucros.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-1">
+                  <Button onClick={() => navigate("/ingredientes")} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-12 rounded-xl">
+                    <Package className="h-4 w-4" /> 1. Cadastrar Ingredientes
+                  </Button>
+                  <Button onClick={() => navigate("/receitas")} variant="outline" className="gap-2 h-12 rounded-xl">
+                    <ChefHat className="h-4 w-4" /> 2. Criar Receitas
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         )}
 
-        {/* Stats Grid — 2x2 on mobile */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-muted-foreground">Visão Geral</span>
           <Button
@@ -324,7 +297,6 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Monthly Totals Card */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <Card className="rounded-2xl shadow-sm">
             <CardContent className="p-5">
@@ -360,7 +332,6 @@ const Dashboard = () => {
           </Card>
         </motion.div>
 
-        {/* Profit + Goal cards */}
         <div className="grid grid-cols-1 gap-3">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Card className="rounded-2xl shadow-sm">
@@ -433,7 +404,6 @@ const Dashboard = () => {
           </motion.div>
         </div>
 
-        {/* Chart */}
         {hasData && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card className="rounded-2xl shadow-sm">
@@ -470,7 +440,6 @@ const Dashboard = () => {
           </motion.div>
         )}
       </div>
-      </PullToRefresh>
     </AppLayout>
   );
 };

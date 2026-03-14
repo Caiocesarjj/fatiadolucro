@@ -496,11 +496,11 @@ const Financeiro = () => {
                           Nova Transação
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
+                      <DialogContent className="sm:max-w-md">
                         <DialogHeader>
                           <DialogTitle>{editingTransaction ? "Editar Transação" : "Nova Transação"}</DialogTitle>
                         </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                           {/* Tipo Entrada/Saída - hidden for profit_withdrawal */}
                           {form.entry_type !== "profit_withdrawal" && (
                             <div className="space-y-2">
@@ -578,7 +578,7 @@ const Financeiro = () => {
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="amount">Valor (R$)</Label>
-                              <Input id="amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="Ex: 80,00" className="input-currency" inputMode="decimal" />
+                              <Input id="amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="Ex: 80,00" className="input-currency" />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="date">Data</Label>

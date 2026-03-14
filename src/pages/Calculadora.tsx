@@ -42,10 +42,10 @@ import {
 } from "@/components/ui/select";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useSubscription, FREE_RECIPE_LIMIT_VALUE } from "@/hooks/useSubscription";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { motion } from "framer-motion";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 type YieldUnit = "unit" | "weight" | "volume";
 
@@ -568,33 +568,33 @@ const Calculadora = () => {
   return (
     <>
     <AppLayout title={editId ? "Editar Receita" : "Calculadora de Receitas"}>
-      <div className="mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/receitas")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar para Receitas
-        </Button>
-      </div>
-      {/* Barra de custo sticky — só mobile */}
+      {/* Barra de custo sticky — só mobile, aparece quando há custo calculado */}
       {isMobile && calculations.unitCost > 0 && (
-        <div className="sticky top-0 z-20 -mx-4 px-4 py-2.5 bg-background/95 backdrop-blur border-b border-border/50 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
+        <div className="sticky top-14 z-20 -mx-4 px-4 py-2.5 bg-primary/95 backdrop-blur-sm flex items-center justify-between mb-4">
+          <span className="text-primary-foreground text-sm font-medium">
             Custo por {yieldUnitNameSingular(yieldUnit)}
           </span>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-primary">
+          <div className="text-right">
+            <span className="text-primary-foreground text-xl font-bold">
               {formatCurrency(calculations.unitCost)}
             </span>
             {calculations.yield > 1 && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-primary-foreground/70 text-xs ml-2">
                 ({calculations.yield} {yieldUnitLabel(yieldUnit)})
               </span>
             )}
           </div>
         </div>
       )}
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/receitas")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para Receitas
+        </Button>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Em mobile: resumo aparece primeiro (order-1), inputs depois (order-2) */}
-        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+        {/* Left Column - Inputs */}
+        <div className="lg:col-span-2 order-2 lg:order-1 space-y-6">
           {/* Recipe Name */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -652,18 +652,18 @@ const Calculadora = () => {
               </CardHeader>
               <CardContent>
                 {/* Ingredientes */}
-                <div className="pb-3 border-b mb-3 grid grid-cols-2 sm:flex gap-2">
-                  <Button onClick={addIngredient} size="sm" variant="outline" className="sm:flex-1">
+                <div className="pb-3 border-b mb-3 flex gap-2">
+                  <Button onClick={addIngredient} size="sm" variant="outline" className="flex-1">
                     <Plus className="h-4 w-4 mr-1" />
                     Ingrediente
                   </Button>
-                  <Button onClick={addRecipeAsIngredient} size="sm" variant="outline" className="sm:flex-1">
+                  <Button onClick={addRecipeAsIngredient} size="sm" variant="outline" className="flex-1">
                     <Cake className="h-4 w-4 mr-1" />
                     Produto Pronto
                   </Button>
                   <Dialog open={showNewIngredient} onOpenChange={setShowNewIngredient}>
                     <DialogTrigger asChild>
-                      <Button size="sm" variant="secondary" className="col-span-2 sm:shrink-0">
+                      <Button size="sm" variant="secondary" className="shrink-0">
                         <Plus className="h-4 w-4 mr-1" />
                         Criar Novo
                       </Button>
@@ -722,7 +722,7 @@ const Calculadora = () => {
                   </Dialog>
                 </div>
 
-                <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'min(500px, 40dvh)' }} data-ingredient-list>
+                <div className="space-y-2 max-h-[500px] overflow-y-auto" data-ingredient-list>
                   {selectedIngredients.length === 0 && selectedRecipes.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
                       Clique em "Ingrediente" ou "Produto Pronto" para começar
@@ -835,8 +835,7 @@ const Calculadora = () => {
                     </Label>
                     <Input
                       id="prepTime"
-                      type="text"
-                      inputMode="decimal"
+                      type="number"
                       value={prepTime}
                       onChange={(e) => setPrepTime(e.target.value)}
                       placeholder="Ex: 30"
@@ -847,7 +846,6 @@ const Calculadora = () => {
                     <Label htmlFor="laborCost">Mão de Obra (R$)</Label>
                     <Input
                       id="laborCost"
-                      inputMode="decimal"
                       value={laborCost}
                       onChange={(e) => {
                         setLaborCost(e.target.value);
@@ -872,8 +870,7 @@ const Calculadora = () => {
                     <div className="flex gap-2">
                       <Input
                         id="yieldAmount"
-                        type="text"
-                        inputMode="decimal"
+                        type="number"
                         value={yieldAmount}
                         onChange={(e) => setYieldAmount(e.target.value)}
                         placeholder={yieldUnit === "unit" ? "Ex: 12" : yieldUnit === "weight" ? "Ex: 1000" : "Ex: 500"}
@@ -917,8 +914,7 @@ const Calculadora = () => {
                   <Label htmlFor="markup">Markup Desejado (%)</Label>
                   <Input
                     id="markup"
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
                     value={suggestedMarkup}
                     onChange={(e) => setSuggestedMarkup(e.target.value)}
                     className="input-currency"
@@ -1063,8 +1059,8 @@ const Calculadora = () => {
           </motion.div>
         </div>
 
-        {/* Right Column - Results — aparece primeiro em mobile */}
-        <div className="space-y-6 order-1 lg:order-2">
+        {/* Right Column - Results */}
+        <div className="order-1 lg:order-2 space-y-6">
           {/* Cost Summary */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
