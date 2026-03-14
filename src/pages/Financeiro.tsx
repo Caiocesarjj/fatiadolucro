@@ -45,6 +45,7 @@ import {
   PiggyBank,
   BarChart3,
 } from "lucide-react";
+import { SkeletonList } from "@/components/ui/skeleton-list";
 import { motion } from "framer-motion";
 import { ReportsTab } from "@/components/reports/ReportsTab";
 import { format } from "date-fns";
