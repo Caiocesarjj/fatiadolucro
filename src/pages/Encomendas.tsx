@@ -534,7 +534,9 @@ const Encomendas = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {upcomingOrders.length === 0 ? (
+                  {loading ? (
+                    <SkeletonList count={5} variant="list" />
+                  ) : upcomingOrders.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>Nenhuma encomenda pendente</p>
