@@ -214,7 +214,7 @@ const Clientes = () => {
                   }
                   resetForm();
                 }}
-                className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                className="hidden md:flex bg-primary hover:bg-primary-hover text-primary-foreground"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Cliente
