@@ -695,15 +695,21 @@ const Financeiro = () => {
                       <TabsTrigger value="expenses">Saídas</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="all">
-                      <TransactionTable transactions={transactions} formatCurrency={formatCurrency} onEdit={handleEdit} onDelete={handleDeleteClick} getPlatformColor={getPlatformColor} />
-                    </TabsContent>
-                    <TabsContent value="revenue">
-                      <TransactionTable transactions={revenueTransactions} formatCurrency={formatCurrency} onEdit={handleEdit} onDelete={handleDeleteClick} getPlatformColor={getPlatformColor} />
-                    </TabsContent>
-                    <TabsContent value="expenses">
-                      <TransactionTable transactions={expenseTransactions} formatCurrency={formatCurrency} onEdit={handleEdit} onDelete={handleDeleteClick} getPlatformColor={getPlatformColor} />
-                    </TabsContent>
+                    {loading ? (
+                      <SkeletonList count={5} variant="row" />
+                    ) : (
+                      <>
+                        <TabsContent value="all">
+                          <TransactionTable transactions={transactions} formatCurrency={formatCurrency} onEdit={handleEdit} onDelete={handleDeleteClick} getPlatformColor={getPlatformColor} />
+                        </TabsContent>
+                        <TabsContent value="revenue">
+                          <TransactionTable transactions={revenueTransactions} formatCurrency={formatCurrency} onEdit={handleEdit} onDelete={handleDeleteClick} getPlatformColor={getPlatformColor} />
+                        </TabsContent>
+                        <TabsContent value="expenses">
+                          <TransactionTable transactions={expenseTransactions} formatCurrency={formatCurrency} onEdit={handleEdit} onDelete={handleDeleteClick} getPlatformColor={getPlatformColor} />
+                        </TabsContent>
+                      </>
+                    )}
                   </Tabs>
                 </CardContent>
               </Card>

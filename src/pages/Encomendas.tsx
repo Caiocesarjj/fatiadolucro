@@ -614,6 +614,21 @@ const Encomendas = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Button
+        onClick={() => {
+          if (!canCreate("orders")) {
+            setShowUpgrade(true);
+            return;
+          }
+          resetForm();
+          setEditingId(null);
+          setDialogOpen(true);
+        }}
+        className="fab bg-primary hover:bg-primary/90 text-primary-foreground md:hidden"
+        size="icon"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
       <ExportPdfDialog
         open={showExport}
         onOpenChange={setShowExport}

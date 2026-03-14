@@ -427,6 +427,21 @@ const Clientes = () => {
         </motion.div>
       </div>
       </PullToRefresh>
+      <Button
+        onClick={() => {
+          if (!canCreate("clients")) {
+            setShowUpgrade(true);
+            return;
+          }
+          resetForm();
+          setEditingId(null);
+          setDialogOpen(true);
+        }}
+        className="fab bg-primary hover:bg-primary/90 text-primary-foreground md:hidden"
+        size="icon"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
