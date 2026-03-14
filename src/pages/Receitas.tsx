@@ -11,8 +11,6 @@ import { useNavigate } from "react-router-dom";
 import { escapeHtml } from "@/lib/htmlEscape";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { motion } from "framer-motion";
-import { PullToRefresh } from "@/components/PullToRefresh";
-import { undoableDelete } from "@/lib/undoDelete";
 import { useFreemiumLimits } from "@/hooks/useFreemiumLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -59,6 +57,7 @@ const Receitas = () => {
   const fetchRecipes = async () => {
     setLoading(true);
 
+    // Query 1: todas as receitas
     const { data, error } = await supabase
       .from("recipes")
       .select("id, name, yield_amount, yield_unit, labor_cost, target_sale_price")
@@ -78,22 +77,22 @@ const Receitas = () => {
 
     const recipeIds = data.map((r) => r.id);
 
-    // 1 query: todos os itens de todas as receitas
+    // Query 2: todos os itens de todas as receitas de uma vez (sem N+1)
     const { data: allItems } = await supabase
       .from("recipe_items")
       .select("recipe_id, quantity, ingredients(cost_per_unit)")
       .in("recipe_id", recipeIds);
 
+    // Agrupa itens por recipe_id em memória
     const itemsByRecipe = new Map<string, typeof allItems>();
     for (const item of allItems || []) {
-      const list = itemsByRecipe.get(item.recipe_id) ?? [];
+      const list = itemsByRecipe.get((item as any).recipe_id) ?? [];
       list.push(item);
-      itemsByRecipe.set(item.recipe_id, list);
+      itemsByRecipe.set((item as any).recipe_id, list);
     }
 
-    // Sub-receitas — 1 query (graceful)
-    let subMap = new Map<string, { subRecipeId: string; quantity: number }[]>();
-    let subCostById = new Map<string, number>();
+    // Sub-receitas — graceful se tabela não existir
+    let subCostByParent = new Map<string, number>();
     try {
       const { data: subLinks } = await supabase
         .from("recipe_recipe_items" as any)
@@ -103,43 +102,61 @@ const Receitas = () => {
       if (subLinks && (subLinks as any[]).length > 0) {
         const subIds = [...new Set((subLinks as any[]).map((s: any) => s.sub_recipe_id))];
 
-        const [{ data: subItems }, { data: subRecipeData }] = await Promise.all([
-          supabase.from("recipe_items").select("recipe_id, quantity, ingredients(cost_per_unit)").in("recipe_id", subIds),
-          supabase.from("recipes").select("id, labor_cost, yield_amount").in("id", subIds),
-        ]);
+        // Query 3: itens de todas as sub-receitas de uma vez
+        const { data: subItems } = await supabase
+          .from("recipe_items")
+          .select("recipe_id, quantity, ingredients(cost_per_unit)")
+          .in("recipe_id", subIds);
 
-        const subItemsByRecipe = new Map<string, any[]>();
+        // Query 4: dados das sub-receitas (labor_cost, yield_amount)
+        const { data: subRecipeData } = await supabase
+          .from("recipes")
+          .select("id, labor_cost, yield_amount")
+          .in("id", subIds);
+
+        // Agrupa itens das sub-receitas
+        const subItemsByRecipe = new Map<string, typeof subItems>();
         for (const item of subItems || []) {
-          const list = subItemsByRecipe.get(item.recipe_id) ?? [];
+          const list = subItemsByRecipe.get((item as any).recipe_id) ?? [];
           list.push(item);
-          subItemsByRecipe.set(item.recipe_id, list);
+          subItemsByRecipe.set((item as any).recipe_id, list);
         }
 
-        const subRecipeById = new Map((subRecipeData || []).map((r) => [r.id, r]));
+        const subRecipeById = new Map(
+          (subRecipeData || []).map((r) => [r.id, r])
+        );
 
+        // Calcula custo unitário de cada sub-receita em memória
+        const subUnitCostById = new Map<string, number>();
         for (const subId of subIds) {
           const items = subItemsByRecipe.get(subId) || [];
           const subRecipe = subRecipeById.get(subId);
-          const ingCost = items.reduce((t: number, i: any) => t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity, 0);
+          const ingCost = items.reduce((t, i) => {
+            return t + ((i.ingredients as any)?.cost_per_unit || 0) * (i as any).quantity;
+          }, 0);
           const total = ingCost + (subRecipe?.labor_cost || 0);
-          subCostById.set(subId, total / (subRecipe?.yield_amount || 1));
+          subUnitCostById.set(subId, total / (subRecipe?.yield_amount || 1));
         }
 
+        // Calcula custo de sub-receitas para cada receita pai
         for (const link of subLinks as any[]) {
-          const list = subMap.get(link.recipe_id) ?? [];
-          list.push({ subRecipeId: link.sub_recipe_id, quantity: link.quantity });
-          subMap.set(link.recipe_id, list);
+          const prev = subCostByParent.get(link.recipe_id) ?? 0;
+          const unitCost = subUnitCostById.get(link.sub_recipe_id) ?? 0;
+          subCostByParent.set(link.recipe_id, prev + unitCost * link.quantity);
         }
       }
     } catch {
-      // recipe_recipe_items may not exist
+      // recipe_recipe_items não existe no banco — continua sem sub-receitas
     }
 
-    const recipesWithCost = data.map((recipe) => {
+    // Monta resultado final em memória, sem mais queries
+    const recipesWithCost: RecipeWithCost[] = data.map((recipe) => {
       const items = itemsByRecipe.get(recipe.id) || [];
-      const ingredientsCost = items.reduce((t: number, i: any) => t + ((i.ingredients as any)?.cost_per_unit || 0) * i.quantity, 0);
-      const subRecipeCost = (subMap.get(recipe.id) || []).reduce((t, s) => t + (subCostById.get(s.subRecipeId) || 0) * s.quantity, 0);
-      return { ...recipe, ingredientsCost: ingredientsCost + subRecipeCost };
+      const ingredientsCost = items.reduce((t, i) => {
+        return t + ((i.ingredients as any)?.cost_per_unit || 0) * (i as any).quantity;
+      }, 0);
+      const subCost = subCostByParent.get(recipe.id) ?? 0;
+      return { ...recipe, ingredientsCost: ingredientsCost + subCost };
     });
 
     setRecipes(recipesWithCost);
@@ -148,24 +165,15 @@ const Receitas = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    const recipe = recipes.find(r => r.id === deleteId);
-    setRecipes((prev) => prev.filter((r) => r.id !== deleteId));
+    await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
+    const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
+    if (error) {
+      toast({ variant: "destructive", title: "Erro ao excluir", description: mapErrorToUserMessage(error) });
+    } else {
+      toast({ title: "Receita excluída!" });
+      setRecipes((prev) => prev.filter((r) => r.id !== deleteId));
+    }
     setDeleteId(null);
-
-    undoableDelete({
-      itemLabel: recipe?.name || "Receita",
-      onDelete: async () => {
-        await supabase.from("recipe_items").delete().eq("recipe_id", deleteId);
-        const { error } = await supabase.from("recipes").delete().eq("id", deleteId);
-        if (error) {
-          fetchRecipes();
-          throw error;
-        }
-      },
-      onUndo: () => {
-        fetchRecipes();
-      },
-    });
   };
 
   const formatCurrency = (value: number) =>
@@ -215,11 +223,11 @@ const Receitas = () => {
       return;
     }
     setSelectingForPdf(false);
-
     toast({ title: "Gerando PDF..." });
 
     const selectedRecipes = recipes.filter(r => selectedIds.has(r.id));
 
+    // PDF ainda usa queries individuais pois só roda quando usuário clica — ok
     const detailedRecipes = await Promise.all(
       selectedRecipes.map(async (recipe) => {
         const { data: items } = await supabase
@@ -320,9 +328,7 @@ const Receitas = () => {
 
   return (
     <AppLayout title="Receitas">
-      <PullToRefresh onRefresh={fetchRecipes}>
       <div className="space-y-3">
-        {/* Header */}
         <div className="flex items-center justify-between gap-2">
           {selectingForPdf ? (
             <>
@@ -330,23 +336,11 @@ const Receitas = () => {
                 {selectedIds.size} de {recipes.length} selecionada{selectedIds.size !== 1 ? "s" : ""}
               </p>
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={cancelSelection}
-                  variant="ghost"
-                  size="sm"
-                  className="h-10 rounded-xl"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Cancelar
+                <Button onClick={cancelSelection} variant="ghost" size="sm" className="h-10 rounded-xl">
+                  <X className="h-4 w-4 mr-1" /> Cancelar
                 </Button>
-                <Button
-                  onClick={generateRecipesPDF}
-                  size="sm"
-                  className="h-10 rounded-xl"
-                  disabled={selectedIds.size === 0}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  Gerar PDF ({selectedIds.size})
+                <Button onClick={generateRecipesPDF} size="sm" className="h-10 rounded-xl" disabled={selectedIds.size === 0}>
+                  <FileText className="h-4 w-4 mr-1" /> Gerar PDF ({selectedIds.size})
                 </Button>
               </div>
             </>
@@ -362,23 +356,17 @@ const Receitas = () => {
                   className="hidden md:flex h-10 rounded-xl"
                   disabled={recipes.length === 0}
                 >
-                  {isPro ? (
-                    <FileText className="h-4 w-4 mr-2" />
-                  ) : (
-                    <Lock className="h-4 w-4 mr-2" />
-                  )}
+                  {isPro ? <FileText className="h-4 w-4 mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
                   Gerar PDF
                 </Button>
                 <Button onClick={handleNewRecipe} className="hidden md:flex h-10 rounded-xl">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Receita
+                  <Plus className="h-4 w-4 mr-2" /> Nova Receita
                 </Button>
               </div>
             </>
           )}
         </div>
 
-        {/* Recipe List — card-based for mobile */}
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -397,8 +385,7 @@ const Receitas = () => {
             <h3 className="font-semibold text-lg mb-1">Nenhuma receita</h3>
             <p className="text-muted-foreground text-sm mb-6">Crie sua primeira receita agora!</p>
             <Button onClick={handleNewRecipe} className="h-12 rounded-xl px-6">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Receita
+              <Plus className="h-4 w-4 mr-2" /> Nova Receita
             </Button>
           </motion.div>
         ) : (
@@ -485,9 +472,7 @@ const Receitas = () => {
           </div>
         )}
       </div>
-      </PullToRefresh>
 
-      {/* FAB */}
       <Button
         onClick={handleNewRecipe}
         className="fab bg-primary hover:bg-primary/90 text-primary-foreground md:hidden"
