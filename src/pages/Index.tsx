@@ -55,6 +55,7 @@ const Index = () => {
           <a href="#como-funciona">Como funciona</a>
           <a href="#planos">Planos</a>
           <a href="#depoimentos">Depoimentos</a>
+          <Link to="/auth?mode=login" className="nav-login-btn">Entrar</Link>
           <Link to="/auth" className="nav-cta-btn">Testar 7 dias grátis →</Link>
         </div>
       </nav>
