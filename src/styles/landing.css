@@ -40,6 +40,12 @@
 .nav-links-list { display: flex; align-items: center; gap: 32px; }
 .nav-links-list a { font-size: 0.9rem; color: var(--l-muted); text-decoration: none; transition: color .2s; }
 .nav-links-list a:hover { color: var(--green); }
+.nav-login-btn {
+  color: var(--green) !important; font-weight: 600; font-size: 0.9rem;
+  text-decoration: none; padding: 8px 20px; border-radius: 50px;
+  border: 1.5px solid var(--green); transition: all .2s; white-space: nowrap;
+}
+.nav-login-btn:hover { background: var(--green); color: white !important; }
 .nav-cta-btn {
   background: var(--green); color: white !important;
   padding: 10px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
