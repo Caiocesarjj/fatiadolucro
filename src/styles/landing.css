@@ -440,8 +440,22 @@
 }
 
 /* ── MOBILE ──────────────────────────────────────────────── */
+.nav-login-mobile { display: none; }
 @media (max-width: 900px) {
   .nav-links-list { display: none; }
+  .nav-login-mobile {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--green);
+    border: 1.5px solid var(--green);
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background .2s, color .2s;
+  }
+  .nav-login-mobile:hover { background: var(--green); color: white; }
   .problem-grid, .features-grid, .testimonials-grid, .faq-grid,
   .pricing-grid, .steps-grid { grid-template-columns: 1fr; }
   .steps-grid::before { display: none; }
