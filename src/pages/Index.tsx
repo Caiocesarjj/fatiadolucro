@@ -58,6 +58,7 @@ const Index = () => {
           <Link to="/auth?mode=login" className="nav-login-btn">Entrar</Link>
           <Link to="/auth" className="nav-cta-btn">Testar 7 dias grátis →</Link>
         </div>
+        <Link to="/auth?mode=login" className="nav-login-mobile">Entrar</Link>
       </nav>
 
       {/* HERO */}
