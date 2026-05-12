@@ -72,7 +72,7 @@ export const UpgradeModal = ({ open, onOpenChange, type = "recipe_limit", module
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Crown className="h-4 w-4 mr-2" />
-            Seja PRO por apenas R$ 19,90/mês
+            Seja PRO • <span className="line-through opacity-70 mr-1">R$ 199,90</span> R$ 89,90/mês
           </Button>
           <Button
             variant="outline"

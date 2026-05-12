@@ -12,8 +12,9 @@ import { validateReferralCode } from "@/lib/referralValidation";
 import { toast } from "@/hooks/use-toast";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
-const PRICE_FULL = 19.90;
-const PRICE_REFERRED = 14.99;
+const PRICE_FULL = 89.90;
+const PRICE_OLD = 199.90;
+const PRICE_REFERRED = 89.90;
 
 const formatDateFriendly = (dateStr: string | null): string | null => {
   if (!dateStr) return null;
@@ -378,7 +379,7 @@ const Planos = () => {
 
       setHasReferral(true);
       setShowReferralInput(false);
-      toast({ title: "🎉 Desconto aplicado!", description: "Você pagará R$ 14,99/mês ao invés de R$ 19,90." });
+      toast({ title: "🎉 Código aplicado!", description: "Indicação registrada com sucesso." });
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
     } finally {
@@ -621,30 +622,23 @@ const Planos = () => {
                     </CardTitle>
                     <CardDescription>Todas as ferramentas para crescer</CardDescription>
                     <div className="mt-4">
-                      {hasReferral || couponApplied ? (
+                      <div>
+                        <div className="inline-flex items-center gap-2 mb-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                          🔥 Promoção
+                        </div>
                         <div>
-                          <span className="text-lg line-through text-muted-foreground mr-2">R$ {PRICE_FULL.toFixed(2).replace(".", ",")}</span>
+                          <span className="text-lg line-through text-muted-foreground mr-2">R$ {PRICE_OLD.toFixed(2).replace(".", ",")}</span>
                           <span className="text-3xl font-bold text-primary">R$ {priceFormatted}</span>
                           <span className="text-muted-foreground">/mês</span>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {hasReferral && (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                <Gift className="h-3 w-3" /> Indicação
-                              </span>
-                            )}
-                            {couponApplied && (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">
-                                🎟️ Cupom {couponDiscount}%
-                              </span>
-                            )}
+                        </div>
+                        {couponApplied && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">
+                              🎟️ Cupom {couponDiscount}%
+                            </span>
                           </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <span className="text-3xl font-bold text-primary">R$ {priceFormatted}</span>
-                          <span className="text-muted-foreground">/mês</span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
