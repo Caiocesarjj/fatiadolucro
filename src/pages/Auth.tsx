@@ -577,7 +577,7 @@ const Auth = () => {
                       maxLength={20}
                       disabled={loading}
                     />
-                    <p className="text-xs text-muted-foreground">Desconto vitalício de R$ 14,99/mês</p>
+                    <p className="text-xs text-muted-foreground">Aplique cupons ou códigos de indicação</p>
                   </div>
                 )}
               </div>

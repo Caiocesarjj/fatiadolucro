@@ -68,7 +68,7 @@ const Index = () => {
         <div className="blob blob-2" />
         <div className="blob blob-3" />
         <div className="hero-inner">
-          <div className="hero-badge">🚀 Novo: Relatórios em PDF para plano PRO</div>
+          <div className="hero-badge">🔥 Promoção: de <s style={{opacity:.7}}>R$ 199,90</s> por <strong>R$ 89,90/mês</strong> + 7 dias grátis</div>
           <h1 className="hero-title">
             Pare de <em>adivinhar</em><br />o preço do seu bolo.
           </h1>
@@ -229,10 +229,11 @@ const Index = () => {
 
           {/* PRO */}
           <div className="plan-card featured reveal">
-            <div className="plan-badge-label">⭐ Mais popular</div>
+            <div className="plan-badge-label">🔥 Promoção por tempo limitado</div>
             <div className="plan-name">PRO</div>
-            <div className="plan-price"><sup>R$</sup>19<small>,90</small> <sub>/mês</sub></div>
-            <p className="plan-desc">Para confeiteiros sérios que querem controle total do negócio.</p>
+            <div style={{fontSize:'1rem',textDecoration:'line-through',opacity:.6,marginBottom:'.25rem'}}>De R$ 199,90/mês</div>
+            <div className="plan-price"><sup>R$</sup>89<small>,90</small> <sub>/mês</sub></div>
+            <p className="plan-desc">Acesso completo a todas as ferramentas. 7 dias grátis para testar tudo.</p>
             <ul className="plan-features-list">
               <li>Ingredientes ilimitados</li>
               <li>Receitas ilimitadas</li>
@@ -245,20 +246,6 @@ const Index = () => {
               <li>Suporte prioritário</li>
             </ul>
             <Link to="/auth" className="plan-cta featured-cta">Começar 7 dias grátis →</Link>
-          </div>
-
-          {/* VIP */}
-          <div className="plan-card reveal">
-            <div className="plan-name">PRO Indicado</div>
-            <div className="plan-price"><sup>R$</sup>14<small>,99</small> <sub>/mês</sub></div>
-            <p className="plan-desc">Desconto especial para quem foi indicado por outro usuário do Fatia do Lucro.</p>
-            <ul className="plan-features-list">
-              <li>Tudo do plano PRO</li>
-              <li>25% de desconto vitalício</li>
-              <li>Válido com código de indicação</li>
-              <li>Mesmos 7 dias de trial</li>
-            </ul>
-            <Link to="/auth" className="plan-cta">Tenho um código →</Link>
           </div>
         </div>
       </section>

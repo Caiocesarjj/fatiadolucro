@@ -139,7 +139,7 @@ export const ReferralCodeSection = () => {
       setRedeemed(true);
       toast({
         title: "🎉 Desconto ativado com sucesso!",
-        description: "Desconto de R$ 19,90 por R$ 14,99 ativado com sucesso!",
+        description: "Código de indicação ativado com sucesso!",
       });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: mapErrorToUserMessage(error) });

@@ -8,8 +8,8 @@ const corsHeaders = {
 };
 
 const ASAAS_API_URL = "https://www.asaas.com/api/v3";
-const PRICE_FULL = 19.90;
-const PRICE_REFERRED = 14.99;
+const PRICE_FULL = 89.90;
+const PRICE_REFERRED = 89.90;
 
 const creditCardSchema = z.object({
   holderName: z.string().min(2).max(100),
